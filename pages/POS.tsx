@@ -875,7 +875,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                   ))}
                </div>
                <div className="text-right text-xs font-bold uppercase">
-                  Total: R$ {lastSaleData?.total?.toFixed(2)}
+                  Total: R$ {lastSaleData?.total ? (lastSaleData.total / 100).toFixed(2) : '0.00'}
                </div>
             </div>
             <div className="w-full flex gap-4 no-print">
