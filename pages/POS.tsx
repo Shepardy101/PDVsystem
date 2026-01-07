@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -293,8 +292,20 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
     else if (e.key === 'Enter') { e.preventDefault(); if (searchResults[selectedIndex]) addToCart(searchResults[selectedIndex]); }
   };
 
-   // Se o caixa estiver fechado ou não há sessão aberta, mostra a tela de bloqueio
-   if (!cashOpen || isLoadingSession || !cashSessionId) {
+   // Mostra loading enquanto está carregando status do caixa
+   if (isLoadingSession) {
+     return (
+       <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse" />
+         <div className="relative z-10 flex flex-col items-center text-center space-y-8 max-w-lg">
+           
+           <h2 className="text-2xl font-bold text-white tracking-widest uppercase assemble-text">Carregando status do terminal...</h2>
+         </div>
+       </div>
+     );
+   }
+   // Se o caixa está realmente fechado
+   if (!cashOpen || !cashSessionId) {
       return (
          <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse" />

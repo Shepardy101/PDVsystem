@@ -5,7 +5,8 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
-import { Product } from '../types';
+import { Product, Category } from '../types';
+import { FeedbackPopup } from '@/components/FeedbackPopup';
 
 const Products: React.FC = () => {
    const [searchTerm, setSearchTerm] = useState('');
@@ -24,9 +25,37 @@ const Products: React.FC = () => {
    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
    const [isUploading, setIsUploading] = useState(false);
    const [importResults, setImportResults] = useState<any[]>([]);
-   // Estados de Filtro
-   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-   const [stockStatus, setStockStatus] = useState<'all' | 'low' | 'normal'>('all');
+    // Estados de Filtro
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [stockStatus, setStockStatus] = useState<'all' | 'low' | 'normal'>('all');
+    const [showCategoryList, setShowCategoryList] = useState(false);
+    const [showStockList, setShowStockList] = useState(false);
+
+    // Estado do popup de feedback
+    const [popup, setPopup] = useState<{ open: boolean; type: 'success' | 'error' | 'info' | 'loading'; title: string; message: string }>(
+       { open: false, type: 'info', title: '', message: '' }
+    );
+
+    // Função para exibir o popup
+    function showPopup(type: 'success' | 'error' | 'info' | 'loading', title: string, message: string) {
+       setPopup({ open: true, type, title, message });
+    }
+
+    // Fecha dropdowns ao clicar fora
+    React.useEffect(() => {
+       function handleClickOutside(e: MouseEvent) {
+          const catMenu = document.getElementById('category-filter-menu');
+          const stockMenu = document.getElementById('stock-filter-menu');
+          if (showCategoryList && catMenu && !catMenu.contains(e.target as Node)) {
+             setShowCategoryList(false);
+          }
+          if (showStockList && stockMenu && !stockMenu.contains(e.target as Node)) {
+             setShowStockList(false);
+          }
+       }
+       document.addEventListener('mousedown', handleClickOutside);
+       return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showCategoryList, showStockList]);
    const fileInputRef = useRef<HTMLInputElement>(null);
 
    // --- NOVO: Produtos da API ---
@@ -92,8 +121,9 @@ const Products: React.FC = () => {
          if (!res.ok && res.status !== 204) throw new Error('Erro ao remover produto');
          setProducts(prev => prev.filter(p => p.id !== productId));
          setSelectedProduct(null);
+         showPopup('success', 'Produto removido', 'O produto foi removido com sucesso.');
       } catch (err) {
-         alert('Erro ao remover produto. Tente novamente.');
+         showPopup('error', 'Erro ao remover produto', 'Tente novamente.');
       }
    }
 
@@ -170,8 +200,9 @@ const Products: React.FC = () => {
          });
          setIsCreateModalOpen(false);
          setSelectedProduct(null);
+         showPopup('success', selectedProduct ? 'Produto atualizado' : 'Produto criado', selectedProduct ? 'O produto foi atualizado com sucesso.' : 'O produto foi criado com sucesso.');
       } catch (err) {
-         alert('Erro ao salvar produto. Verifique os campos e tente novamente.');
+         showPopup('error', 'Erro ao salvar produto', 'Verifique os campos e tente novamente.');
       }
    }
 
@@ -225,6 +256,13 @@ const Products: React.FC = () => {
          if (!row.costPrice) errors.push('Preço de custo obrigatório');
          if (!row.salePrice) errors.push('Preço de venda obrigatório');
          if (!row.stock) errors.push('Quantidade obrigatória');
+
+         // Verifica duplicidade no banco atual
+         const eanExists = products.some(p => p.gtin === row.gtin);
+         const codeExists = products.some(p => p.internalCode === row.internalCode);
+         if (eanExists) errors.push('EAN já existe');
+         if (codeExists) errors.push('Código interno já existe');
+
          return {
             id: `import-${idx}`,
             internalCode: row.internalCode,
@@ -287,6 +325,8 @@ const Products: React.FC = () => {
    }, [isCreateModalOpen, selectedProduct]);
 
    return (
+      
+      
       <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid">
          {/* Header Section */}
          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 shrink-0 mb-8 relative z-10">
@@ -308,12 +348,12 @@ const Products: React.FC = () => {
                         const res = await fetch('/api/products', { method: 'DELETE' });
                         if (res.ok) {
                            setProducts([]);
-                           alert('Todos os produtos foram excluídos.');
+                           showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
                         } else {
-                           alert('Erro ao excluir todos os produtos.');
+                           showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
                         }
                      } catch {
-                        alert('Erro ao excluir todos os produtos.');
+                        showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
                      }
                   }}
                >
@@ -350,41 +390,103 @@ const Products: React.FC = () => {
                </div>
                <div className="md:col-span-3 space-y-2">
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Filtro por Categoria</label>
-                  <div className="flex gap-2">
-                     <select
-                        value={selectedCategory}
-                        onChange={e => setSelectedCategory(e.target.value)}
-                        className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all"
-                     >
-                        <option value="all">Todas Categorias</option>
-                        {categories.map(c => (
-                           <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                     </select>
-                     <div className="relative">
-                        <button
-                           onClick={() => setIsCategoryModalOpen(true)}
-                           className="p-3 bg-accent/10 border border-accent/30 rounded-xl text-accent hover:bg-accent/20 hover:border-accent transition-all group"
-                           title="Nova Categoria"
-                        >
-                           <FolderPlus size={18} className="group-hover:scale-110 transition-transform" />
-                        </button>
-                        
-                     </div>
-                  </div>
+                           <div className="relative" id="category-filter-menu">
+                              <button
+                                 className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${selectedCategory === 'all' ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                                 onClick={() => setShowCategoryList(prev => !prev)}
+                                 style={{ minWidth: 180 }}
+                              >
+                                 {selectedCategory === 'all' ? 'Todas Categorias' : (categories.find(c => c.id === selectedCategory)?.name || 'Categoria')}
+                                 <ChevronRight size={16} className={`ml-2 transition-transform ${showCategoryList ? 'rotate-90' : ''}`} />
+                              </button>
+                              {showCategoryList && (
+                                 <div className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50">
+                                    {categories.length === 0 && (
+                                       <div className="px-4 py-2 text-slate-500 text-xs">Nenhuma categoria cadastrada</div>
+                                    )}
+                                    <button
+                                       className={`w-full text-left px-4 py-2 text-xs font-semibold ${selectedCategory === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                                       onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); }}
+                                    >
+                                       Todas Categorias
+                                    </button>
+                                    {categories.map(c => (
+                                       <div key={c.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent/10">
+                                          <button
+                                             className={`truncate text-left flex-1 ${selectedCategory === c.id ? 'text-accent' : 'text-slate-300 hover:text-accent'}`}
+                                             onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); }}
+                                             title={c.name}
+                                          >
+                                             {c.name}
+                                          </button>
+                                          <button
+                                             className="ml-2 p-1 text-red-500 hover:bg-red-500/10 rounded"
+                                             title="Excluir categoria"
+                                             onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (!window.confirm(`Excluir categoria \"${c.name}\"?`)) return;
+                                                try {
+                                                   const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
+                                                   if (res.ok) {
+                                                      setCategories(prev => prev.filter(cat => cat.id !== c.id));
+                                                      if (selectedCategory === c.id) setSelectedCategory('all');
+                                                   } else {
+                                                      alert('Erro ao excluir categoria.');
+                                                   }
+                                                } catch {
+                                                   alert('Erro ao excluir categoria.');
+                                                }
+                                             }}
+                                          >
+                                             <Trash2 size={14} />
+                                          </button>
+                                       </div>
+                                    ))}
+                                    <button
+                                       onClick={() => { setIsCategoryModalOpen(true); setShowCategoryList(false); }}
+                                       className="w-full flex items-center gap-2 px-4 py-2 text-accent hover:bg-accent/10 text-xs font-semibold border-t border-white/10"
+                                    >
+                                       <FolderPlus size={16} /> Nova Categoria
+                                    </button>
+                                 </div>
+                              )}
+                           </div>
                </div>
-               <div className="md:col-span-3">
-                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1 mb-2">Estado do Estoque</label>
-                  <select
-                     value={stockStatus}
-                     onChange={e => setStockStatus(e.target.value as any)}
-                     className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none h-[46px]"
-                  >
-                     <option value="all">Todo Estoque</option>
-                     <option value="low">Estoque Crítico</option>
-                     <option value="normal">Estoque Normal</option>
-                  </select>
-               </div>
+                      <div className="md:col-span-3">
+                           <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1 mb-2">Estado do Estoque</label>
+                           <div className="relative" id="stock-filter-menu">
+                              <button
+                                 className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${stockStatus === 'all' ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                                 onClick={() => setShowStockList(prev => !prev)}
+                                 style={{ minWidth: 180 }}
+                              >
+                                 {stockStatus === 'all' ? 'Todo Estoque' : stockStatus === 'low' ? 'Estoque Crítico' : 'Estoque Normal'}
+                                 <ChevronRight size={16} className={`ml-2 transition-transform ${showStockList ? 'rotate-90' : ''}`} />
+                              </button>
+                              {showStockList && (
+                                 <div className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50">
+                                    <button
+                                       className={`w-full text-left px-4 py-2 text-xs font-semibold ${stockStatus === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                                       onClick={() => { setStockStatus('all'); setShowStockList(false); }}
+                                    >
+                                       Todo Estoque
+                                    </button>
+                                    <button
+                                       className={`w-full text-left px-4 py-2 text-xs font-semibold ${stockStatus === 'low' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                                       onClick={() => { setStockStatus('low'); setShowStockList(false); }}
+                                    >
+                                       Estoque Crítico
+                                    </button>
+                                    <button
+                                       className={`w-full text-left px-4 py-2 text-xs font-semibold ${stockStatus === 'normal' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                                       onClick={() => { setStockStatus('normal'); setShowStockList(false); }}
+                                    >
+                                       Estoque Normal
+                                    </button>
+                                 </div>
+                              )}
+                           </div>
+                      </div>
                <div className="md:col-span-2">
                   <Button variant="ghost" className="w-full py-3 h-[46px] text-[10px] tracking-[0.2em]" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); setStockStatus('all'); }}>Limpar Filtros</Button>
                </div>
@@ -392,7 +494,7 @@ const Products: React.FC = () => {
          )}
 
          {/* Main Content Area */}
-         <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative z-10">
+         <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative z-0">
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                {!showImages ? (
                   /* LIST VIEW */
@@ -749,10 +851,10 @@ const Products: React.FC = () => {
                   <div className="p-6 border-t border-white/10 bg-dark-950/80 flex justify-end gap-4">
                      <Button variant="secondary" onClick={() => setIsPreviewModalOpen(false)}>Cancelar</Button>
                      <Button icon={<Check size={18} />} onClick={async () => {
-                        // Filtra apenas produtos válidos
+                        // Filtra apenas produtos válidos e não duplicados
                         const validProducts = importResults.filter((item: any) => item.status === 'valid');
                         if (validProducts.length === 0) {
-                           alert('Nenhum produto válido para importar.');
+                           showPopup('error', 'Importação inválida', 'Nenhum produto válido para importar.');
                            return;
                         }
                         let importedCount = 0;
@@ -837,7 +939,7 @@ const Products: React.FC = () => {
                               if (res.ok) importedCount++;
                            } catch { }
                         }
-                        alert(importedCount + ' produtos importados com sucesso!');
+                        showPopup('success', 'Importação concluída!', `${importedCount} produtos importados com sucesso!`);
                         setIsPreviewModalOpen(false);
                         // Atualiza lista de produtos
                         setLoading(true);
@@ -873,6 +975,15 @@ const Products: React.FC = () => {
                </div>
             </div>
          )}
+
+
+         <FeedbackPopup
+        open={popup.open}
+        type={popup.type}
+        title={popup.title}
+        message={popup.message}
+        onClose={() => setPopup(p => ({ ...p, open: false }))}
+      />
       </div>
    );
 };
