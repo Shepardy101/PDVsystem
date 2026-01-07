@@ -5,12 +5,17 @@ import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_SUPPLIERS } from '../constants';
 import { SystemUser, Client, Supplier } from '../types';
 import { createUser, listUsers, updateUser, deleteUser } from '../services/user';
+import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../services/supplier';
+import { listCategories } from '../services/category';
 import { createClient, updateClient, listClients, deleteClient } from '../services/client';
 import { FeedbackPopup } from '../components/FeedbackPopup';
 
 type EntityTab = 'users' | 'clients' | 'suppliers';
 
 const Entities: React.FC = () => {
+    const [suppliers, setSuppliers] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [activeTab, setActiveTab] = useState<EntityTab>('users');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -41,6 +46,11 @@ const Entities: React.FC = () => {
 
   // Carregar usuários/clientes reais ao abrir aba
   React.useEffect(() => {
+        if (activeTab === 'suppliers') {
+          setLoadingSuppliers(true);
+          listSuppliers().then(setSuppliers).catch(() => setSuppliers([])).finally(() => setLoadingSuppliers(false));
+          listCategories().then(data => setCategories(data.items || [])).catch(() => setCategories([]));
+        }
     if (activeTab === 'users') {
       setLoadingUsers(true);
       listUsers().then(setUsers).catch(() => setUsers([])).finally(() => setLoadingUsers(false));
@@ -83,9 +93,9 @@ const Entities: React.FC = () => {
     } else if (activeTab === 'clients') {
       return clients.filter(c => c.name.toLowerCase().includes(term) || c.cpf.includes(term));
     } else {
-      return MOCK_SUPPLIERS.filter(s => s.name.toLowerCase().includes(term) || s.cnpj.includes(term));
+      return suppliers.filter(s => s.name.toLowerCase().includes(term) || s.cnpj.includes(term));
     }
-  }, [activeTab, searchTerm, users, clients]);
+  }, [activeTab, searchTerm, users, clients, suppliers]);
 
   const TabButton = ({ id, label, icon: Icon }: { id: EntityTab, label: string, icon: any }) => (
     <button 
@@ -286,6 +296,17 @@ const Entities: React.FC = () => {
                                setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
                              }
                            }
+                           if (activeTab === 'suppliers') {
+                             try {
+                               await deleteSupplier(item.id);
+                               setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
+                               setLoadingSuppliers(true);
+                               const updated = await listSuppliers();
+                               setSuppliers(updated);
+                             } catch {
+                               setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                             }
+                           }
                          }}
                        >
                          <Trash2 size={14} />
@@ -447,28 +468,49 @@ const Entities: React.FC = () => {
       </Modal>
 
       {/* Supplier Modal */}
-      <Modal isOpen={isSupplierModalOpen} onClose={() => setIsSupplierModalOpen(false)} title={editingItem ? "Ativo Logístico" : "Homologar Fornecedor"}>
-         <div className="space-y-6">
-            <Input label="Corporação (Fantasia)" defaultValue={editingItem?.name} className="bg-dark-950/50" />
-            <div className="grid grid-cols-2 gap-4">
-               <Input label="Registro CNPJ" defaultValue={editingItem?.cnpj} className="bg-dark-950/50" />
-               <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Especialidade</label>
-                  <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent" defaultValue={editingItem?.category || 'Bebidas'}>
-                    {['Bebidas', 'Refrigerantes', 'Vinhos', 'Logística'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  </select>
-               </div>
+      <Modal isOpen={isSupplierModalOpen} onClose={() => { setIsSupplierModalOpen(false); setEditingItem(null); }} title={editingItem ? "Ativo Logístico" : "Homologar Fornecedor"}>
+        <div className="space-y-6">
+          <Input label="Corporação (Fantasia)" value={editingItem?.name ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, name: e.target.value }))} className="bg-dark-950/50" />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Registro CNPJ" value={editingItem?.cnpj ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, cnpj: e.target.value }))} className="bg-dark-950/50" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Especialidade</label>
+              <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent" value={editingItem?.category ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, category: e.target.value }))}>
+                {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+              </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-               <Input label="E-mail Corporativo" defaultValue={editingItem?.email} className="bg-dark-950/50" />
-               <Input label="Suporte Vendas" defaultValue={editingItem?.phone} className="bg-dark-950/50" />
-            </div>
-            <Input label="Centro de Distribuição" defaultValue={editingItem?.address} icon={<MapPin size={14} />} className="bg-dark-950/50" />
-            <div className="flex gap-4 pt-4">
-               <Button variant="secondary" className="flex-1" onClick={() => setIsSupplierModalOpen(false)}>Descartar</Button>
-               <Button className="flex-1 shadow-accent-glow" onClick={() => setIsSupplierModalOpen(false)}>Salvar Cadastro</Button>
-            </div>
-         </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="E-mail Corporativo" value={editingItem?.email ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, email: e.target.value }))} className="bg-dark-950/50" />
+            <Input label="Suporte Vendas" value={editingItem?.phone ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, phone: e.target.value }))} className="bg-dark-950/50" />
+          </div>
+          <Input label="Centro de Distribuição" value={editingItem?.address ?? ''} icon={<MapPin size={14} />} onChange={e => setEditingItem((prev: any) => ({ ...prev, address: e.target.value }))} className="bg-dark-950/50" />
+          <div className="flex gap-4 pt-4">
+            <Button variant="secondary" className="flex-1" onClick={() => { setIsSupplierModalOpen(false); setEditingItem(null); }}>Descartar</Button>
+            <Button className="flex-1 shadow-accent-glow" onClick={async () => {
+              if (!editingItem?.name || !editingItem?.category) {
+               setPopup({open: true, type: 'error', title: 'Preencha todos os campos obrigatórios', message: 'Nome e especialidade são obrigatórios.'});
+               return;
+              }
+              try {
+               if (editingItem?.id) {
+                await updateSupplier(editingItem.id, editingItem);
+                setPopup({open: true, type: 'success', title: 'Fornecedor atualizado', message: 'Dados do fornecedor atualizados!'});
+               } else {
+                await createSupplier(editingItem);
+                setPopup({open: true, type: 'success', title: 'Fornecedor criado', message: 'Novo fornecedor cadastrado!'});
+               }
+               setIsSupplierModalOpen(false);
+               setEditingItem(null);
+               setLoadingSuppliers(true);
+               const updated = await listSuppliers();
+               setSuppliers(updated);
+              } catch (e) {
+               setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar fornecedor' : 'Erro ao criar fornecedor', message: 'Tente novamente.'});
+              }
+            }}>Salvar Cadastro</Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

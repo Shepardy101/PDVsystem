@@ -8,6 +8,7 @@ import { cashRouter } from './routes/cash.routes';
 import { categoryRouter } from './routes/category.routes';
 import { userRouter } from './routes/user.routes';
 import { clientRouter } from './routes/user.routes';
+import { supplierRouter } from './routes/user.routes';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8787;
@@ -23,6 +24,7 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
 app.use('/api/users', userRouter);
 app.use('/api/clients', clientRouter);
+app.use('/api/suppliers', supplierRouter);
 
 
 app.use('/api/cash', cashRouter);

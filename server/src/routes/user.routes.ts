@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { createUser, listUsers, updateUser, deleteUser } from '../repositories/user.repo';
 import { createClient, listClients, updateClient, deleteClient } from '../repositories/client.repo';
+import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../repositories/supplier.repo';
 
 export const userRouter = Router();
 export const clientRouter = Router();
+export const supplierRouter = Router();
 
 userRouter.put('/:id', async (req, res) => {
   try {
@@ -117,5 +119,59 @@ clientRouter.delete('/:id', async (req, res) => {
   } catch (e: any) {
     console.error('[DELETE /api/clients/:id] Erro ao deletar cliente:', e);
     res.status(500).json({ error: 'Erro ao deletar cliente', details: e && e.message ? e.message : e });
+  }
+});
+
+supplierRouter.get('/', async (req, res) => {
+  try {
+    const suppliers = await listSuppliers();
+    res.json(suppliers);
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao listar fornecedores' });
+  }
+});
+
+supplierRouter.post('/', async (req, res) => {
+  try {
+    const { name, cnpj, address, phone, email, category } = req.body;
+    if (!name || !category) {
+      return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    }
+    const supplier = await createSupplier({ name, cnpj, address, phone, email, category });
+    res.status(201).json(supplier);
+  } catch (e: any) {
+    res.status(500).json({ error: 'Erro ao criar fornecedor', details: e && e.message ? e.message : e });
+  }
+});
+
+supplierRouter.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, cnpj, address, phone, email, category } = req.body;
+    if (!name || !category) {
+      return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    }
+    const ok = await updateSupplier(id, { name, cnpj, address, phone, email, category });
+    if (ok) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Fornecedor não encontrado' });
+    }
+  } catch (e: any) {
+    res.status(500).json({ error: 'Erro ao atualizar fornecedor', details: e && e.message ? e.message : e });
+  }
+});
+
+supplierRouter.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ok = await deleteSupplier(id);
+    if (ok) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Fornecedor não encontrado' });
+    }
+  } catch (e: any) {
+    res.status(500).json({ error: 'Erro ao deletar fornecedor', details: e && e.message ? e.message : e });
   }
 });
