@@ -1,0 +1,296 @@
+
+import React, { useState, useMemo } from 'react';
+import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, Check, X, Filter } from 'lucide-react';
+import { Button, Input, Badge, Modal, Switch } from '../components/UI';
+import { MOCK_USERS, MOCK_CLIENTS, MOCK_SUPPLIERS } from '../constants';
+import { SystemUser, Client, Supplier } from '../types';
+
+type EntityTab = 'users' | 'clients' | 'suppliers';
+
+const Entities: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<EntityTab>('users');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // States for Modals
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  
+  const [editingItem, setEditingItem] = useState<any>(null);
+
+  // Filtering Logic
+  const filteredData = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    if (activeTab === 'users') {
+      return MOCK_USERS.filter(u => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term));
+    } else if (activeTab === 'clients') {
+      return MOCK_CLIENTS.filter(c => c.name.toLowerCase().includes(term) || c.cpf.includes(term));
+    } else {
+      return MOCK_SUPPLIERS.filter(s => s.name.toLowerCase().includes(term) || s.cnpj.includes(term));
+    }
+  }, [activeTab, searchTerm]);
+
+  const TabButton = ({ id, label, icon: Icon }: { id: EntityTab, label: string, icon: any }) => (
+    <button 
+      onClick={() => { setActiveTab(id); setSearchTerm(''); }}
+      className={`flex items-center gap-3 px-6 py-4 border-b-2 transition-all duration-300 ${
+        activeTab === id 
+          ? 'border-accent text-accent bg-accent/5' 
+          : 'border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/2'
+      }`}
+    >
+      <Icon size={18} />
+      <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 shrink-0 mb-8 relative z-10">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+             <Users className="text-accent" /> Gerenciamento de Entidades
+          </h1>
+          <p className="text-slate-500 text-sm font-medium">Controlador central de identidades e parceiros do ecossistema.</p>
+        </div>
+        <div className="flex items-center gap-3">
+           <Button 
+            className="shadow-accent-glow"
+            onClick={() => {
+              if (activeTab === 'users') setIsUserModalOpen(true);
+              if (activeTab === 'clients') setIsClientModalOpen(true);
+              if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
+              setEditingItem(null);
+            }} 
+            icon={<Plus size={18} />}
+           >
+             Adicionar {activeTab === 'users' ? 'Usuário' : activeTab === 'clients' ? 'Cliente' : 'Fornecedor'}
+           </Button>
+        </div>
+      </div>
+
+      {/* Tabs & Filters Bar */}
+      <div className="flex flex-col md:flex-row items-center justify-between bg-dark-900/60 border border-white/5 rounded-2xl overflow-hidden mb-6 shrink-0 backdrop-blur-md relative z-10 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex w-full md:w-auto overflow-x-auto">
+          <TabButton id="users" label="Usuários" icon={Shield} />
+          <TabButton id="clients" label="Clientes" icon={Users} />
+          <TabButton id="suppliers" label="Fornecedores" icon={Truck} />
+        </div>
+        <div className="p-2 w-full md:w-80 px-4">
+           <Input 
+            placeholder={`Filtrar ${activeTab}...`} 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
+            icon={<Search size={16} />}
+            className="bg-transparent border-none py-2"
+           />
+        </div>
+      </div>
+
+      {/* Main Table Content */}
+      <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="overflow-y-auto flex-1 custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
+              <tr className="text-slate-600 text-[10px] uppercase font-bold tracking-[0.2em]">
+                {activeTab === 'users' && (
+                  <>
+                    <th className="px-8 py-5">Identidade</th>
+                    <th className="px-8 py-5">Acesso</th>
+                    <th className="px-8 py-5">Status</th>
+                    <th className="px-8 py-5">Último Login</th>
+                  </>
+                )}
+                {activeTab === 'clients' && (
+                  <>
+                    <th className="px-8 py-5">Cliente / CPF</th>
+                    <th className="px-8 py-5">Contato</th>
+                    <th className="px-8 py-5">Localização</th>
+                    <th className="px-8 py-5">Volume Gasto</th>
+                  </>
+                )}
+                {activeTab === 'suppliers' && (
+                  <>
+                    <th className="px-8 py-5">Razão / CNPJ</th>
+                    <th className="px-8 py-5">Categoria</th>
+                    <th className="px-8 py-5">Contato</th>
+                    <th className="px-8 py-5">Endereço</th>
+                  </>
+                )}
+                <th className="px-8 py-5 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredData.map((item: any) => (
+                <tr key={item.id} className="group hover:bg-white/5 transition-all cursor-default">
+                  {activeTab === 'users' && (
+                    <>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center font-bold text-accent shadow-accent-glow/20">
+                              {item.name.charAt(0)}
+                           </div>
+                           <div>
+                              <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
+                              <div className="text-[10px] text-slate-500 font-mono tracking-tight">{item.email}</div>
+                           </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                         <Badge variant={item.role === 'admin' ? 'info' : 'success'}>{item.role}</Badge>
+                      </td>
+                      <td className="px-8 py-5">
+                         <div className="flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
+                            <span className="text-[10px] font-bold uppercase text-slate-400">{item.status}</span>
+                         </div>
+                      </td>
+                      <td className="px-8 py-5 text-[10px] font-mono text-slate-600">
+                         {new Date(item.lastLogin).toLocaleString()}
+                      </td>
+                    </>
+                  )}
+
+                  {activeTab === 'clients' && (
+                    <>
+                      <td className="px-8 py-5">
+                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
+                        <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cpf}</div>
+                      </td>
+                      <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
+                         <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email || 'N/A'}</div>
+                         <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
+                      </td>
+                      <td className="px-8 py-5 text-[10px] text-slate-500 truncate max-w-xs">
+                         <div className="flex items-center gap-2"><MapPin size={12} className="text-slate-600" /> {item.address}</div>
+                      </td>
+                      <td className="px-8 py-5 font-mono text-sm font-bold text-emerald-400">
+                         R$ {item.totalSpent.toFixed(2)}
+                      </td>
+                    </>
+                  )}
+
+                  {activeTab === 'suppliers' && (
+                    <>
+                      <td className="px-8 py-5">
+                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
+                        <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cnpj}</div>
+                      </td>
+                      <td className="px-8 py-5">
+                         <Badge variant="info">{item.category}</Badge>
+                      </td>
+                      <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
+                         <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email}</div>
+                         <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
+                      </td>
+                      <td className="px-8 py-5 text-[10px] text-slate-500 max-w-xs truncate">
+                         {item.address}
+                      </td>
+                    </>
+                  )}
+
+                  <td className="px-8 py-5 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <button 
+                        onClick={() => {
+                          setEditingItem(item);
+                          if (activeTab === 'users') setIsUserModalOpen(true);
+                          if (activeTab === 'clients') setIsClientModalOpen(true);
+                          if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
+                        }}
+                        className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
+                       >
+                         <Edit2 size={14} />
+                       </button>
+                       <button className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90">
+                         <Trash2 size={14} />
+                       </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* MODALS SECTION */}
+
+      {/* User Modal */}
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={editingItem ? "Sincronizar Operador" : "Vincular Novo Operador"}>
+         <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+               <div className="col-span-2"><Input label="Identificação Completa" defaultValue={editingItem?.name} className="bg-dark-950/50" /></div>
+               <div className="col-span-2"><Input label="E-mail de Acesso" type="email" defaultValue={editingItem?.email} icon={<Mail size={14} />} className="bg-dark-950/50" /></div>
+               <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block">Célula de Acesso</label>
+                  <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent transition-all" defaultValue={editingItem?.role || 'operator'}>
+                    <option value="operator">Operador</option>
+                    <option value="manager">Gerente</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+               </div>
+               <div className="flex items-end pb-3">
+                  <Switch label="Credencial Ativa" enabled={editingItem?.status !== 'inactive'} onChange={() => {}} />
+               </div>
+               {!editingItem && (
+                 <>
+                   <Input label="Código de Acesso" type="password" />
+                   <Input label="Confirmar Código" type="password" />
+                 </>
+               )}
+            </div>
+            <div className="flex gap-4 pt-4">
+               <Button variant="secondary" className="flex-1" onClick={() => setIsUserModalOpen(false)}>Abortar</Button>
+               <Button className="flex-1 shadow-accent-glow" onClick={() => setIsUserModalOpen(false)}>Confirmar Vínculo</Button>
+            </div>
+         </div>
+      </Modal>
+
+      {/* Client Modal */}
+      <Modal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} title={editingItem ? "Ficha do Consumidor" : "Indexar Novo Consumidor"}>
+         <div className="space-y-6">
+            <Input label="Nome Completo / Social" defaultValue={editingItem?.name} className="bg-dark-950/50" />
+            <div className="grid grid-cols-2 gap-4">
+               <Input label="CPF / CNPJ" defaultValue={editingItem?.cpf} className="bg-dark-950/50" />
+               <Input label="Linha Direta" defaultValue={editingItem?.phone} icon={<Phone size={14} />} className="bg-dark-950/50" />
+            </div>
+            <Input label="Canal Digital" type="email" defaultValue={editingItem?.email} icon={<Mail size={14} />} className="bg-dark-950/50" />
+            <Input label="Coordenadas de Entrega" defaultValue={editingItem?.address} icon={<MapPin size={14} />} className="bg-dark-950/50" />
+            <div className="flex gap-4 pt-4">
+               <Button variant="secondary" className="flex-1" onClick={() => setIsClientModalOpen(false)}>Retornar</Button>
+               <Button className="flex-1 shadow-accent-glow" onClick={() => setIsClientModalOpen(false)}>Efetuar Registro</Button>
+            </div>
+         </div>
+      </Modal>
+
+      {/* Supplier Modal */}
+      <Modal isOpen={isSupplierModalOpen} onClose={() => setIsSupplierModalOpen(false)} title={editingItem ? "Ativo Logístico" : "Homologar Fornecedor"}>
+         <div className="space-y-6">
+            <Input label="Corporação (Fantasia)" defaultValue={editingItem?.name} className="bg-dark-950/50" />
+            <div className="grid grid-cols-2 gap-4">
+               <Input label="Registro CNPJ" defaultValue={editingItem?.cnpj} className="bg-dark-950/50" />
+               <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Especialidade</label>
+                  <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent" defaultValue={editingItem?.category || 'Bebidas'}>
+                    {['Bebidas', 'Refrigerantes', 'Vinhos', 'Logística'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+               <Input label="E-mail Corporativo" defaultValue={editingItem?.email} className="bg-dark-950/50" />
+               <Input label="Suporte Vendas" defaultValue={editingItem?.phone} className="bg-dark-950/50" />
+            </div>
+            <Input label="Centro de Distribuição" defaultValue={editingItem?.address} icon={<MapPin size={14} />} className="bg-dark-950/50" />
+            <div className="flex gap-4 pt-4">
+               <Button variant="secondary" className="flex-1" onClick={() => setIsSupplierModalOpen(false)}>Descartar</Button>
+               <Button className="flex-1 shadow-accent-glow" onClick={() => setIsSupplierModalOpen(false)}>Salvar Cadastro</Button>
+            </div>
+         </div>
+      </Modal>
+    </div>
+  );
+};
+
+export default Entities;

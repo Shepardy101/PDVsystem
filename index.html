@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NovaBev POS - Tech Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        accent: {
+                            DEFAULT: '#00e0ff',
+                            glow: 'rgba(0, 224, 255, 0.3)',
+                        },
+                        dark: {
+                            950: '#030308',
+                            900: '#080812',
+                            850: '#0d0d1a',
+                            800: '#141423',
+                            700: '#1e1e2d'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        glass: '0 8px 32px 0 rgba(0, 0, 0, 0.8)',
+                        'accent-glow': '0 0 15px rgba(0, 224, 255, 0.25)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030308;
+            color: #e0e0e0;
+            overflow: hidden; 
+            font-feature-settings: "ss01", "ss02", "cv01";
+            height: 100vh;
+            width: 100vw;
+        }
+        #root {
+            height: 100%;
+            width: 100%;
+        }
+        .glass-panel {
+            background: rgba(20, 20, 35, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Base View Animation */
+        @keyframes assemble {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .assemble-view {
+            animation: assemble 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        /* Cyberpunk Toast Animation */
+        @keyframes toast-in {
+            0% { transform: translateX(110%) skewX(10deg); opacity: 0; }
+            70% { transform: translateX(-10px) skewX(-2deg); opacity: 1; }
+            100% { transform: translateX(0) skewX(0); opacity: 1; }
+        }
+        .cyber-toast {
+            animation: toast-in 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            will-change: transform, opacity;
+        }
+
+        /* Cyberpunk Modal Core Animation - Stable version */
+        @keyframes modal-cyber-in {
+            0% { transform: scale(0.98) translateY(10px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .cyber-modal-container {
+            animation: modal-cyber-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            will-change: transform, opacity;
+        }
+
+        /* Digital Text Assembly Animation */
+        @keyframes text-assemble {
+            0% { letter-spacing: 0.5em; filter: blur(4px); opacity: 0; }
+            100% { letter-spacing: normal; filter: blur(0); opacity: 1; }
+        }
+        .assemble-text {
+            animation: text-assemble 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        /* Border Drawing Animation */
+        @keyframes border-draw {
+            0% { width: 0; opacity: 0; }
+            100% { width: 100%; opacity: 1; }
+        }
+        .border-animation {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00e0ff, transparent);
+            animation: border-draw 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Grid Background Pattern */
+        .bg-cyber-grid {
+            background-image: 
+                linear-gradient(rgba(0, 224, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 224, 255, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        /* Cyber Upload Zone Pulse */
+        @keyframes pulse-accent {
+            0%, 100% { border-color: rgba(0, 224, 255, 0.2); box-shadow: 0 0 0 rgba(0, 224, 255, 0); }
+            50% { border-color: rgba(0, 224, 255, 0.6); box-shadow: 0 0 20px rgba(0, 224, 255, 0.1); }
+        }
+        .cyber-upload-zone {
+            animation: pulse-accent 3s infinite ease-in-out;
+        }
+
+        @media print {
+            body * { visibility: hidden; background: white !important; color: black !important; }
+            #thermal-receipt, #thermal-receipt * { visibility: visible; box-shadow: none !important; border: none !important; }
+            #thermal-receipt { position: absolute; left: 0; top: 0; width: 80mm; margin: 0; padding: 10px; background: white !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
