@@ -1,0 +1,16 @@
+// services/user.ts
+export async function createUser(user) {
+  const res = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user)
+  });
+  if (!res.ok) throw new Error('Erro ao criar usuário');
+  return res.json();
+}
+
+export async function listUsers() {
+  const res = await fetch('/api/users');
+  if (!res.ok) throw new Error('Erro ao buscar usuários');
+  return res.json();
+}

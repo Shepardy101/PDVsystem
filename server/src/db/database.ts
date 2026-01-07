@@ -5,6 +5,7 @@ import fs from 'fs';
 
 const dbDir = path.join(__dirname, '../../../../data');
 const dbPath = path.join(dbDir, 'novabev.sqlite');
+console.log('[DB] Usando banco de dados em:', dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }

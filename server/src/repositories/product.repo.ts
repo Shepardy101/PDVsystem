@@ -1,10 +1,10 @@
+import { db } from '../db/database';
+import { v4 as uuidv4 } from 'uuid';
 // Remove todos os produtos do banco
 export function deleteAllProducts() {
   db.prepare('DELETE FROM products').run();
 }
 
-import { db } from '../db/database';
-import { v4 as uuidv4 } from 'uuid';
 
 export function deleteProduct(id: string) {
   console.log(`[deleteProduct] Buscando produto id=${id}`);
@@ -42,7 +42,8 @@ export interface Product {
 
 export function listProducts(limit = 50, offset = 0) {
   const items = db.prepare('SELECT * FROM products ORDER BY name LIMIT ? OFFSET ?').all(limit, offset);
-  const total = db.prepare('SELECT COUNT(*) as total FROM products').get().total;
+  const totalRow = db.prepare('SELECT COUNT(*) as total FROM products').get() as { total: number };
+  const total = totalRow.total;
   return { items, total };
 }
 
@@ -62,12 +63,12 @@ export function getProductById(id: string) {
   return db.prepare('SELECT * FROM products WHERE id = ?').get(id);
 }
 
-export function getProductByEAN(ean: string) {
-  return db.prepare('SELECT * FROM products WHERE ean = ?').get(ean);
+export function getProductByEAN(ean: string): Product | undefined {
+  return db.prepare('SELECT * FROM products WHERE ean = ?').get(ean) as Product | undefined;
 }
 
-export function getProductByInternalCode(internal_code: string) {
-  return db.prepare('SELECT * FROM products WHERE internal_code = ?').get(internal_code);
+export function getProductByInternalCode(internal_code: string): Product | undefined {
+  return db.prepare('SELECT * FROM products WHERE internal_code = ?').get(internal_code) as Product | undefined;
 }
 
 export function createProduct(data: any) {

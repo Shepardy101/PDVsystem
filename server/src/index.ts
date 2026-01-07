@@ -6,6 +6,7 @@ import { productRouter } from './routes/product.routes.ts';
 import { posRouter } from './routes/pos.routes.ts';
 import { cashRouter } from './routes/cash.routes.ts';
 import { categoryRouter } from './routes/category.routes.ts';
+import { userRouter } from './routes/user.routes.ts';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8787;
@@ -16,8 +17,10 @@ app.use(express.json());
 // Health check
 app.use('/api/health', healthRouter);
 
+
 app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
+app.use('/api/users', userRouter);
 
 
 app.use('/api/cash', cashRouter);

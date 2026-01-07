@@ -4,6 +4,8 @@ import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, More
 import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_CLIENTS, MOCK_SUPPLIERS } from '../constants';
 import { SystemUser, Client, Supplier } from '../types';
+import { createUser, listUsers } from '../services/user';
+import { FeedbackPopup } from '../components/FeedbackPopup';
 
 type EntityTab = 'users' | 'clients' | 'suppliers';
 
@@ -15,20 +17,68 @@ const Entities: React.FC = () => {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
-  
   const [editingItem, setEditingItem] = useState<any>(null);
+
+  // Controlled form state for user modal
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    role: 'operator',
+    status: true,
+    password: '',
+    confirmPassword: ''
+  });
+
+  // Lista real de usuários
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Feedback popup
+  const [popup, setPopup] = useState<{open: boolean, type?: any, title: string, message?: string}>({open: false, type: 'info', title: '', message: ''});
+
+  // Carregar usuários reais ao abrir aba
+  React.useEffect(() => {
+    if (activeTab === 'users') {
+      setLoadingUsers(true);
+      listUsers().then(setUsers).catch(() => setUsers([])).finally(() => setLoadingUsers(false));
+    }
+  }, [activeTab, isUserModalOpen]);
+
+  // Reset form when opening modal for new user
+  React.useEffect(() => {
+    if (isUserModalOpen && !editingItem) {
+      setUserForm({
+        name: '',
+        email: '',
+        role: 'operator',
+        status: true,
+        password: '',
+        confirmPassword: ''
+      });
+    }
+    if (isUserModalOpen && editingItem) {
+      setUserForm({
+        name: editingItem.name || '',
+        email: editingItem.email || '',
+        role: editingItem.role || 'operator',
+        status: editingItem.status !== 'inactive',
+        password: '',
+        confirmPassword: ''
+      });
+    }
+  }, [isUserModalOpen, editingItem]);
 
   // Filtering Logic
   const filteredData = useMemo(() => {
     const term = searchTerm.toLowerCase();
     if (activeTab === 'users') {
-      return MOCK_USERS.filter(u => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term));
+      return users.filter(u => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term));
     } else if (activeTab === 'clients') {
       return MOCK_CLIENTS.filter(c => c.name.toLowerCase().includes(term) || c.cpf.includes(term));
     } else {
       return MOCK_SUPPLIERS.filter(s => s.name.toLowerCase().includes(term) || s.cnpj.includes(term));
     }
-  }, [activeTab, searchTerm]);
+  }, [activeTab, searchTerm, users]);
 
   const TabButton = ({ id, label, icon: Icon }: { id: EntityTab, label: string, icon: any }) => (
     <button 
@@ -221,32 +271,98 @@ const Entities: React.FC = () => {
       <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={editingItem ? "Sincronizar Operador" : "Vincular Novo Operador"}>
          <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-               <div className="col-span-2"><Input label="Identificação Completa" defaultValue={editingItem?.name} className="bg-dark-950/50" /></div>
-               <div className="col-span-2"><Input label="E-mail de Acesso" type="email" defaultValue={editingItem?.email} icon={<Mail size={14} />} className="bg-dark-950/50" /></div>
+               <div className="col-span-2">
+                 <Input 
+                   label="Identificação Completa" 
+                   value={userForm.name}
+                   onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))}
+                   className="bg-dark-950/50" 
+                 />
+               </div>
+               <div className="col-span-2">
+                 <Input 
+                   label="E-mail de Acesso" 
+                   type="email" 
+                   value={userForm.email}
+                   onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))}
+                   icon={<Mail size={14} />} 
+                   className="bg-dark-950/50" 
+                 />
+               </div>
                <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block">Célula de Acesso</label>
-                  <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent transition-all" defaultValue={editingItem?.role || 'operator'}>
+                  <select 
+                    className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent transition-all" 
+                    value={userForm.role}
+                    onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}
+                  >
                     <option value="operator">Operador</option>
                     <option value="manager">Gerente</option>
                     <option value="admin">Administrador</option>
                   </select>
                </div>
                <div className="flex items-end pb-3">
-                  <Switch label="Credencial Ativa" enabled={editingItem?.status !== 'inactive'} onChange={() => {}} />
+                  <Switch 
+                    label="Credencial Ativa" 
+                    enabled={userForm.status}
+                    onChange={val => setUserForm(f => ({ ...f, status: val }))} 
+                  />
                </div>
                {!editingItem && (
                  <>
-                   <Input label="Código de Acesso" type="password" />
-                   <Input label="Confirmar Código" type="password" />
+                   <Input 
+                     label="Código de Acesso" 
+                     type="password" 
+                     value={userForm.password}
+                     onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))}
+                   />
+                   <Input 
+                     label="Confirmar Código" 
+                     type="password" 
+                     value={userForm.confirmPassword}
+                     onChange={e => setUserForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                   />
                  </>
                )}
             </div>
             <div className="flex gap-4 pt-4">
                <Button variant="secondary" className="flex-1" onClick={() => setIsUserModalOpen(false)}>Abortar</Button>
-               <Button className="flex-1 shadow-accent-glow" onClick={() => setIsUserModalOpen(false)}>Confirmar Vínculo</Button>
+               <Button className="flex-1 shadow-accent-glow" onClick={async () => {
+                 // Validação básica
+                 if (!userForm.name || !userForm.email || !userForm.role || (!editingItem && (!userForm.password || userForm.password !== userForm.confirmPassword))) {
+                   setPopup({open: true, type: 'error', title: 'Preencha todos os campos corretamente', message: 'Verifique os dados e tente novamente.'});
+                   return;
+                 }
+                 try {
+                   await createUser({
+                     name: userForm.name,
+                     email: userForm.email,
+                     role: userForm.role,
+                     status: userForm.status,
+                     password: userForm.password
+                   });
+                   setPopup({open: true, type: 'success', title: 'Usuário criado', message: 'Novo operador vinculado com sucesso!'});
+                   setIsUserModalOpen(false);
+                   // Atualiza lista
+                   setLoadingUsers(true);
+                   const updated = await listUsers();
+                   setUsers(updated);
+                 } catch (e) {
+                   setPopup({open: true, type: 'error', title: 'Erro ao criar usuário', message: 'Tente novamente.'});
+                 }
+               }}>Confirmar Vínculo</Button>
             </div>
          </div>
       </Modal>
+
+      {/* Feedback Popup */}
+      <FeedbackPopup 
+        open={popup.open} 
+        type={popup.type} 
+        title={popup.title} 
+        message={popup.message} 
+        onClose={() => setPopup(p => ({...p, open: false}))} 
+      />
 
       {/* Client Modal */}
       <Modal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} title={editingItem ? "Ficha do Consumidor" : "Indexar Novo Consumidor"}>
