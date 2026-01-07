@@ -8,7 +8,7 @@ import { cashRouter } from './routes/cash.routes';
 import { categoryRouter } from './routes/category.routes';
 import { userRouter } from './routes/user.routes';
 import { clientRouter } from './routes/user.routes';
-import { supplierRouter } from './routes/user.routes';
+import supplierRouter from './routes/supplier.routes';
 
 const app = express();
 // Servir arquivos da pasta public/uploads

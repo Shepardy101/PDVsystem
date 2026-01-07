@@ -298,12 +298,21 @@ const Entities: React.FC = () => {
                            }
                            if (activeTab === 'suppliers') {
                              try {
-                               await deleteSupplier(item.id);
-                               setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
-                               setLoadingSuppliers(true);
-                               const updated = await listSuppliers();
-                               setSuppliers(updated);
-                             } catch {
+                               console.log('[UI] Tentando excluir fornecedor id:', item.id);
+                               const result = await deleteSupplier(item.id);
+                               console.log('[UI] Resultado da exclusão:', result);
+                               if (result && result.changes > 0) {
+                                 setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
+                                 setLoadingSuppliers(true);
+                                 const updated = await listSuppliers();
+                                 console.log('[UI] Lista de fornecedores após exclusão:', updated);
+                                 setSuppliers(updated);
+                               } else {
+                                 console.error('[UI] Erro: Exclusão não retornou changes > 0', result);
+                                 setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                               }
+                             } catch (e) {
+                               console.error('[UI] Catch erro ao excluir fornecedor:', e);
                                setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
                              }
                            }

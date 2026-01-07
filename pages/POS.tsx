@@ -77,7 +77,10 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    useEffect(() => {
       if (cashOpen) {
-         inputRef.current?.focus();
+         setTimeout(() => {
+           inputRef.current?.focus();
+           if (inputRef.current) inputRef.current.value = '';
+         }, 50);
       }
    }, [cashOpen]);
 
@@ -258,18 +261,21 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    }, [searchTerm]);
 
   const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
-      const discount = product.autoDiscount || 0;
-      if (existing) {
-        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
-      return [...prev, { product, quantity: 1, appliedDiscount: discount }];
-    });
-    setSearchTerm('');
-    setSelectedIndex(0);
-    setTimeout(() => inputRef.current?.focus(), 10);
-  };
+      setCart(prev => {
+         const existing = prev.find(item => item.product.id === product.id);
+         const discount = product.autoDiscount || 0;
+         if (existing) {
+            return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+         }
+         return [...prev, { product, quantity: 1, appliedDiscount: discount }];
+      });
+      setSearchTerm('');
+      setSelectedIndex(0);
+      setTimeout(() => {
+         inputRef.current?.focus();
+         if (inputRef.current) inputRef.current.value = '';
+      }, 50);
+   };
 
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => prev.map(item => {
@@ -551,7 +557,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                  <div className="flex justify-between items-end">
                     <div>
                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-600 mb-2">Montante Líquido</p>
-                       <h2 className="text-5xl font-mono font-bold text-accent shadow-accent-glow">R$ {total.toFixed(2)}</h2>
+                       <h2 className="text-5xl font-mono font-bold text-accent ">R$ {total.toFixed(2)}</h2>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-center animate-pulse">
                        <ArrowRight className="text-accent" />

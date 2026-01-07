@@ -29,5 +29,6 @@ export async function deleteSupplier(id) {
 export async function listSuppliers() {
   const res = await fetch('/api/suppliers');
   if (!res.ok) throw new Error('Erro ao buscar fornecedores');
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data.items) ? data.items : [];
 }
