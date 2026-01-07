@@ -1,6 +1,5 @@
-
 import { Router } from 'express';
-import { createUser, listUsers, updateUser,  } from '../repositories/user.repo';
+import { createUser, listUsers, updateUser, deleteUser } from '../repositories/user.repo';
 
 export const userRouter = Router();
 
@@ -46,5 +45,20 @@ userRouter.post('/', async (req, res) => {
   } catch (e: any) {
     console.error('[POST /api/users] Erro ao criar usuário:', e);
     res.status(500).json({ error: 'Erro ao criar usuário', details: e && e.message ? e.message : e });
+  }
+});
+
+userRouter.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ok = await deleteUser(id);
+    if (ok) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+  } catch (e: any) {
+    console.error('[DELETE /api/users/:id] Erro ao deletar usuário:', e);
+    res.status(500).json({ error: 'Erro ao deletar usuário', details: e && e.message ? e.message : e });
   }
 });

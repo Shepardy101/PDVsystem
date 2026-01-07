@@ -1,4 +1,3 @@
-
 import { db } from '../db/database';
 import { randomUUID } from 'crypto';
 
@@ -18,5 +17,11 @@ export async function createUser({ name, email, role, status, password }: any) {
 export async function updateUser(id: string, { name, email, role, status }: any) {
   const stmt = db.prepare('UPDATE users SET name = ?, email = ?, role = ?, status = ? WHERE id = ?');
   const info = stmt.run(name, email, role, status ? 'active' : 'inactive', id);
+  return info.changes > 0;
+}
+
+export async function deleteUser(id: string) {
+  const stmt = db.prepare('DELETE FROM users WHERE id = ?');
+  const info = stmt.run(id);
   return info.changes > 0;
 }

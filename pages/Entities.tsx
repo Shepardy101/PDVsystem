@@ -4,7 +4,7 @@ import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, More
 import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_CLIENTS, MOCK_SUPPLIERS } from '../constants';
 import { SystemUser, Client, Supplier } from '../types';
-import { createUser, listUsers, updateUser } from '../services/user';
+import { createUser, listUsers, updateUser, deleteUser } from '../services/user';
 import { FeedbackPopup } from '../components/FeedbackPopup';
 
 type EntityTab = 'users' | 'clients' | 'suppliers';
@@ -253,7 +253,23 @@ const Entities: React.FC = () => {
                        >
                          <Edit2 size={14} />
                        </button>
-                       <button className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90">
+                       <button
+                         className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90"
+                         onClick={async (e) => {
+                           e.stopPropagation();
+                           if (activeTab === 'users') {
+                             try {
+                               await deleteUser(item.id);
+                               setPopup({open: true, type: 'success', title: 'Usuário excluído', message: 'Usuário removido com sucesso!'});
+                               setLoadingUsers(true);
+                               const updated = await listUsers();
+                               setUsers(updated);
+                             } catch {
+                               setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
+                             }
+                           }
+                         }}
+                       >
                          <Trash2 size={14} />
                        </button>
                     </div>

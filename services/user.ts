@@ -1,3 +1,10 @@
+export async function deleteUser(id) {
+  const res = await fetch(`/api/users/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Erro ao deletar usuário');
+  return res.json();
+}
 export async function updateUser(id, user) {
   const res = await fetch(`/api/users/${id}`, {
     method: 'PUT',
