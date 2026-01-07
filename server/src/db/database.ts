@@ -3,7 +3,9 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const dbDir = path.join(__dirname, '../../../../data');
+
+// Sempre usa o banco na raiz do projeto, pasta data/novabev.sqlite
+const dbDir = path.join(process.cwd(), 'data');
 const dbPath = path.join(dbDir, 'novabev.sqlite');
 console.log('[DB] Usando banco de dados em:', dbPath);
 if (!fs.existsSync(dbDir)) {

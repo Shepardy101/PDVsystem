@@ -4,7 +4,7 @@ import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, More
 import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_CLIENTS, MOCK_SUPPLIERS } from '../constants';
 import { SystemUser, Client, Supplier } from '../types';
-import { createUser, listUsers } from '../services/user';
+import { createUser, listUsers, updateUser } from '../services/user';
 import { FeedbackPopup } from '../components/FeedbackPopup';
 
 type EntityTab = 'users' | 'clients' | 'suppliers';
@@ -172,8 +172,8 @@ const Entities: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredData.map((item: any) => (
-                <tr key={item.id} className="group hover:bg-white/5 transition-all cursor-default">
+              {filteredData.filter((item: any) => item.id != null).map((item: any, idx: number) => (
+                <tr key={item.id ?? `user-row-${idx}`} className="group hover:bg-white/5 transition-all cursor-default">
                   {activeTab === 'users' && (
                     <>
                       <td className="px-8 py-5">
@@ -334,21 +334,31 @@ const Entities: React.FC = () => {
                    return;
                  }
                  try {
-                   await createUser({
-                     name: userForm.name,
-                     email: userForm.email,
-                     role: userForm.role,
-                     status: userForm.status,
-                     password: userForm.password
-                   });
-                   setPopup({open: true, type: 'success', title: 'Usuário criado', message: 'Novo operador vinculado com sucesso!'});
+                   if (editingItem) {
+                     await updateUser(editingItem.id, {
+                       name: userForm.name,
+                       email: userForm.email,
+                       role: userForm.role,
+                       status: userForm.status
+                     });
+                     setPopup({open: true, type: 'success', title: 'Usuário atualizado', message: 'Dados do operador atualizados!'});
+                   } else {
+                     await createUser({
+                       name: userForm.name,
+                       email: userForm.email,
+                       role: userForm.role,
+                       status: userForm.status,
+                       password: userForm.password
+                     });
+                     setPopup({open: true, type: 'success', title: 'Usuário criado', message: 'Novo operador vinculado com sucesso!'});
+                   }
                    setIsUserModalOpen(false);
                    // Atualiza lista
                    setLoadingUsers(true);
                    const updated = await listUsers();
                    setUsers(updated);
                  } catch (e) {
-                   setPopup({open: true, type: 'error', title: 'Erro ao criar usuário', message: 'Tente novamente.'});
+                   setPopup({open: true, type: 'error', title: editingItem ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário', message: 'Tente novamente.'});
                  }
                }}>Confirmar Vínculo</Button>
             </div>
