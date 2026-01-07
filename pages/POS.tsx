@@ -78,24 +78,40 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    // Fetch open cash session on mount or when cashOpen changes
    useEffect(() => {
-      if (!cashOpen) {
-         setCashSessionId(null);
-         setIsLoadingSession(false);
-         return;
-      }
-      setIsLoadingSession(true);
-      fetch('/api/cash/open')
-         .then(res => res.json())
-         .then(data => {
-            if (data && data.session && data.session.id) {
-               setCashSessionId(data.session.id);
-            } else {
-               setCashSessionId(null);
-            }
-         })
-         .catch(() => setCashSessionId(null))
-         .finally(() => setIsLoadingSession(false));
-   }, [cashOpen]);
+         if (!cashOpen) {
+             setCashSessionId(null);
+             setIsLoadingSession(false);
+             console.log('[PDV] cashOpen=false, caixa será fechado.');
+             return;
+         }
+         setIsLoadingSession(true);
+         console.log('[PDV] Verificando se existe caixa aberto...');
+         fetch('/api/cash/open')
+             .then(async res => {
+                  if (res.ok) {
+                     const data = await res.json();
+                     if (data && data.session && data.session.id) {
+                        setCashSessionId(data.session.id);
+                        setIsOpeningModalOpen(false); // Não abre modal, já existe caixa aberto
+                        console.log('[PDV] Caixa aberto encontrado:', data.session.id);
+                     } else {
+                        setCashSessionId(null);
+                        setIsOpeningModalOpen(true); // Abre modal para abrir caixa
+                        console.log('[PDV] Nenhum caixa aberto encontrado, solicitando abertura.');
+                     }
+                  } else {
+                     setCashSessionId(null);
+                     setIsOpeningModalOpen(true); // Abre modal para abrir caixa
+                     console.log('[PDV] Erro ao consultar caixa aberto, solicitando abertura.');
+                  }
+             })
+             .catch((err) => {
+                  setCashSessionId(null);
+                  setIsOpeningModalOpen(true); // Abre modal para abrir caixa
+                  console.log('[PDV] Falha ao consultar caixa aberto:', err);
+             })
+             .finally(() => setIsLoadingSession(false));
+    }, [cashOpen]);
 
    useEffect(() => {
       if (cashOpen) {
