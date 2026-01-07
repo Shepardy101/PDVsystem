@@ -1,13 +1,12 @@
-
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, Check, X, Filter } from 'lucide-react';
+import { Search, Plus, Users, Truck, Shield, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, Check, X, Filter } from 'lucide-react';
 import { Button, Input, Badge, Modal, Switch } from '../components/UI';
-import { MOCK_USERS, MOCK_CLIENTS, MOCK_SUPPLIERS } from '../constants';
-import { SystemUser, Client, Supplier } from '../types';
+import { MOCK_USERS, MOCK_SUPPLIERS } from '../constants';
+import { SystemUser, Supplier } from '../types';
 import { createUser, listUsers, updateUser, deleteUser } from '../services/user';
 import { FeedbackPopup } from '../components/FeedbackPopup';
 
-type EntityTab = 'users' | 'clients' | 'suppliers';
+type EntityTab = 'users' | 'suppliers';
 
 const Entities: React.FC = () => {
   const [activeTab, setActiveTab] = useState<EntityTab>('users');
@@ -15,7 +14,6 @@ const Entities: React.FC = () => {
   
   // States for Modals
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
@@ -73,8 +71,6 @@ const Entities: React.FC = () => {
     const term = searchTerm.toLowerCase();
     if (activeTab === 'users') {
       return users.filter(u => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term));
-    } else if (activeTab === 'clients') {
-      return MOCK_CLIENTS.filter(c => c.name.toLowerCase().includes(term) || c.cpf.includes(term));
     } else {
       return MOCK_SUPPLIERS.filter(s => s.name.toLowerCase().includes(term) || s.cnpj.includes(term));
     }
@@ -109,13 +105,12 @@ const Entities: React.FC = () => {
             className="shadow-accent-glow"
             onClick={() => {
               if (activeTab === 'users') setIsUserModalOpen(true);
-              if (activeTab === 'clients') setIsClientModalOpen(true);
               if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
               setEditingItem(null);
             }} 
             icon={<Plus size={18} />}
            >
-             Adicionar {activeTab === 'users' ? 'Usuário' : activeTab === 'clients' ? 'Cliente' : 'Fornecedor'}
+             Adicionar {activeTab === 'users' ? 'Usuário' : 'Fornecedor'}
            </Button>
         </div>
       </div>
@@ -124,7 +119,6 @@ const Entities: React.FC = () => {
       <div className="flex flex-col md:flex-row items-center justify-between bg-dark-900/60 border border-white/5 rounded-2xl overflow-hidden mb-6 shrink-0 backdrop-blur-md relative z-10 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex w-full md:w-auto overflow-x-auto">
           <TabButton id="users" label="Usuários" icon={Shield} />
-          <TabButton id="clients" label="Clientes" icon={Users} />
           <TabButton id="suppliers" label="Fornecedores" icon={Truck} />
         </div>
         <div className="p-2 w-full md:w-80 px-4">
@@ -150,14 +144,6 @@ const Entities: React.FC = () => {
                     <th className="px-8 py-5">Acesso</th>
                     <th className="px-8 py-5">Status</th>
                     <th className="px-8 py-5">Último Login</th>
-                  </>
-                )}
-                {activeTab === 'clients' && (
-                  <>
-                    <th className="px-8 py-5">Cliente / CPF</th>
-                    <th className="px-8 py-5">Contato</th>
-                    <th className="px-8 py-5">Localização</th>
-                    <th className="px-8 py-5">Volume Gasto</th>
                   </>
                 )}
                 {activeTab === 'suppliers' && (
@@ -202,25 +188,6 @@ const Entities: React.FC = () => {
                     </>
                   )}
 
-                  {activeTab === 'clients' && (
-                    <>
-                      <td className="px-8 py-5">
-                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
-                        <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cpf}</div>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
-                         <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email || 'N/A'}</div>
-                         <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] text-slate-500 truncate max-w-xs">
-                         <div className="flex items-center gap-2"><MapPin size={12} className="text-slate-600" /> {item.address}</div>
-                      </td>
-                      <td className="px-8 py-5 font-mono text-sm font-bold text-emerald-400">
-                         R$ {item.totalSpent.toFixed(2)}
-                      </td>
-                    </>
-                  )}
-
                   {activeTab === 'suppliers' && (
                     <>
                       <td className="px-8 py-5">
@@ -246,7 +213,7 @@ const Entities: React.FC = () => {
                         onClick={() => {
                           setEditingItem(item);
                           if (activeTab === 'users') setIsUserModalOpen(true);
-                          if (activeTab === 'clients') setIsClientModalOpen(true);
+                          if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
                           if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
                         }}
                         className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
@@ -389,23 +356,6 @@ const Entities: React.FC = () => {
         message={popup.message} 
         onClose={() => setPopup(p => ({...p, open: false}))} 
       />
-
-      {/* Client Modal */}
-      <Modal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} title={editingItem ? "Ficha do Consumidor" : "Indexar Novo Consumidor"}>
-         <div className="space-y-6">
-            <Input label="Nome Completo / Social" defaultValue={editingItem?.name} className="bg-dark-950/50" />
-            <div className="grid grid-cols-2 gap-4">
-               <Input label="CPF / CNPJ" defaultValue={editingItem?.cpf} className="bg-dark-950/50" />
-               <Input label="Linha Direta" defaultValue={editingItem?.phone} icon={<Phone size={14} />} className="bg-dark-950/50" />
-            </div>
-            <Input label="Canal Digital" type="email" defaultValue={editingItem?.email} icon={<Mail size={14} />} className="bg-dark-950/50" />
-            <Input label="Coordenadas de Entrega" defaultValue={editingItem?.address} icon={<MapPin size={14} />} className="bg-dark-950/50" />
-            <div className="flex gap-4 pt-4">
-               <Button variant="secondary" className="flex-1" onClick={() => setIsClientModalOpen(false)}>Retornar</Button>
-               <Button className="flex-1 shadow-accent-glow" onClick={() => setIsClientModalOpen(false)}>Efetuar Registro</Button>
-            </div>
-         </div>
-      </Modal>
 
       {/* Supplier Modal */}
       <Modal isOpen={isSupplierModalOpen} onClose={() => setIsSupplierModalOpen(false)} title={editingItem ? "Ativo Logístico" : "Homologar Fornecedor"}>
