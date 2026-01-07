@@ -233,7 +233,7 @@ const Entities: React.FC = () => {
                          <div className="flex items-center gap-2"><MapPin size={12} className="text-slate-600" /> {item.address}</div>
                       </td>
                       <td className="px-8 py-5 font-mono text-sm font-bold text-emerald-400">
-                         R$ {(item.totalSpent !== undefined && item.totalSpent !== null) ? Number(item.totalSpent).toFixed(2) : '0.00'}
+                         R$ {(item.totalSpent !== undefined && item.totalSpent !== null) ? (Number(item.totalSpent) / 100).toFixed(2) : '0.00'}
                       </td>
                     </>
                   )}
