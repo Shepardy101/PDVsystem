@@ -1,13 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { healthRouter } from './routes/health.routes.ts';
-import { productRouter } from './routes/product.routes.ts';
-import { posRouter } from './routes/pos.routes.ts';
-import { cashRouter } from './routes/cash.routes.ts';
-import { categoryRouter } from './routes/category.routes.ts';
-import { userRouter } from './routes/user.routes.ts';
-import { clientRouter } from './routes/user.routes.ts';
+import { healthRouter } from './routes/health.routes';
+import { productRouter } from './routes/product.routes';
+import { posRouter } from './routes/pos.routes';
+import { cashRouter } from './routes/cash.routes';
+import { categoryRouter } from './routes/category.routes';
+import { userRouter } from './routes/user.routes';
+import { clientRouter } from './routes/user.routes';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8787;

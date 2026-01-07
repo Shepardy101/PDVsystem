@@ -19,3 +19,9 @@ export async function updateClient(id: string, { name, cpf, address, phone, emai
   const info = stmt.run(name, cpf, address, phone, email, now, id);
   return info.changes > 0;
 }
+
+export async function deleteClient(id: string) {
+  const stmt = db.prepare('DELETE FROM clients WHERE id = ?');
+  const info = stmt.run(id);
+  return info.changes > 0;
+}

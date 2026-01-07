@@ -1,3 +1,10 @@
+export async function deleteClient(id) {
+  const res = await fetch(`/api/clients/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Erro ao deletar cliente');
+  return res.json();
+}
 export async function createClient(client) {
   const res = await fetch('/api/clients', {
     method: 'POST',

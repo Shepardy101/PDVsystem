@@ -5,7 +5,7 @@ import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_SUPPLIERS } from '../constants';
 import { SystemUser, Client, Supplier } from '../types';
 import { createUser, listUsers, updateUser, deleteUser } from '../services/user';
-import { createClient, updateClient, listClients } from '../services/client';
+import { createClient, updateClient, listClients, deleteClient } from '../services/client';
 import { FeedbackPopup } from '../components/FeedbackPopup';
 
 type EntityTab = 'users' | 'clients' | 'suppliers';
@@ -273,6 +273,17 @@ const Entities: React.FC = () => {
                                setUsers(updated);
                              } catch {
                                setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
+                             }
+                           }
+                           if (activeTab === 'clients') {
+                             try {
+                               await deleteClient(item.id);
+                               setPopup({open: true, type: 'success', title: 'Cliente excluído', message: 'Cliente removido com sucesso!'});
+                               setLoadingClients(true);
+                               const updated = await listClients();
+                               setClients(updated);
+                             } catch {
+                               setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
                              }
                            }
                          }}

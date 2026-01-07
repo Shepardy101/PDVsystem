@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createUser, listUsers, updateUser, deleteUser } from '../repositories/user.repo';
-import { createClient, listClients, updateClient } from '../repositories/client.repo';
+import { createClient, listClients, updateClient, deleteClient } from '../repositories/client.repo';
 
 export const userRouter = Router();
 export const clientRouter = Router();
@@ -102,5 +102,20 @@ clientRouter.put('/:id', async (req, res) => {
     }
   } catch (e: any) {
     res.status(500).json({ error: 'Erro ao atualizar cliente', details: e && e.message ? e.message : e });
+  }
+});
+
+clientRouter.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ok = await deleteClient(id);
+    if (ok) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Cliente não encontrado' });
+    }
+  } catch (e: any) {
+    console.error('[DELETE /api/clients/:id] Erro ao deletar cliente:', e);
+    res.status(500).json({ error: 'Erro ao deletar cliente', details: e && e.message ? e.message : e });
   }
 });
