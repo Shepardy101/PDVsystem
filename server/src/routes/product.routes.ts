@@ -1,13 +1,33 @@
+
 import { Router } from 'express';
 import {
   listProducts,
   searchProducts,
   createProduct,
   updateProduct,
-  getProductById
+  getProductById,
+  deleteProduct
 } from '../repositories/product.repo';
 
 export const productRouter = Router();
+
+// Deletar produto por ID
+productRouter.delete('/:id', (req, res) => {
+  const { id } = req.params;
+  console.log(`[DELETE /api/products/${id}] Iniciando deleção do produto.`);
+  try {
+    deleteProduct(id);
+    console.log(`[DELETE /api/products/${id}] Produto removido com sucesso.`);
+    res.status(204).send();
+  } catch (err: any) {
+    console.error(`[DELETE /api/products/${id}] Erro ao remover produto:`, err);
+    if (err.code === 'NOT_FOUND') {
+      res.status(404).json({ error: { code: err.code, message: err.message } });
+    } else {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao deletar produto.', details: err && err.message ? err.message : err } });
+    }
+  }
+});
 
 productRouter.get('/', (req, res) => {
   const limit = parseInt(req.query.limit as string) || 50;

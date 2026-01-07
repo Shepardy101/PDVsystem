@@ -1,5 +1,6 @@
+   
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus } from 'lucide-react';
+import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
 import { Product } from '../types';
 
@@ -80,7 +81,18 @@ const Products: React.FC = () => {
          return matchesSearch && matchesCategory && matchesStock;
       });
    }, [products, searchTerm, selectedCategory, stockStatus]);
-
+// Função para deletar produto
+   async function handleDeleteProduct(productId: string) {
+      if (!window.confirm('Tem certeza que deseja remover este produto?')) return;
+      try {
+         const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+         if (!res.ok && res.status !== 204) throw new Error('Erro ao remover produto');
+         setProducts(prev => prev.filter(p => p.id !== productId));
+         setSelectedProduct(null);
+      } catch (err) {
+         alert('Erro ao remover produto. Tente novamente.');
+      }
+   }
 
 // --- Adicionar no início do componente Products ---
                // Função para submit do novo produto
@@ -307,9 +319,10 @@ const Products: React.FC = () => {
                              {product.stock} {product.unit}
                            </span>
                         </td>
-                        <td className="px-8 py-5 text-right">
-                          <button className="p-2 text-slate-500 hover:text-accent transition-colors"><Edit2 size={14}/></button>
-                        </td>
+                                    <td className="px-8 py-5 text-right flex gap-2 justify-end">
+                                       <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14}/></button>
+                                       <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14}/></button>
+                                    </td>
                       </tr>
                     ))}
                   </tbody>

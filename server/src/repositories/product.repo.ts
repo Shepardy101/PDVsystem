@@ -1,5 +1,22 @@
+
 import { db } from '../db/database';
 import { v4 as uuidv4 } from 'uuid';
+
+export function deleteProduct(id: string) {
+  console.log(`[deleteProduct] Buscando produto id=${id}`);
+  const existing = getProductById(id);
+  if (!existing) {
+    console.error(`[deleteProduct] Produto não encontrado id=${id}`);
+    throw { code: 'NOT_FOUND', message: 'Produto não encontrado.' };
+  }
+  try {
+    db.prepare('DELETE FROM products WHERE id = ?').run(id);
+    console.log(`[deleteProduct] Produto removido id=${id}`);
+  } catch (err) {
+    console.error(`[deleteProduct] Erro ao remover produto id=${id}:`, err);
+    throw err;
+  }
+}
 
 export interface Product {
   id: string;
