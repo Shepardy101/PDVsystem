@@ -230,12 +230,12 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       }
       if (isPaymentModalOpen) {
         const key = e.key.toLowerCase();
-        if (['d', 'p', 'c'].includes(key)) {
-          e.preventDefault();
-          if (key === 'd') finalizeSale('cash');
-          if (key === 'p') finalizeSale('pix');
-          if (key === 'c') finalizeSale('card');
-        }
+      if (['1', '2', '3'].includes(key)) {
+        e.preventDefault();
+        if (key === '1') finalizeSale('card');
+        if (key === '2') finalizeSale('pix');
+        if (key === '3') finalizeSale('cash');
+      }
       }
       if (e.key === 'Escape') {
         if (isPaymentModalOpen) { e.preventDefault(); setIsPaymentModalOpen(false); setTimeout(() => inputRef.current?.focus(), 10); }
@@ -700,9 +700,9 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
                  <div className="grid grid-cols-3 gap-6">
                     {[
-                      { id: 'cash', label: 'Dinheiro', key: 'D', icon: DollarSign, color: 'text-emerald-400', delay: '0.1s' },
-                      { id: 'pix', label: 'Pix', key: 'P', icon: Zap, color: 'text-blue-400', delay: '0.2s' },
-                      { id: 'card', label: 'Cartão', key: 'C', icon: CreditCard, color: 'text-purple-400', delay: '0.3s' }
+                       { id: 'card', label: 'Cartão', key: '1', icon: CreditCard, color: 'text-purple-400', delay: '0.3s' },
+                       { id: 'pix', label: 'Pix', key: '2', icon: Zap, color: 'text-blue-400', delay: '0.2s' },
+                      { id: 'cash', label: 'Dinheiro', key: '3', icon: DollarSign, color: 'text-emerald-400', delay: '0.1s' },
                     ].map(m => (
                       <div key={m.id} className="space-y-3 assemble-text" style={{ animationDelay: m.delay }}>
                          <button 
