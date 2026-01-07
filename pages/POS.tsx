@@ -24,36 +24,63 @@ const SHIFT_PERFORMANCE_DATA = [
   { time: '20h', sales: 1100 },
 ];
 
-const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [manualDiscount, setManualDiscount] = useState(0);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-  const [lastSaleData, setLastSaleData] = useState<any>(null);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [tempDiscount, setTempDiscount] = useState('0');
-  
-  // Modais de Estado do Caixa
-  const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
-  const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
-  const [initialBalance, setInitialBalance] = useState('0.00');
-  const [physicalCashInput, setPhysicalCashInput] = useState('');
-  
-  // Notification State
-  const [notification, setNotification] = useState<{show: boolean, msg: string, sub: string} | null>(null);
-  
-  const inputRef = useRef<HTMLInputElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const discountInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (cashOpen) {
-      inputRef.current?.focus();
-    }
-  }, [cashOpen]);
+const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
+   const [searchTerm, setSearchTerm] = useState('');
+   const [isSearchFocused, setIsSearchFocused] = useState(false);
+   const [cart, setCart] = useState<CartItem[]>([]);
+   const [manualDiscount, setManualDiscount] = useState(0);
+   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+   const [lastSaleData, setLastSaleData] = useState<any>(null);
+   const [selectedIndex, setSelectedIndex] = useState(0);
+   const [tempDiscount, setTempDiscount] = useState('0');
+
+   // Cash session state
+   const [cashSessionId, setCashSessionId] = useState<string | null>(null);
+   const [operatorId, setOperatorId] = useState<string>('operador-1'); // TODO: Replace with real operator logic
+   const [isLoadingSession, setIsLoadingSession] = useState(true);
+
+   // Modais de Estado do Caixa
+   const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
+   const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
+   const [initialBalance, setInitialBalance] = useState('0.00');
+   const [physicalCashInput, setPhysicalCashInput] = useState('');
+
+   // Notification State
+   const [notification, setNotification] = useState<{show: boolean, msg: string, sub: string} | null>(null);
+
+   const inputRef = useRef<HTMLInputElement>(null);
+   const searchRef = useRef<HTMLDivElement>(null);
+   const discountInputRef = useRef<HTMLInputElement>(null);
+
+   // Fetch open cash session on mount or when cashOpen changes
+   useEffect(() => {
+      if (!cashOpen) {
+         setCashSessionId(null);
+         setIsLoadingSession(false);
+         return;
+      }
+      setIsLoadingSession(true);
+      fetch('/api/cash/open')
+         .then(res => res.json())
+         .then(data => {
+            if (data && data.session && data.session.id) {
+               setCashSessionId(data.session.id);
+            } else {
+               setCashSessionId(null);
+            }
+         })
+         .catch(() => setCashSessionId(null))
+         .finally(() => setIsLoadingSession(false));
+   }, [cashOpen]);
+
+   useEffect(() => {
+      if (cashOpen) {
+         inputRef.current?.focus();
+      }
+   }, [cashOpen]);
 
   const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.product.salePrice * item.quantity), 0), [cart]);
   const autoDiscountsTotal = useMemo(() => cart.reduce((acc, item) => acc + (item.appliedDiscount * item.quantity), 0), [cart]);
@@ -89,21 +116,52 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
     window.print();
   }, []);
 
-  const finalizeSale = useCallback((method: string) => {
-    const saleData = {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      timestamp: new Date().toISOString(),
-      items: [...cart],
-      subtotal,
-      autoDiscounts: autoDiscountsTotal,
-      manualDiscount,
-      total,
-      method
-    };
-    setLastSaleData(saleData);
-    setIsPaymentModalOpen(false);
-    setIsReceiptModalOpen(true);
-  }, [cart, subtotal, autoDiscountsTotal, manualDiscount, total]);
+   // Função para finalizar venda real
+   const finalizeSale = useCallback(async (method: string) => {
+      if (!cashSessionId) {
+         alert('Nenhuma sessão de caixa aberta. Abra o caixa para registrar vendas.');
+         return;
+      }
+      const items = cart.map(item => ({
+         productId: item.product.id,
+         productName: item.product.name,
+         productInternalCode: item.product.internalCode,
+         productEan: item.product.gtin,
+         unit: item.product.unit,
+         quantity: item.quantity,
+         unitPrice: Math.round(item.product.salePrice * 100),
+         autoDiscountApplied: Math.round((item.product.autoDiscount || 0) * 100),
+         manualDiscountApplied: 0, // MVP: só desconto global
+         finalUnitPrice: Math.round((item.product.salePrice - (item.product.autoDiscount || 0)) * 100),
+         lineTotal: Math.round((item.product.salePrice - (item.product.autoDiscount || 0)) * item.quantity * 100)
+      }));
+      const payments = [
+         { method, amount: Math.round(total * 100), metadataJson: null }
+      ];
+      const payload = {
+         operatorId,
+         cashSessionId,
+         items,
+         payments,
+         subtotal: Math.round(subtotal * 100),
+         discountTotal: Math.round((autoDiscountsTotal + manualDiscount) * 100),
+         total: Math.round(total * 100)
+      };
+      try {
+         const res = await fetch('/api/pos/finalizeSale', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+         });
+         if (!res.ok) throw new Error('Erro ao registrar venda');
+         const { saleId } = await res.json();
+         setLastSaleData({ ...payload, id: saleId, method });
+         setIsPaymentModalOpen(false);
+         setIsReceiptModalOpen(true);
+      } catch (err) {
+         alert('Erro ao registrar venda. Tente novamente.');
+      }
+   }, [cart, subtotal, autoDiscountsTotal, manualDiscount, total, cashSessionId, operatorId]);
 
   const applyManualDiscount = () => {
     setManualDiscount(parseFloat(tempDiscount) || 0);
@@ -235,10 +293,10 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
     else if (e.key === 'Enter') { e.preventDefault(); if (searchResults[selectedIndex]) addToCart(searchResults[selectedIndex]); }
   };
 
-  // Se o caixa estiver fechado, mostra a tela de bloqueio
-  if (!cashOpen) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
+   // Se o caixa estiver fechado ou não há sessão aberta, mostra a tela de bloqueio
+   if (!cashOpen || isLoadingSession || !cashSessionId) {
+      return (
+         <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse" />
         
         <div className="relative z-10 flex flex-col items-center text-center space-y-8 max-w-lg">
@@ -305,12 +363,33 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                         </button>
                       ))}
                    </div>
-                   <Button 
-                      onClick={() => { onOpenCash(parseFloat(initialBalance) || 0); setIsOpeningModalOpen(false); }}
-                      className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
-                   >
-                      Liberar Acesso
-                   </Button>
+                            <Button 
+                                 onClick={async () => {
+                                    const value = parseFloat(initialBalance) || 0;
+                                    try {
+                                       const res = await fetch('/api/cash/open', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ operatorId: operatorId || 'operador-1', initialBalance: value })
+                                       });
+                                       if (!res.ok) throw new Error('Erro ao abrir caixa');
+                                       // Confirma se a sessão foi realmente aberta
+                                       const check = await fetch('/api/cash/open');
+                                       const data = await check.json();
+                                       if (data && data.session && data.session.id) {
+                                          onOpenCash(value); // Só libera o PDV se o backend confirmou
+                                          setIsOpeningModalOpen(false);
+                                       } else {
+                                          throw new Error('Sessão de caixa não foi aberta.');
+                                       }
+                                    } catch (err) {
+                                       alert('Erro ao abrir caixa. Tente novamente.');
+                                    }
+                                 }}
+                                 className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
+                            >
+                                 Liberar Acesso
+                            </Button>
                 </div>
              </div>
           </div>
@@ -683,8 +762,8 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                   </div>
                   {lastSaleData?.items?.map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between">
-                       <span>{item.quantity}x {item.product.name}</span>
-                       <span>{(item.product.salePrice * item.quantity).toFixed(2)}</span>
+                       <span>{item.quantity}x {item.productName}</span>
+                       <span>{((item.unitPrice / 100) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                </div>

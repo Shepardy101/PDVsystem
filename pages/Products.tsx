@@ -1,8 +1,6 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus } from 'lucide-react';
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
-import { CATEGORIES as INITIAL_CATEGORIES } from '../constants';
 import { Product } from '../types';
 
 const Products: React.FC = () => {
@@ -11,8 +9,10 @@ const Products: React.FC = () => {
    const [showFilters, setShowFilters] = useState(false);
    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+   // Estado para auto-ativação do produto
+   const [autoActive, setAutoActive] = useState(true);
    // Estados de Categoria
-   const [categories, setCategories] = useState<string[]>(INITIAL_CATEGORIES);
+   const [categories, setCategories] = useState<Category[]>([]);
    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
    const [newCategoryName, setNewCategoryName] = useState('');
    // Estados de Importação
@@ -32,6 +32,13 @@ const Products: React.FC = () => {
 
    React.useEffect(() => {
       setLoading(true);
+      // Buscar categorias do backend
+      fetch('/api/categories')
+        .then(res => res.json())
+        .then(data => {
+          setCategories(data.items || []);
+        });
+      // Buscar produtos
       fetch('/api/products')
          .then(res => {
             if (!res.ok) throw new Error('Erro ao buscar produtos');
@@ -85,15 +92,18 @@ const Products: React.FC = () => {
                      name: formData.get('name'),
                      ean: formData.get('gtin'),
                      internalCode: formData.get('internalCode'),
-                     category: formData.get('category'),
+                     unit: formData.get('unit') || 'unit',
+                     status: autoActive ? 'active' : 'inactive',
                      costPrice: Number(formData.get('costPrice')) || 0,
                      salePrice: Number(formData.get('salePrice')) || 0,
-                     // valores padrão para campos obrigatórios do backend
-                     unit: 'unit',
-                     status: 'active',
-                     stockOnHand: 0,
-                     autoDiscountEnabled: false,
-                     autoDiscountValue: 0
+                     stockOnHand: Number(formData.get('stockOnHand')) || 0,
+                     minStock: Number(formData.get('minStock')) || 0,
+                     autoDiscountEnabled: formData.get('autoDiscountEnabled') === 'on' ? true : false,
+                     autoDiscountValue: Number(formData.get('autoDiscountValue')) || 0,
+                     imageUrl: formData.get('imageUrl') || '',
+                     // Enviar categoryId e supplierId se existirem
+                     categoryId: formData.get('categoryId') || null,
+                     supplierId: formData.get('supplier') || null
                   };
                   try {
                      const res = await fetch('/api/products', {
@@ -155,13 +165,34 @@ const Products: React.FC = () => {
     simulateImport();
   };
 
-  const handleCreateCategory = () => {
-    if (newCategoryName.trim()) {
-      setCategories(prev => [...prev, newCategoryName.trim()]);
-      setNewCategoryName('');
-      setIsCategoryModalOpen(false);
-    }
-  };
+   const handleCreateCategory = async () => {
+      if (!newCategoryName.trim()) return;
+      try {
+         const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newCategoryName.trim() })
+         });
+         if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert(err?.error?.message || 'Erro ao criar categoria');
+            return;
+         }
+         setNewCategoryName('');
+         setIsCategoryModalOpen(false);
+         // Atualizar lista de categorias do backend
+         const cats = await fetch('/api/categories').then(r => r.json());
+         setCategories(cats.items || []);
+      } catch (e) {
+         alert('Erro ao criar categoria');
+      }
+   };
+
+  React.useEffect(() => {
+     // Reset autoActive when opening/closing modal
+     if (isCreateModalOpen && !selectedProduct) setAutoActive(true);
+     if (!isCreateModalOpen) setAutoActive(true);
+  }, [isCreateModalOpen, selectedProduct]);
 
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid">
@@ -210,7 +241,7 @@ const Products: React.FC = () => {
                   className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all"
                 >
                   <option value="all">Todas Categorias</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <button 
                   onClick={() => setIsCategoryModalOpen(true)}
@@ -411,69 +442,85 @@ const Products: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.3s'}}>Categoria Logic</label>
-                         <select name="category" defaultValue={selectedProduct?.category} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
-                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                         <select name="categoryId" defaultValue={selectedProduct?.category} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
+                            <option value="">Selecione...</option>
+                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                         </select>
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text">Unidade</label>
+                         <select name="unit" defaultValue={selectedProduct?.unit || 'unit'} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
+                            <option value="unit">UN</option>
+                            <option value="kg">KG</option>
+                            <option value="cx">CX</option>
                          </select>
                       </div>
                    </div>
-                   {/* ...demais campos do formulário podem ser adaptados da mesma forma... */}
+
+                   {/* CAMPOS DE PREÇO, DESCONTO, ESTOQUE E MÍNIMO */}
+                   <div className="p-6 bg-accent/5 rounded-2xl border border-accent/10 space-y-6 mt-6">
+                      <div className="flex items-center gap-2 border-b border-accent/10 pb-3">
+                         <DollarSign size={14} className="text-accent" />
+                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-accent assemble-text" style={{animationDelay: '0.4s'}}>Algoritmo de Precificação</h4>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-bold text-slate-500 uppercase">Custo Médio</label>
+                            <Input name="costPrice" defaultValue={selectedProduct?.costPrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-white/5" step="0.01" min="0" />
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-bold text-slate-500 uppercase">Venda Público</label>
+                            <Input name="salePrice" defaultValue={selectedProduct?.salePrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-accent/10" step="0.01" min="0" />
+                         </div>
+                         <div className="space-y-1">
+                            <label className="text-[8px] font-bold text-slate-500 uppercase">Auto-Discount</label>
+                            <Input name="autoDiscountValue" defaultValue={selectedProduct?.autoDiscount} placeholder="0.00" type="number" className="bg-dark-950/80 border-emerald-500/10" step="0.01" min="0" />
+                            <input type="hidden" name="autoDiscountEnabled" value="on" />
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                      <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
+                         <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.5s'}}>Inventário Atual</label>
+                         <div className="flex items-center gap-4">
+                            <Input name="stockOnHand" defaultValue={selectedProduct?.stock} placeholder="0" type="number" className="flex-1" min="0" />
+                            <Badge variant="info">{selectedProduct?.unit || 'UN'}</Badge>
+                         </div>
+                      </div>
+                      <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
+                         <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.55s'}}>Estoque Mínimo</label>
+                         <div className="flex items-center gap-4">
+                            <Input name="minStock" defaultValue={selectedProduct?.minStock || 20} placeholder="20" type="number" icon={<Activity size={14} className="text-red-400/60" />} className="flex-1" min="0" />
+                         </div>
+                      </div>
+                      <div className="p-4 bg-white/2 rounded-xl border border-white/5 flex items-center justify-between">
+                         <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Auto-Ativação</label>
+                            <p className="text-[8px] text-slate-600 uppercase">Status no PDV: {selectedProduct?.status || (autoActive ? 'active' : 'inactive')}</p>
+                         </div>
+                         <input type="checkbox" name="status" checked={autoActive} onChange={e => setAutoActive(e.target.checked)} style={{display:'none'}} readOnly />
+                         <Switch enabled={autoActive} onChange={setAutoActive} />
+                      </div>
+                   </div>
+
+                   <div className="space-y-4 pb-4 mt-6">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.6s'}}>Caminho da Mídia Visual</label>
+                      <div className="flex gap-4">
+                         <div className="flex-1">
+                            <Input name="imageUrl" defaultValue={selectedProduct?.imageUrl} placeholder="https://cdn.image-server.com/..." icon={<ImageIcon size={14} />} />
+                         </div>
+                         <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden">
+                            {selectedProduct?.imageUrl ? <img src={selectedProduct.imageUrl} className="w-full h-full object-cover opacity-50"/> : <ImageIcon size={20} className="opacity-40" />}
+                         </div>
+                      </div>
+                   </div>
                  </form>
 
-                 <div className="p-6 bg-accent/5 rounded-2xl border border-accent/10 space-y-6">
-                    <div className="flex items-center gap-2 border-b border-accent/10 pb-3">
-                       <DollarSign size={14} className="text-accent" />
-                       <h4 className="text-[10px] font-bold uppercase tracking-widest text-accent assemble-text" style={{animationDelay: '0.4s'}}>Algoritmo de Precificação</h4>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                       <div className="space-y-1">
-                          <label className="text-[8px] font-bold text-slate-500 uppercase">Custo Médio</label>
-                          <Input defaultValue={selectedProduct?.costPrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-white/5" />
-                       </div>
-                       <div className="space-y-1">
-                          <label className="text-[8px] font-bold text-slate-500 uppercase">Venda Público</label>
-                          <Input defaultValue={selectedProduct?.salePrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-accent/10" />
-                       </div>
-                       <div className="space-y-1">
-                          <label className="text-[8px] font-bold text-slate-500 uppercase">Auto-Discount</label>
-                          <Input defaultValue={selectedProduct?.autoDiscount} placeholder="0.00" type="number" className="bg-dark-950/80 border-emerald-500/10" />
-                       </div>
-                    </div>
-                 </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
-                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.5s'}}>Inventário Atual</label>
-                       <div className="flex items-center gap-4">
-                          <Input defaultValue={selectedProduct?.stock} placeholder="0" type="number" className="flex-1" />
-                          <Badge variant="info">{selectedProduct?.unit || 'UN'}</Badge>
-                       </div>
-                    </div>
-                    <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
-                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.55s'}}>Estoque Mínimo</label>
-                       <div className="flex items-center gap-4">
-                          <Input defaultValue={selectedProduct?.minStock || 20} placeholder="20" type="number" icon={<Activity size={14} className="text-red-400/60" />} className="flex-1" />
-                       </div>
-                    </div>
-                    <div className="p-4 bg-white/2 rounded-xl border border-white/5 flex items-center justify-between">
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Auto-Ativação</label>
-                          <p className="text-[8px] text-slate-600 uppercase">Status no PDV: {selectedProduct?.status || 'active'}</p>
-                       </div>
-                       <Switch enabled={selectedProduct ? selectedProduct.status === 'active' : true} onChange={() => {}} />
-                    </div>
-                 </div>
+              
 
-                 <div className="space-y-4 pb-4">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{animationDelay: '0.6s'}}>Caminho da Mídia Visual</label>
-                    <div className="flex gap-4">
-                       <div className="flex-1">
-                          <Input defaultValue={selectedProduct?.imageUrl} placeholder="https://cdn.image-server.com/..." icon={<ImageIcon size={14} />} />
-                       </div>
-                       <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden">
-                          {selectedProduct?.imageUrl ? <img src={selectedProduct.imageUrl} className="w-full h-full object-cover opacity-50"/> : <ImageIcon size={20} className="opacity-40" />}
-                       </div>
-                    </div>
-                 </div>
+                 
               </div>
 
               {/* Modal Footer */}

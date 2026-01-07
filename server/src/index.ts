@@ -4,17 +4,23 @@ import path from 'path';
 import { healthRouter } from './routes/health.routes.ts';
 import { productRouter } from './routes/product.routes.ts';
 import { posRouter } from './routes/pos.routes.ts';
+import { cashRouter } from './routes/cash.routes.ts';
+import { categoryRouter } from './routes/category.routes.ts';
 
 const app = express();
-const PORT = process.env.PORT || 8787;
+const PORT = Number(process.env.PORT) || 8787;
 
 app.use(cors());
 app.use(express.json());
 
 // Health check
 app.use('/api/health', healthRouter);
+
+app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
 
+
+app.use('/api/cash', cashRouter);
 app.use('/api/pos', posRouter);
 
 // Static serving (prod)
