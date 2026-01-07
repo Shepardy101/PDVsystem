@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { createUser, listUsers, updateUser, deleteUser } from '../repositories/user.repo';
+import { createClient, listClients, updateClient } from '../repositories/client.repo';
 
 export const userRouter = Router();
+export const clientRouter = Router();
 
 userRouter.put('/:id', async (req, res) => {
   try {
@@ -60,5 +62,45 @@ userRouter.delete('/:id', async (req, res) => {
   } catch (e: any) {
     console.error('[DELETE /api/users/:id] Erro ao deletar usuário:', e);
     res.status(500).json({ error: 'Erro ao deletar usuário', details: e && e.message ? e.message : e });
+  }
+});
+
+clientRouter.get('/', async (req, res) => {
+  try {
+    const clients = await listClients();
+    res.json(clients);
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao listar clientes' });
+  }
+});
+
+clientRouter.post('/', async (req, res) => {
+  try {
+    const { name, cpf, address, phone, email } = req.body;
+    if (!name || !cpf) {
+      return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    }
+    const client = await createClient({ name, cpf, address, phone, email });
+    res.status(201).json(client);
+  } catch (e: any) {
+    res.status(500).json({ error: 'Erro ao criar cliente', details: e && e.message ? e.message : e });
+  }
+});
+
+clientRouter.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, cpf, address, phone, email } = req.body;
+    if (!name || !cpf) {
+      return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    }
+    const ok = await updateClient(id, { name, cpf, address, phone, email });
+    if (ok) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Cliente não encontrado' });
+    }
+  } catch (e: any) {
+    res.status(500).json({ error: 'Erro ao atualizar cliente', details: e && e.message ? e.message : e });
   }
 });
