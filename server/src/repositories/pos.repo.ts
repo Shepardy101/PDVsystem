@@ -4,12 +4,12 @@ import { v4 as uuidv4 } from 'uuid';
 export function finalizeSale(saleData: any) {
   const now = Date.now();
   const saleId = uuidv4();
-  const { operatorId, cashSessionId, items, payments, subtotal, discountTotal, total } = saleData;
+  const { operatorId, cashSessionId, items, payments, subtotal, discountTotal, total, clientId } = saleData;
   const tx = db.transaction(() => {
     // 1. Grava venda
-    db.prepare(`INSERT INTO sales (id, timestamp, operator_id, cash_session_id, subtotal, discount_total, total, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?)`)
-      .run(saleId, now, operatorId, cashSessionId, subtotal, discountTotal, total, now);
+    db.prepare(`INSERT INTO sales (id, timestamp, operator_id, cash_session_id, subtotal, discount_total, total, status, created_at, client_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?)`)
+      .run(saleId, now, operatorId, cashSessionId, subtotal, discountTotal, total, now, clientId || null);
     // 2. Grava itens
     for (const item of items) {
       db.prepare(`INSERT INTO sale_items (id, sale_id, product_id, product_name_snapshot, product_internal_code_snapshot, product_ean_snapshot, unit_snapshot, quantity, unit_price_at_sale, auto_discount_applied, manual_discount_applied, final_unit_price, line_total)

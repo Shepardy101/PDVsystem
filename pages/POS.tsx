@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target } from 'lucide-react';
+import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Button, Badge, Modal, Input } from '../components/UI';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, Client } from '../types';
+import { listClients } from '../services/client';
 
 
 interface POSProps {
@@ -30,6 +31,27 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    const [cart, setCart] = useState<CartItem[]>([]);
    const [manualDiscount, setManualDiscount] = useState(0);
    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+   const [clientSearch, setClientSearch] = useState('');
+   const [clientResults, setClientResults] = useState<Client[]>([]);
+   const [selectedClientIndex, setSelectedClientIndex] = useState(0);
+   const [selectedClient, setSelectedClient] = useState<Client|null>(null);
+   const clientInputRef = useRef<HTMLInputElement>(null);
+       // Buscar clientes ao digitar no mini modal
+       useEffect(() => {
+          if (!isClientModalOpen) return;
+          if (!clientSearch.trim()) {
+             setClientResults([]);
+             return;
+          }
+          listClients().then(data => {
+             const items = (data.items || data || []).filter((c: Client) =>
+                c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                (c.cpf && c.cpf.includes(clientSearch))
+             );
+             setClientResults(items);
+          }).catch(() => setClientResults([]));
+       }, [clientSearch, isClientModalOpen]);
    const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
    const [lastSaleData, setLastSaleData] = useState<any>(null);
@@ -147,7 +169,8 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          payments,
          subtotal: Math.round(subtotal * 100),
          discountTotal: Math.round((autoDiscountsTotal + manualDiscount) * 100),
-         total: Math.round(total * 100)
+         total: Math.round(total * 100),
+         clientId: selectedClient ? selectedClient.id : null
       };
       try {
          const res = await fetch('/api/pos/finalizeSale', {
@@ -160,10 +183,11 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          setLastSaleData({ ...payload, id: saleId, method });
          setIsPaymentModalOpen(false);
          setIsReceiptModalOpen(true);
+         setSelectedClient(null);
       } catch (err) {
          alert('Erro ao registrar venda. Tente novamente.');
       }
-   }, [cart, subtotal, autoDiscountsTotal, manualDiscount, total, cashSessionId, operatorId]);
+   }, [cart, subtotal, autoDiscountsTotal, manualDiscount, total, cashSessionId, operatorId, selectedClient]);
 
   const applyManualDiscount = () => {
     setManualDiscount(parseFloat(tempDiscount) || 0);
@@ -185,10 +209,19 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
         inputRef.current?.focus();
         setSearchTerm('');
       }
-      if (e.key === 'F10' && cart.length > 0 && !isPaymentModalOpen && !isDiscountModalOpen && !isReceiptModalOpen) {
-        e.preventDefault();
-        setIsPaymentModalOpen(true);
-      }
+         // F10: Sempre previne comportamento padrão e controla fluxo dos modais
+         if (e.key === 'F10') {
+            e.preventDefault();
+            if (cart.length > 0 && !isPaymentModalOpen && !isDiscountModalOpen && !isReceiptModalOpen) {
+               setIsPaymentModalOpen(true);
+               return;
+            }
+            if (isPaymentModalOpen && !isClientModalOpen) {
+               setIsClientModalOpen(true);
+               setTimeout(() => clientInputRef.current?.focus(), 50);
+               return;
+            }
+         }
       if (e.ctrlKey && e.key.toLowerCase() === 'd' && !isPaymentModalOpen && !isDiscountModalOpen && !isReceiptModalOpen) {
         e.preventDefault();
         setTempDiscount(manualDiscount.toString());
@@ -582,7 +615,62 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
       {/* PAYMENT MODAL */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+               {/* MINI MODAL CLIENTE */}
+               {isClientModalOpen && (
+                  <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                     <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={() => setIsClientModalOpen(false)} />
+                     <div className="relative w-full max-w-md cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden">
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/80">
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
+                                 <Users className="text-accent" size={20} />
+                              </div>
+                              <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">Vincular Cliente</h2>
+                           </div>
+                           <button onClick={() => setIsClientModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
+                        </div>
+                        <div className="p-8 space-y-4">
+                           <input
+                              ref={clientInputRef}
+                              type="text"
+                              className="w-full bg-dark-950/50 border border-white/10 rounded-lg py-3 px-4 text-slate-100 outline-none text-lg focus:border-accent transition-all"
+                              placeholder="Buscar cliente por nome ou CPF..."
+                              value={clientSearch}
+                              onChange={e => { setClientSearch(e.target.value); setSelectedClientIndex(0); }}
+                              onKeyDown={e => {
+                                 if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedClientIndex(i => Math.min(i + 1, clientResults.length - 1)); }
+                                 if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedClientIndex(i => Math.max(i - 1, 0)); }
+                                 if (e.key === 'Enter' && clientResults[selectedClientIndex]) {
+                                    setSelectedClient(clientResults[selectedClientIndex]);
+                                    setIsClientModalOpen(false);
+                                    setTimeout(() => { document.querySelector('body')?.focus(); }, 50);
+                                 }
+                              }}
+                           />
+                           <div className="max-h-60 overflow-y-auto divide-y divide-white/5 mt-2">
+                              {clientResults.length === 0 && <div className="text-slate-500 text-sm text-center py-6">Nenhum cliente encontrado</div>}
+                              {clientResults.map((c, idx) => (
+                                 <button
+                                    key={c.id}
+                                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${idx === selectedClientIndex ? 'bg-accent/10 text-accent' : 'hover:bg-white/5 text-slate-200'}`}
+                                    onMouseDown={e => {
+                                       e.preventDefault();
+                                       setSelectedClient(c);
+                                       setIsClientModalOpen(false);
+                                       setTimeout(() => { document.querySelector('body')?.focus(); }, 50);
+                                    }}
+                                 >
+                                    <div className="font-bold text-base">{c.name}</div>
+                                    <div className="text-xs text-slate-400">CPF: {c.cpf}</div>
+                                    <div className="text-xs text-slate-400">{c.email}</div>
+                                 </button>
+                              ))}
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               )}
            <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={() => setIsPaymentModalOpen(false)} />
            <div className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden">
               <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">

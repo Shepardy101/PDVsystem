@@ -69,7 +69,9 @@ userRouter.delete('/:id', async (req, res) => {
 
 clientRouter.get('/', async (req, res) => {
   try {
-    const clients = await listClients();
+    // Retorna clientes com totalSpent
+    const { listClientsWithTotalSpent } = require('../repositories/client.repo');
+    const clients = await listClientsWithTotalSpent();
     res.json(clients);
   } catch (e) {
     res.status(500).json({ error: 'Erro ao listar clientes' });
