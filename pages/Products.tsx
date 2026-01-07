@@ -1,5 +1,7 @@
    
+// @ts-ignore
 import React, { useState, useMemo, useRef } from 'react';
+import Papa from 'papaparse';
 import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
 import { Product } from '../types';
@@ -96,6 +98,7 @@ const Products: React.FC = () => {
 
 // --- Adicionar no início do componente Products ---
                // Função para submit do novo produto
+
                async function handleProductSubmit(e: React.FormEvent<HTMLFormElement>) {
                   e.preventDefault();
                   const form = e.currentTarget;
@@ -113,64 +116,110 @@ const Products: React.FC = () => {
                      autoDiscountEnabled: formData.get('autoDiscountEnabled') === 'on' ? true : false,
                      autoDiscountValue: Number(formData.get('autoDiscountValue')) || 0,
                      imageUrl: formData.get('imageUrl') || '',
-                     // Enviar categoryId e supplierId se existirem
                      categoryId: formData.get('categoryId') || null,
                      supplierId: formData.get('supplier') || null
                   };
                   try {
-                     const res = await fetch('/api/products', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                     });
+                     let res;
+                     let product;
+                     if (selectedProduct) {
+                       // Atualização (PUT)
+                       res = await fetch(`/api/products/${selectedProduct.id}`, {
+                         method: 'PUT',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(payload)
+                       });
+                     } else {
+                       // Criação (POST)
+                       res = await fetch('/api/products', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(payload)
+                       });
+                     }
                      if (!res.ok) {
                         const errData = await res.json().catch(() => ({}));
-                        throw new Error(errData?.error?.message || 'Erro ao criar produto');
+                        throw new Error(errData?.error?.message || 'Erro ao salvar produto');
                      }
-                     // Atualiza lista de produtos
-                               const { product } = await res.json();
-                               // Mapeia campos do backend para o formato do frontend
-                               const mappedProduct = {
-                                  id: product.id,
-                                  name: product.name,
-                                  gtin: product.ean || product.gtin,
-                                  internalCode: product.internal_code || product.internalCode,
-                                  unit: product.unit,
-                                  costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
-                                  salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
-                                  stock: product.stock_on_hand ?? product.stock ?? 0,
-                                  minStock: product.min_stock ?? 20,
-                                  category: product.category_id || product.category,
-                                  supplier: product.supplier_id || product.supplier || '',
-                                  status: product.status,
-                                  imageUrl: product.imageUrl || '',
-                                  autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
-                               };
-                               setProducts(prev => [...prev, mappedProduct]);
-                               setIsCreateModalOpen(false);
-                               setSelectedProduct(null);
+                     ({ product } = await res.json());
+                     // Mapeia campos do backend para o formato do frontend
+                     const mappedProduct = {
+                        id: product.id,
+                        name: product.name,
+                        gtin: product.ean || product.gtin,
+                        internalCode: product.internal_code || product.internalCode,
+                        unit: product.unit,
+                        costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
+                        salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
+                        stock: product.stock_on_hand ?? product.stock ?? 0,
+                        minStock: product.min_stock ?? 20,
+                        category: product.category_id || product.category,
+                        supplier: product.supplier_id || product.supplier || '',
+                        status: product.status,
+                        imageUrl: product.imageUrl || '',
+                        autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+                     };
+                     setProducts(prev => {
+                       // Se for update, substitui, se for create, adiciona
+                       if (selectedProduct) {
+                         return prev.map(p => p.id === mappedProduct.id ? mappedProduct : p);
+                       } else {
+                         return [...prev, mappedProduct];
+                       }
+                     });
+                     setIsCreateModalOpen(false);
+                     setSelectedProduct(null);
                   } catch (err) {
-                     alert('Erro ao criar produto. Verifique os campos e tente novamente.');
+                     alert('Erro ao salvar produto. Verifique os campos e tente novamente.');
                   }
                }
 
 
   // Simulação de Importação
-  const simulateImport = () => {
-    setIsUploading(true);
-    setTimeout(() => {
-      const mockImported = [
-        { id: 'imp-1', name: 'Cerveja Artesanal Cyber-Hop 500ml', gtin: '1234567890123', category: 'Cervejas', salePrice: 18.90, stock: 50, status: 'valid' },
-        { id: 'imp-2', name: 'Energético Neon Power 250ml', gtin: '9876543210987', category: 'Energéticos', salePrice: 8.50, stock: 120, status: 'valid' },
-        { id: 'imp-3', name: 'Vinho Tinto Digital Reserva 750ml', gtin: '1122334455667', category: 'Vinhos', salePrice: 145.00, stock: 12, status: 'warning', message: 'Preço acima da média' },
-        { id: 'imp-4', name: 'Água Glitch Gás 300ml', gtin: '0000000000000', category: 'Águas', salePrice: 4.50, stock: 0, status: 'error', message: 'GTIN Inválido' },
-      ];
-      setImportResults(mockImported);
-      setIsUploading(false);
-      setIsImportModalOpen(false);
-      setIsPreviewModalOpen(true);
-    }, 1500);
-  };
+
+   // Função para importar CSV
+   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setIsUploading(true);
+      Papa.parse(file, {
+         header: true,
+         skipEmptyLines: true,
+         complete: (results: any) => {
+            // Esperado: internalCode, gtin, name, costPrice, salePrice, stock, [supplier], [category]
+            const rows = results.data.map((row: any, idx: number) => {
+               const errors = [];
+               if (!row.internalCode) errors.push('Código interno obrigatório');
+               if (!row.gtin) errors.push('EAN obrigatório');
+               if (!row.name) errors.push('Descrição obrigatória');
+               if (!row.costPrice) errors.push('Preço de custo obrigatório');
+               if (!row.salePrice) errors.push('Preço de venda obrigatório');
+               if (!row.stock) errors.push('Quantidade obrigatória');
+               return {
+                  id: `import-${idx}`,
+                  internalCode: row.internalCode,
+                  gtin: row.gtin,
+                  name: row.name,
+                  costPrice: parseFloat(row.costPrice),
+                  salePrice: parseFloat(row.salePrice),
+                  stock: parseInt(row.stock),
+                  supplier: row.supplier || '',
+                  category: row.category || '',
+                  status: errors.length ? 'error' : 'valid',
+                  message: errors.join(', ')
+               };
+            });
+            setImportResults(rows);
+            setIsUploading(false);
+            setIsImportModalOpen(false);
+            setIsPreviewModalOpen(true);
+         },
+         error: () => {
+            setIsUploading(false);
+            alert('Erro ao ler arquivo.');
+         }
+      });
+   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -583,7 +632,7 @@ const Products: React.FC = () => {
                     </div>
                  ) : (
                     <div onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} className="w-full p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4" onClick={() => fileInputRef.current?.click()}>
-                       <input type="file" ref={fileInputRef} className="hidden" accept=".txt,.csv,.xlsx" onChange={simulateImport} />
+                       <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt" onChange={handleImportFile} />
                        <FileSpreadsheet className="text-accent opacity-50 group-hover:opacity-100 transition-all" size={48} />
                        <div>
                           <p className="text-sm font-bold text-slate-300">Solte o arquivo aqui ou clique</p>
@@ -634,7 +683,75 @@ const Products: React.FC = () => {
               </div>
               <div className="p-6 border-t border-white/10 bg-dark-950/80 flex justify-end gap-4">
                  <Button variant="secondary" onClick={() => setIsPreviewModalOpen(false)}>Cancelar</Button>
-                 <Button icon={<Check size={18}/>} onClick={() => setIsPreviewModalOpen(false)}>Confirmar Importação</Button>
+                         <Button icon={<Check size={18}/>} onClick={async () => {
+                            // Filtra apenas produtos válidos
+                            const validProducts = importResults.filter((item: any) => item.status === 'valid');
+                            if (validProducts.length === 0) {
+                               alert('Nenhum produto válido para importar.');
+                               return;
+                            }
+                            let importedCount = 0;
+                            for (const item of validProducts) {
+                               const payload = {
+                                  name: item.name,
+                                  ean: item.gtin,
+                                  internalCode: item.internalCode,
+                                  unit: 'unit',
+                                  status: 'active',
+                                  costPrice: item.costPrice,
+                                  salePrice: item.salePrice,
+                                  stockOnHand: item.stock,
+                                  minStock: 0,
+                                  autoDiscountEnabled: false,
+                                  autoDiscountValue: 0,
+                                  imageUrl: '',
+                                  categoryId: null,
+                                  supplierId: null,
+                                  // Para exibição local
+                                  category: item.category || 'sem categoria',
+                                  supplier: item.supplier || 'sem fornecedor',
+                               };
+                               try {
+                                  const res = await fetch('/api/products', {
+                                     method: 'POST',
+                                     headers: { 'Content-Type': 'application/json' },
+                                     body: JSON.stringify(payload)
+                                  });
+                                  if (res.ok) importedCount++;
+                               } catch {}
+                            }
+                            alert(importedCount + ' produtos importados com sucesso!');
+                            setIsPreviewModalOpen(false);
+                            // Atualiza lista de produtos
+                            setLoading(true);
+                            fetch('/api/products')
+                               .then(res => res.json())
+                               .then(data => {
+                                  const items = (data.items || data.products || []).map((product: any) => ({
+                                     id: product.id,
+                                     name: product.name,
+                                     gtin: product.ean || product.gtin,
+                                     internalCode: product.internal_code || product.internalCode,
+                                     unit: product.unit,
+                                     costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
+                                     salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
+                                     stock: product.stock_on_hand ?? product.stock ?? 0,
+                                     minStock: product.min_stock ?? 20,
+                                     category: product.category_id || product.category,
+                                     supplier: product.supplier_id || product.supplier || '',
+                                     status: product.status,
+                                     imageUrl: product.imageUrl || '',
+                                     autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+                                  }));
+                                  setProducts(items);
+                                  setError(null);
+                               })
+                               .catch(() => {
+                                  setError('Erro ao carregar produtos da API.');
+                                  setProducts([]);
+                               })
+                               .finally(() => setLoading(false));
+                         }}>Confirmar Importação</Button>
               </div>
            </div>
         </div>
