@@ -1,3 +1,7 @@
+// Remove todos os produtos do banco
+export function deleteAllProducts() {
+  db.prepare('DELETE FROM products').run();
+}
 
 import { db } from '../db/database';
 import { v4 as uuidv4 } from 'uuid';

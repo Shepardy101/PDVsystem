@@ -6,10 +6,21 @@ import {
   createProduct,
   updateProduct,
   getProductById,
-  deleteProduct
+  deleteProduct,
+  deleteAllProducts
 } from '../repositories/product.repo';
 
 export const productRouter = Router();
+
+// Deletar TODOS os produtos
+productRouter.delete('/', (req, res) => {
+  try {
+    const deleted = deleteAllProducts();
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao deletar todos os produtos.' } });
+  }
+});
 
 // Deletar produto por ID
 productRouter.delete('/:id', (req, res) => {

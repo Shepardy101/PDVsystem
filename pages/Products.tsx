@@ -2,6 +2,7 @@
 // @ts-ignore
 import React, { useState, useMemo, useRef } from 'react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
 import { Product } from '../types';
@@ -177,54 +178,84 @@ const Products: React.FC = () => {
 
   // Simulação de Importação
 
-   // Função para importar CSV
+   // Função para importar CSV ou XLSX
    const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       setIsUploading(true);
-      Papa.parse(file, {
-         header: true,
-         skipEmptyLines: true,
-         complete: (results: any) => {
-            // Esperado: internalCode, gtin, name, costPrice, salePrice, stock, [supplier], [category]
-            const rows = results.data.map((row: any, idx: number) => {
-               const errors = [];
-               if (!row.internalCode) errors.push('Código interno obrigatório');
-               if (!row.gtin) errors.push('EAN obrigatório');
-               if (!row.name) errors.push('Descrição obrigatória');
-               if (!row.costPrice) errors.push('Preço de custo obrigatório');
-               if (!row.salePrice) errors.push('Preço de venda obrigatório');
-               if (!row.stock) errors.push('Quantidade obrigatória');
-               return {
-                  id: `import-${idx}`,
-                  internalCode: row.internalCode,
-                  gtin: row.gtin,
-                  name: row.name,
-                  costPrice: parseFloat(row.costPrice),
-                  salePrice: parseFloat(row.salePrice),
-                  stock: parseInt(row.stock),
-                  supplier: row.supplier || '',
-                  category: row.category || '',
-                  status: errors.length ? 'error' : 'valid',
-                  message: errors.join(', ')
-               };
-            });
-            setImportResults(rows);
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext === 'csv' || ext === 'txt') {
+         Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results: any) => processImportRows(results.data),
+            error: () => {
+               setIsUploading(false);
+               alert('Erro ao ler arquivo.');
+            }
+         });
+      } else if (ext === 'xlsx') {
+         const reader = new FileReader();
+         reader.onload = (evt) => {
+            const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            processImportRows(json);
+         };
+         reader.onerror = () => {
             setIsUploading(false);
-            setIsImportModalOpen(false);
-            setIsPreviewModalOpen(true);
-         },
-         error: () => {
-            setIsUploading(false);
-            alert('Erro ao ler arquivo.');
-         }
-      });
+            alert('Erro ao ler arquivo XLSX.');
+         };
+         reader.readAsArrayBuffer(file);
+      } else {
+         setIsUploading(false);
+         alert('Formato de arquivo não suportado. Use .csv, .txt ou .xlsx');
+      }
    };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    simulateImport();
-  };
+   // Função para processar linhas importadas
+   function processImportRows(data: any[]) {
+      // Esperado: internalCode, gtin, name, costPrice, salePrice, stock, [supplier], [category]
+      const rows = data.map((row: any, idx: number) => {
+         const errors = [];
+         if (!row.internalCode) errors.push('Código interno obrigatório');
+         if (!row.gtin) errors.push('EAN obrigatório');
+         if (!row.name) errors.push('Descrição obrigatória');
+         if (!row.costPrice) errors.push('Preço de custo obrigatório');
+         if (!row.salePrice) errors.push('Preço de venda obrigatório');
+         if (!row.stock) errors.push('Quantidade obrigatória');
+         return {
+            id: `import-${idx}`,
+            internalCode: row.internalCode,
+            gtin: row.gtin,
+            name: row.name,
+            costPrice: parseFloat(row.costPrice),
+            salePrice: parseFloat(row.salePrice),
+            stock: parseInt(row.stock),
+            supplier: row.supplier || '',
+            category: row.category || '',
+            status: errors.length ? 'error' : 'valid',
+            message: errors.join(', ')
+         };
+      });
+      setImportResults(rows);
+      setIsUploading(false);
+      setIsImportModalOpen(false);
+      setIsPreviewModalOpen(true);
+   }
+
+   const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+         // Cria um evento fake para reutilizar handleImportFile
+         const fakeEvent = {
+            target: { files: e.dataTransfer.files }
+         } as unknown as React.ChangeEvent<HTMLInputElement>;
+         handleImportFile(fakeEvent);
+         e.dataTransfer.clearData();
+      }
+   };
 
    const handleCreateCategory = async () => {
       if (!newCategoryName.trim()) return;
@@ -264,7 +295,31 @@ const Products: React.FC = () => {
              <Package className="text-accent" /> Gestão de Ativos
           </h1>
           <p className="text-slate-500 text-sm font-medium">Controle granular do inventário e precificação dinâmica.</p>
-        </div>
+            </div>
+
+            {/* Botão temporário para deletar todos os produtos */}
+            <div className="mt-6 flex justify-end">
+               <Button
+                  variant="danger"
+                  className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
+                  onClick={async () => {
+                     if (!window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) return;
+                     try {
+                        const res = await fetch('/api/products', { method: 'DELETE' });
+                        if (res.ok) {
+                           setProducts([]);
+                           alert('Todos os produtos foram excluídos.');
+                        } else {
+                           alert('Erro ao excluir todos os produtos.');
+                        }
+                     } catch {
+                        alert('Erro ao excluir todos os produtos.');
+                     }
+                  }}
+               >
+                  Excluir TODOS os produtos (TESTE)
+               </Button>
+            </div>
         <div className="flex items-center gap-3">
            <div className="flex items-center bg-dark-900/50 p-1 rounded-xl border border-white/5 mr-2">
               <button 
@@ -631,8 +686,13 @@ const Products: React.FC = () => {
                        <p className="text-accent font-mono text-xs font-bold tracking-[0.2em] uppercase">Processando Arquivo...</p>
                     </div>
                  ) : (
-                    <div onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} className="w-full p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4" onClick={() => fileInputRef.current?.click()}>
-                       <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt" onChange={handleImportFile} />
+                              <div
+                                 onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                                 onDrop={handleDrop}
+                                 className="w-full p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4"
+                                 onClick={() => fileInputRef.current?.click()}
+                              >
+                       <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt,.xlsx" onChange={handleImportFile} />
                        <FileSpreadsheet className="text-accent opacity-50 group-hover:opacity-100 transition-all" size={48} />
                        <div>
                           <p className="text-sm font-bold text-slate-300">Solte o arquivo aqui ou clique</p>
@@ -692,6 +752,47 @@ const Products: React.FC = () => {
                             }
                             let importedCount = 0;
                             for (const item of validProducts) {
+                               let categoryId = null;
+                               let supplierId = null;
+                               // Se categoria informada, tenta buscar ou criar
+                               if (item.category && item.category !== 'sem categoria') {
+                                  try {
+                                     // Busca categoria existente
+                                     let cat = categories.find(c => c.name.toLowerCase() === item.category.toLowerCase());
+                                     if (!cat) {
+                                        // Cria categoria se não existir
+                                        const res = await fetch('/api/categories', {
+                                           method: 'POST',
+                                           headers: { 'Content-Type': 'application/json' },
+                                           body: JSON.stringify({ name: item.category })
+                                        });
+                                        if (res.ok) {
+                                           const data = await res.json();
+                                           categoryId = data.category?.id;
+                                           // Atualiza lista local
+                                           setCategories(prev => [...prev, data.category]);
+                                        }
+                                     } else {
+                                        categoryId = cat.id;
+                                     }
+                                  } catch {}
+                               }
+                               // Se fornecedor informado, tenta buscar ou criar
+                               if (item.supplier && item.supplier !== 'sem fornecedor') {
+                                  try {
+                                     // Busca fornecedor existente
+                                     // Supondo que não há endpoint de busca, sempre cria (ajuste se necessário)
+                                     const res = await fetch('/api/suppliers', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ name: item.supplier })
+                                     });
+                                     if (res.ok) {
+                                        const data = await res.json();
+                                        supplierId = data.supplier?.id;
+                                     }
+                                  } catch {}
+                               }
                                const payload = {
                                   name: item.name,
                                   ean: item.gtin,
@@ -705,11 +806,8 @@ const Products: React.FC = () => {
                                   autoDiscountEnabled: false,
                                   autoDiscountValue: 0,
                                   imageUrl: '',
-                                  categoryId: null,
-                                  supplierId: null,
-                                  // Para exibição local
-                                  category: item.category || 'sem categoria',
-                                  supplier: item.supplier || 'sem fornecedor',
+                                  categoryId,
+                                  supplierId,
                                };
                                try {
                                   const res = await fetch('/api/products', {
