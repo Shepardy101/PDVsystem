@@ -517,7 +517,7 @@ const Products: React.FC = () => {
                               >
                                  <td className="px-8 py-5 flex items-center gap-4">
                                     <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
-                                       <img src={product.imageUrl} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                                       <img src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
                                     </div>
                                     <div>
                                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>
@@ -555,7 +555,7 @@ const Products: React.FC = () => {
                            </div>
 
                            <div className="relative h-40 w-full rounded-2xl bg-dark-950 border border-white/5 overflow-hidden flex items-center justify-center">
-                              <img src={product.imageUrl} className="w-full h-full object-cover opacity-40 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
+                              <img src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`} className="w-full h-full object-cover opacity-40 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
                               <div className="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent opacity-60" />
                            </div>
 
@@ -729,15 +729,64 @@ const Products: React.FC = () => {
                         </div>
 
                         <div className="space-y-4 pb-4 mt-6">
-                           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>
-                           <div className="flex gap-4">
-                              <div className="flex-1">
-                                 <Input name="imageUrl" defaultValue={selectedProduct?.imageUrl} placeholder="https://cdn.image-server.com/..." icon={<ImageIcon size={14} />} />
-                              </div>
-                              <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden">
-                                 {selectedProduct?.imageUrl ? <img src={selectedProduct.imageUrl} className="w-full h-full object-cover opacity-50" /> : <ImageIcon size={20} className="opacity-40" />}
-                              </div>
-                           </div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>
+                                        <div className="flex gap-4 items-center">
+                                             <div className="flex-1">
+                                                 <Input name="imageUrl" value={selectedProduct?.imageUrl || ''} onChange={e => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)} placeholder="Selecione ou faça upload..." icon={<ImageIcon size={14} />} readOnly />
+                                                 <input type="file" accept="image/*" style={{ display: 'none' }} id="product-image-upload" onChange={async e => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+                                                    // Garante que EAN e nome estejam presentes, mesmo se for novo produto
+                                                    // Busca o EAN do campo correto (gtin ou ean)
+                                                    const ean = selectedProduct?.gtin || selectedProduct?.ean || document.querySelector('input[name="gtin"]')?.value || document.querySelector('input[name="ean"]')?.value || '';
+                                                    const name = selectedProduct?.name || document.querySelector('input[name="name"]')?.value || '';
+                                                    const formData = new FormData();
+                                                    formData.append('image', file);
+                                                    formData.append('ean', ean);
+                                                    formData.append('description', name);
+                                                    try {
+                                                       const res = await fetch('/api/products/upload-image', {
+                                                          method: 'POST',
+                                                          body: formData
+                                                       });
+                                                       const data = await res.json();
+                                                       if (data.imageUrl) {
+                                                          setSelectedProduct(p => p ? { ...p, imageUrl: data.imageUrl } : null);
+                                                          showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
+                                                       } else {
+                                                          showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
+                                                       }
+                                                    } catch {
+                                                       showPopup('error', 'Erro', 'Erro ao enviar imagem.');
+                                                    }
+                                                 }} />
+                                                 <Button type="button" variant="secondary" size="sm" style={{ marginTop: 8 }} onClick={() => document.getElementById('product-image-upload')?.click()} icon={<UploadCloud size={16} />}>Selecionar Foto</Button>
+                                             </div>
+                                                                   <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden relative">
+                                                                        {selectedProduct?.imageUrl ? (
+                                                                           <>
+                                                                              <img src={selectedProduct.imageUrl?.startsWith('/uploads/') ? selectedProduct.imageUrl : `/uploads/${selectedProduct.imageUrl}`} className="w-full h-full object-cover opacity-50" />
+                                                                              <button type="button" className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all" title="Remover imagem" onClick={async () => {
+                                                                                 // Chama API para remover arquivo
+                                                                                 const imagePath = selectedProduct.imageUrl;
+                                                                                 try {
+                                                                                    await fetch('/api/products/delete-image', {
+                                                                                       method: 'POST',
+                                                                                       headers: { 'Content-Type': 'application/json' },
+                                                                                       body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
+                                                                                    });
+                                                                                    setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
+                                                                                    showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
+                                                                                 } catch {
+                                                                                    showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
+                                                                                 }
+                                                                              }}>
+                                                                                 <Trash2 size={12} />
+                                                                              </button>
+                                                                           </>
+                                                                        ) : <ImageIcon size={20} className="opacity-40" />}
+                                                                   </div>
+                                        </div>
                         </div>
                      </form>
 

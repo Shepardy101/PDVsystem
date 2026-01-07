@@ -1,5 +1,9 @@
+// Rota para remover imagem de produto
+// --- mover para depois da declaração do productRouter ---
 
 import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
 import {
   listProducts,
   searchProducts,
@@ -11,6 +15,52 @@ import {
 } from '../repositories/product.repo';
 
 export const productRouter = Router();
+
+import fs from 'fs';
+productRouter.post('/delete-image', async (req, res) => {
+  const { imageUrl, productId } = req.body;
+  if (!imageUrl || !productId) return res.status(400).json({ error: 'Dados insuficientes.' });
+  try {
+    // Remove arquivo físico
+    const filePath = path.resolve(__dirname, '../../../', imageUrl.replace(/^\//, ''));
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    // Limpa campo imageUrl no banco
+    updateProduct(productId, { imageUrl: '' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao remover imagem.' });
+  }
+});
+
+// Configuração do multer para salvar imagens
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.resolve(__dirname, '../../../public/uploads'));
+  },
+  filename: function (req, file, cb) {
+    // Usa id do produto e descrição para nome do arquivo
+    const { ean, description } = req.body;
+    const ext = path.extname(file.originalname);
+    const safeDesc = description ? description.replace(/[^a-zA-Z0-9-_]/g, '_') : '';
+    const safeEan = ean ? String(ean).replace(/[^a-zA-Z0-9-_]/g, '_') : 'new';
+    cb(null, `${safeEan}_${safeDesc}_${Date.now()}${ext}`);
+  }
+});
+const upload = multer({ storage });
+
+// Rota para upload de imagem
+productRouter.post('/upload-image', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+    // Caminho relativo para salvar no banco
+    const relativePath = `/uploads/${req.file.filename}`;
+    res.json({ imageUrl: relativePath });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar imagem.' });
+  }
+});
 
 // Deletar TODOS os produtos
 productRouter.delete('/', (req, res) => {

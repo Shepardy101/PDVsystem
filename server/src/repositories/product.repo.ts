@@ -38,6 +38,7 @@ export interface Product {
   stock_on_hand: number;
   created_at: number;
   updated_at: number;
+  imageUrl: string;
 }
 
 export function listProducts(limit = 50, offset = 0) {
@@ -104,14 +105,15 @@ export function createProduct(data: any) {
     supplier_id: data.supplierId || null,
     status: data.status || 'active',
     stock_on_hand: data.stockOnHand || 0,
+    imageUrl: data.imageUrl || '',
     created_at: now,
     updated_at: now
   };
   try {
     db.prepare(`INSERT INTO products (
-      id, name, ean, internal_code, unit, cost_price, sale_price, auto_discount_enabled, auto_discount_value, category_id, supplier_id, status, stock_on_hand, created_at, updated_at
+      id, name, ean, internal_code, unit, cost_price, sale_price, auto_discount_enabled, auto_discount_value, category_id, supplier_id, status, stock_on_hand, imageUrl, created_at, updated_at
     ) VALUES (
-      @id, @name, @ean, @internal_code, @unit, @cost_price, @sale_price, @auto_discount_enabled, @auto_discount_value, @category_id, @supplier_id, @status, @stock_on_hand, @created_at, @updated_at
+      @id, @name, @ean, @internal_code, @unit, @cost_price, @sale_price, @auto_discount_enabled, @auto_discount_value, @category_id, @supplier_id, @status, @stock_on_hand, @imageUrl, @created_at, @updated_at
     )`).run(product);
     console.log('[createProduct] Produto inserido com sucesso:', product);
     return product;
@@ -153,10 +155,11 @@ export function updateProduct(id: string, data: any) {
     supplier_id: data.supplierId || null,
     status: data.status || 'active',
     stock_on_hand: data.stockOnHand || 0,
+    imageUrl: data.imageUrl || '',
     updated_at: now
   };
   db.prepare(`UPDATE products SET
-    name=@name, ean=@ean, internal_code=@internal_code, unit=@unit, cost_price=@cost_price, sale_price=@sale_price, auto_discount_enabled=@auto_discount_enabled, auto_discount_value=@auto_discount_value, category_id=@category_id, supplier_id=@supplier_id, status=@status, stock_on_hand=@stock_on_hand, updated_at=@updated_at
+    name=@name, ean=@ean, internal_code=@internal_code, unit=@unit, cost_price=@cost_price, sale_price=@sale_price, auto_discount_enabled=@auto_discount_enabled, auto_discount_value=@auto_discount_value, category_id=@category_id, supplier_id=@supplier_id, status=@status, stock_on_hand=@stock_on_hand, imageUrl=@imageUrl, updated_at=@updated_at
     WHERE id=@id
   `).run({ ...updated, id });
   return updated;

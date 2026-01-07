@@ -11,6 +11,8 @@ import { clientRouter } from './routes/user.routes';
 import { supplierRouter } from './routes/user.routes';
 
 const app = express();
+// Servir arquivos da pasta public/uploads
+app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
 const PORT = Number(process.env.PORT) || 8787;
 
 app.use(cors());
