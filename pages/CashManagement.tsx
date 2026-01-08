@@ -299,8 +299,28 @@ const CashManagement: React.FC = () => {
                                </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
-                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Lastro</p>
-                     <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">R$ {session && session.initialBalance ? session.initialBalance.toFixed(2) : '0.00'}</h3>
+                               <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Lastro</p>
+                              <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
+                                   R$ {
+                                      (() => {
+                                         if (!session) return '0.00';
+                                         // Detecta se o saldo inicial já está em centavos (ex: 1000 ou 10.00)
+                                         let initialBalanceCents = session.initial_balance ?? 0;
+                                         if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
+                                           // Exemplo: 10.50 -> 1050
+                                           initialBalanceCents = Math.round(initialBalanceCents * 100);
+                                         }
+                                         const totalSangrias = session.transactions.reduce((acc, tx) => {
+                                            if (tx.type === 'sangria' && typeof tx.amount === 'number') {
+                                               return acc + tx.amount;
+                                            }
+                                            return acc;
+                                         }, 0);
+                                         const lastro = initialBalanceCents - totalSangrias;
+                                         return (lastro / 100).toFixed(2);
+                                      })()
+                                   }
+                              </h3>
                   </Card>
                </div>
 

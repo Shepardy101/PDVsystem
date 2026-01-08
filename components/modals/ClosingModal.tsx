@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Input } from '../UI';
-import { X } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
 
 export interface ClosingModalProps {
   isOpen: boolean;
@@ -35,6 +35,7 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
             onChange={e => onInputChange(e.target.value)}
             placeholder="0.00"
             className="text-center text-3xl font-mono text-accent bg-dark-950/50"
+            autoFocus
           />
           {closeError && <div className="text-red-500 text-sm text-center">{closeError}</div>}
           <Button

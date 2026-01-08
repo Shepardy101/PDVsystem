@@ -159,14 +159,15 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          });
    }, [cashOpen, operatorId]);
 
+
    useEffect(() => {
-      if (cashOpen) {
+      if (cashOpen && !isClosingModalOpen) {
          setTimeout(() => {
             inputRef.current?.focus();
             if (inputRef.current) inputRef.current.value = '';
          }, 50);
       }
-   }, [cashOpen]);
+   }, [cashOpen, isClosingModalOpen]);
 
    const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.product.salePrice * item.quantity), 0), [cart]);
    const autoDiscountsTotal = useMemo(() => cart.reduce((acc, item) => acc + (item.appliedDiscount * item.quantity), 0), [cart]);
@@ -267,6 +268,9 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+         // Bloqueia todos os atalhos do POS enquanto o modal de fechamento de caixa está aberto
+         if (isClosingModalOpen) return;
+
          // Abrir modal de desconto com Ctrl + D se houver venda no buffer
          if (e.ctrlKey && e.key.toLowerCase() === 'd') {
             if (cart && cart.length > 0) {
@@ -343,6 +347,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       openPaymentModal,
       closePaymentModal,
       toggleMultiMode,
+      isClosingModalOpen
    ]);
 
 
@@ -834,16 +839,42 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          />
 
          {/* CLOSING MODAL */}
-         <ClosingModal
-            isOpen={isClosingModalOpen}
-            physicalCashInput={physicalCashInput}
-            closeError={closeError}
-            closeLoading={closeLoading}
-            closeResult={closeResult}
-            onClose={() => setIsClosingModalOpen(false)}
-            onInputChange={setPhysicalCashInput}
-            onConfirm={() => {/* lógica de fechamento de caixa */ }}
-         />
+             <ClosingModal
+                  isOpen={isClosingModalOpen}
+                  physicalCashInput={physicalCashInput}
+                  closeError={closeError}
+                  closeLoading={closeLoading}
+                  closeResult={closeResult}
+                  onClose={() => setIsClosingModalOpen(false)}
+                  onInputChange={setPhysicalCashInput}
+                  onConfirm={async () => {
+                     setCloseLoading(true);
+                     setCloseError('');
+                     try {
+                        const value = parseFloat(physicalCashInput) || 0;
+                        const res = await fetch('/api/cash/close', {
+                           method: 'POST',
+                           headers: { 'Content-Type': 'application/json' },
+                           body: JSON.stringify({ sessionId: cashSessionId, physicalCount: Math.round(value * 100) })
+                        });
+                        if (!res.ok) throw new Error('Erro ao fechar caixa');
+                        const data = await res.json();
+                        setCloseResult(data.closeResult);
+                        // Fechar modal e atualizar estado do caixa
+                        setTimeout(() => {
+                           setIsClosingModalOpen(false);
+                           setCashSessionId(null);
+                           setCloseResult(null);
+                           setPhysicalCashInput('');
+                           setCloseError('');
+                        }, 1200); // Mostra resumo por 1.2s antes de fechar
+                     } catch (err) {
+                        setCloseError('Erro ao fechar caixa. Tente novamente.');
+                     } finally {
+                        setCloseLoading(false);
+                     }
+                  }}
+             />
 
          {/* OPENING MODAL */}
          <OpeningModal
