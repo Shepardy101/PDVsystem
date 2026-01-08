@@ -922,16 +922,15 @@ useEffect(() => {
                   if (!res.ok) throw new Error('Erro ao fechar caixa');
                   const data = await res.json();
                   setCloseResult(data.closeResult);
-                  // Fechar modal e atualizar estado do caixa
-                  // setTimeout(() => {
-                  //    setIsClosingModalOpen(false);
-                  //    setCashSessionId(null);
-                  //    setCloseResult(null);
-                  //    setPhysicalCashInput('');
-                  //    setCloseError('');
-                  // }, 1200);
-                  // Mostra resumo por 1.2s antes de fechar
-
+                  // Após mostrar o resumo, fecha modal e força tela de abertura de caixa
+                  setTimeout(() => {
+                     setIsClosingModalOpen(false);
+                     setCashSessionId(null);
+                     setCloseResult(null);
+                     setPhysicalCashInput('');
+                     setCloseError('');
+                     onCloseCash();
+                  }, 4200);
                } catch (err) {
                   setCloseError('Erro ao fechar caixa. Tente novamente.');
                } finally {
