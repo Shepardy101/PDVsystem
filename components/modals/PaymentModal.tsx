@@ -30,14 +30,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
 
     useEffect(() => {
         if (isOpen) {
+            console.log('[PaymentModal] MONTADO/ABERTO');
             setPartialPayments([]);
             setPaymentAmount('');
             setPaymentMethod('cash');
+            setMultiMode(false);
             setTimeout(() => {
                 modalRef.current?.focus();
             }, 10);
         }
-    }, [isOpen]);
+    }, [isOpen, setMultiMode]);
 
 
 
@@ -53,16 +55,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         if (!isOpen) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-
-           const isInputFocused = (
-    inputRef.current && document.activeElement === inputRef.current
-) || (
-    selectRef.current && document.activeElement === selectRef.current
-) || (
-    (document.activeElement as HTMLElement)?.closest("input, select")
-);
-
-                document.activeElement?.tagName === "SELECT";
+           // console.log('[PaymentModal] keydown:', e.key, 'multiMode:', multiMode, 'isInputFocused:', document.activeElement);
+            const isInputFocused = (
+                inputRef.current && document.activeElement === inputRef.current
+            ) || (
+                selectRef.current && document.activeElement === selectRef.current
+            ) || (
+                (document.activeElement as HTMLElement)?.closest("input, select")
+            );
 
             // 🚨 IMPORTANTE:
             // Se está digitando → NÃO BLOQUEIE 1,2,3 e nem atalhos
@@ -72,14 +72,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
             // MODO MULTIPAGAMENTOS
             // ======================
             if (multiMode) {
-
                 if (e.key === "/") {
                     e.preventDefault();
                     setMultiMode(false);
                     setFocusStep("input");
                     return;
                 }
-
                 if (e.key === "Enter") {
                     e.preventDefault();
                     if (focusStep === "input") setFocusStep("select");
@@ -87,7 +85,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                     else if (focusStep === "add") addBtnRef.current?.click();
                     else if (focusStep === "finalize") finalizeBtnRef.current?.click();
                 }
-
+                // Não bloquear 'c' para POS
+                // Não retorna aqui, deixa o evento seguir normalmente
                 return; // impede de cair no modo simples
             }
 
@@ -107,6 +106,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                 setFocusStep("input");
                 return;
             }
+            // Não bloquear 'c' para POS
         };
 
         window.addEventListener("keydown", handleKeyDown);

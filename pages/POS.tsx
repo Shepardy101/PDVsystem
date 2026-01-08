@@ -253,6 +253,16 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       // nada do pai pode capturar teclas.
       if (isPaymentModalOpen && multiMode) return;
 
+      // Log de todas as teclas
+      console.log('[POS] keydown:', e.key, 'isPaymentModalOpen:', isPaymentModalOpen, 'multiMode:', multiMode);
+
+      // Atalho para abrir modal de cliente
+      if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
+         console.log('[POS] Abrindo modal de cliente via tecla c');
+         setIsClientModalOpen(true);
+         return;
+      }
+
       // Sempre previne o padrão do navegador para F10
       if (e.key === 'F10') {
          e.preventDefault();
