@@ -244,15 +244,59 @@ const CashManagement: React.FC = () => {
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0 mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
                   <Card className="bg-dark-900/40 border-accent/20 shadow-accent-glow/10 p-4">
                      <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Liquidez</p>
-                     <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">R$ {session && session.currentBalance ? session.currentBalance.toFixed(2) : '0.00'}</h3>
+                               <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">
+                                  R$ {
+                                     (() => {
+                                        if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                        // Filtra apenas vendas: objetos com campo 'status' e array 'items'
+                                        const vendas = session.transactions.filter(tx => tx.status && Array.isArray(tx.items));
+                                        const totalVendas = vendas.reduce((acc, venda) => {
+                                           if (typeof venda.total === 'number') {
+                                              return acc + venda.total;
+                                           }
+                                           if (Array.isArray(venda.items)) {
+                                              return acc + venda.items.reduce((sum, item) => sum + (item.line_total || item.lineTotal || 0), 0);
+                                           }
+                                           return acc;
+                                        }, 0);
+                                        return (totalVendas / 100).toFixed(2);
+                                     })()
+                                  }
+                               </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
                      <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
-                     <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">+ R$ 100.00</h3>
+                               <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">
+                                  + R$ {
+                                     (() => {
+                                        if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                        let totalSuprimentos = 0;
+                                        session.transactions.forEach(tx => {
+                                           if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
+                                              totalSuprimentos += tx.amount;
+                                           }
+                                        });
+                                        return (totalSuprimentos / 100).toFixed(2);
+                                     })()
+                                  }
+                               </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
                      <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
-                     <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">- R$ 135.00</h3>
+                               <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">
+                                  - R$ {
+                                     (() => {
+                                        if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                        let totalDeducoes = 0;
+                                        session.transactions.forEach(tx => {
+                                           if ((tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number') {
+                                              totalDeducoes += tx.amount;
+                                           }
+                                        });
+                                        return (totalDeducoes / 100).toFixed(2);
+                                     })()
+                                  }
+                               </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
                      <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Lastro</p>
