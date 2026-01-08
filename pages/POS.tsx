@@ -22,6 +22,14 @@ interface POSProps {
 
 
 const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
+      // Função para limpar o carrinho e focar no input
+      const handleClearCart = () => {
+         setCart([]);
+         setSelectedClient(null);
+         setTimeout(() => {
+            if (inputRef.current) inputRef.current.focus();
+         }, 50);
+      };
    // Funções auxiliares para controle do PaymentModal
    const openPaymentModal = () => {
       setIsPaymentModalOpen(true);
@@ -672,7 +680,17 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                            </div>
                         </div>
                      )}
-                     <Badge variant="info">{cart.length} Ativos</Badge>
+                               <div className="flex items-center gap-2">
+                                  <Badge variant="info">{cart.length} Ativos</Badge>
+                                  <button
+                                     title="Limpar carrinho"
+                                     onClick={handleClearCart}
+                                     className="ml-1 p-1  rounded hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors text-slate-400 hover:text-red-400"
+                                     style={{ display: cart.length > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                     <span className='mr-1'>Limpar</span> <Trash2 size={14} />
+                                  </button>
+                               </div>
                   </div>
                </div>
 
