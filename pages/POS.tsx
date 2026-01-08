@@ -3,7 +3,7 @@ import { useAuth } from '../components/AuthContext';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Button, Badge, Modal, Input } from '../components/UI';
-import { Product, CartItem, Client } from '../types';
+import { Product, CartItem, Client, Category, Sale, Supplier, CashTransaction, CashSession } from '../types';
 import { listClients } from '../services/client';
 import PaymentModal from '../components/modals/PaymentModal';
 import ClientModal from '../components/modals/ClientModal';
@@ -14,7 +14,7 @@ import OpeningModal from '../components/modals/OpeningModal';
 
 
 interface POSProps {
-   onFinishSale: (sale: any) => void;
+   onFinishSale: (sale: Sale) => void;
    cashOpen: boolean;
    onOpenCash: (balance: number) => void;
    onCloseCash: () => void;
@@ -22,25 +22,7 @@ interface POSProps {
 
 
 const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
-      // Função para limpar o carrinho e focar no input
-      const handleClearCart = () => {
-         setCart([]);
-         setSelectedClient(null);
-         setTimeout(() => {
-            if (inputRef.current) inputRef.current.focus();
-         }, 50);
-      };
-   // Funções auxiliares para controle do PaymentModal
-   const openPaymentModal = () => {
-      setIsPaymentModalOpen(true);
-   };
-   const closePaymentModal = () => {
-      setIsPaymentModalOpen(false);
-      setMultiMode(false);
-   };
-   const toggleMultiMode = () => {
-      setMultiMode(prev => !prev);
-   };
+
    const [searchTerm, setSearchTerm] = useState('');
    const [isSearchFocused, setIsSearchFocused] = useState(false);
    const [cart, setCart] = useState<CartItem[]>([]);
@@ -52,33 +34,10 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    const [clientResults, setClientResults] = useState<Client[]>([]);
    const [selectedClientIndex, setSelectedClientIndex] = useState(0);
    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-   const clientInputRef = useRef<HTMLInputElement>(null);
 
 
-   //ficar input de busca de produtos quando o componente montar
-   useEffect(() => {
-      if (inputRef.current) {
-         inputRef.current.focus();
-         inputRef.current.value = '';
-      }
-   }, []);
 
-   // Buscar clientes ao digitar no mini modal
-   useEffect(() => {
-      if (!isClientModalOpen) return;
-      if (!clientSearch.trim()) {
-         setClientResults([]);
-         return;
-      }
-      listClients().then(data => {
-         const items = (data.items || data || []).filter((c: Client) =>
-            c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-            (c.cpf && c.cpf.includes(clientSearch))
-         );
-         setClientResults(items);
-      }).catch(() => setClientResults([]));
-   }, [clientSearch, isClientModalOpen]);
-
+   // Discount Modal State
    const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
    const [lastSaleData, setLastSaleData] = useState<any>(null);
@@ -105,7 +64,14 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    const inputRef = useRef<HTMLInputElement>(null);
    const searchRef = useRef<HTMLDivElement>(null);
-   const discountInputRef = useRef<HTMLInputElement>(null);
+
+
+
+   const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.product.salePrice * item.quantity), 0), [cart]);
+   const autoDiscountsTotal = useMemo(() => cart.reduce((acc, item) => acc + (item.appliedDiscount * item.quantity), 0), [cart]);
+   const total = useMemo(() => Math.max(0, subtotal - autoDiscountsTotal - manualDiscount), [subtotal, autoDiscountsTotal, manualDiscount]);
+
+
 
    // Fetch open cash session on mount or when cashOpen changes
    useEffect(() => {
@@ -116,6 +82,60 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       }
    }, [user]);
 
+useEffect(() => {
+   console.log('closeResult atualizado:', closeResult);
+}, [closeResult]);
+
+
+
+   // Função para limpar o carrinho e focar no input
+   const handleClearCart = () => {
+      setCart([]);
+      setSelectedClient(null);
+      setTimeout(() => {
+         if (inputRef.current) inputRef.current.focus();
+      }, 50);
+   };
+   // Funções auxiliares para controle do PaymentModal
+   const openPaymentModal = () => {
+      setIsPaymentModalOpen(true);
+   };
+   const closePaymentModal = () => {
+      setIsPaymentModalOpen(false);
+      setMultiMode(false);
+   };
+   const toggleMultiMode = () => {
+      setMultiMode(prev => !prev);
+   };
+
+
+
+
+
+   // Buscar clientes ao digitar no mini modal
+   useEffect(() => {
+      if (!isClientModalOpen) return;
+      if (!clientSearch.trim()) {
+         setClientResults([]);
+         return;
+      }
+      listClients().then(data => {
+         const items = (data.items || data || []).filter((c: Client) =>
+            c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+            (c.cpf && c.cpf.includes(clientSearch))
+         );
+         setClientResults(items);
+      }).catch(() => setClientResults([]));
+   }, [clientSearch, isClientModalOpen]);
+
+
+
+
+
+
+
+
+
    useEffect(() => {
       if (!cashOpen || !operatorId) {
          setIsLoadingSession(true);
@@ -123,7 +143,6 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          setTimeout(() => {
             setIsLoadingSession(false);
          }, 500); // Garante spinner mínimo
-         console.log('[PDV] cashOpen=false ou operador não definido, caixa será fechado.');
          return;
       }
       setIsLoadingSession(true);
@@ -169,9 +188,6 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       }
    }, [cashOpen, isClosingModalOpen]);
 
-   const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.product.salePrice * item.quantity), 0), [cart]);
-   const autoDiscountsTotal = useMemo(() => cart.reduce((acc, item) => acc + (item.appliedDiscount * item.quantity), 0), [cart]);
-   const total = useMemo(() => Math.max(0, subtotal - autoDiscountsTotal - manualDiscount), [subtotal, autoDiscountsTotal, manualDiscount]);
 
    const triggerNotification = (msg: string, sub: string) => {
       setNotification({ show: true, msg, sub });
@@ -179,6 +195,9 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          setNotification(null);
       }, 4000);
    };
+
+
+
 
    const completeSaleFlow = useCallback(() => {
       if (lastSaleData) {
@@ -199,9 +218,19 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       }, 50);
    }, [lastSaleData, onFinishSale]);
 
+
+
+
+
+
+
    const handlePrint = useCallback(() => {
       window.print();
    }, []);
+
+
+
+
 
    // Função para finalizar venda real
    const finalizeSale = useCallback(async (payments: { method: string, amount: number }[]) => {
@@ -252,6 +281,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
             clientCpf = selectedClient.cpf;
          }
          setLastSaleData({ ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf });
+         console.log('-----', { ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf })
          setIsPaymentModalOpen(false);
          setIsReceiptModalOpen(true);
          setSelectedClient(null);
@@ -266,6 +296,8 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       setTimeout(() => inputRef.current?.focus(), 10);
    };
 
+
+   // Gerenciamento de atalhos de teclado
    useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
          // Bloqueia todos os atalhos do POS enquanto o modal de fechamento de caixa está aberto
@@ -388,8 +420,8 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
             setSearchResults(items);
             setSearchError(null);
          })
-         .catch(() => {
-            setSearchError('Erro ao buscar produtos');
+         .catch((e) => {
+            setSearchError('Erro ao buscar produtos', e.message);
             setSearchResults([]);
          })
          .finally(() => setSearchLoading(false));
@@ -552,6 +584,24 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       );
    }
 
+   if (searchError) {
+      return (
+         <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse" />
+            <div className="relative z-10 flex flex-col items-center text-center space-y-8 max-w-lg">
+               <div className="flex flex-col items-center gap-6">
+                  <AlertTriangle size={48} className="text-red-500" />
+                  <span className="text-red-400 text-sm font-bold tracking-widest uppercase">Erro ao buscar produtos</span>
+                  <p className="text-slate-500 text-xs">Verifique sua conexão com a internet e tente novamente.</p>
+               </div>
+            </div>
+         </div>
+      );
+   }
+
+
+ 
+
    return (
       <div className="flex-1 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid p-6 gap-6 relative">
          {/* Search Header */}
@@ -621,6 +671,9 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                      >
                         Encerrar Turno
                      </button>
+
+
+
                      {/* MODAL DE FECHAMENTO DE CAIXA */}
                      {isClosingModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -669,7 +722,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                                  >
                                     {closeLoading ? 'Processando...' : 'Confirmar Fechamento'}
                                  </Button>
-                                 {closeResult && (
+                                 {/* {closeResult && (
                                     <div className="mt-6 p-4 bg-dark-950/60 rounded-xl border border-accent/20">
                                        <h3 className="text-lg font-bold text-accent mb-2">Resumo do Fechamento</h3>
                                        <p className="text-sm text-slate-300">Operador: <span className="font-bold">{closeResult.operatorId}</span></p>
@@ -678,6 +731,12 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                                        <p className="text-sm text-slate-300">Saldo Inicial: <span className="font-mono">R$ {(closeResult.initialBalance / 100).toFixed(2)}</span></p>
                                        <p className="text-sm text-slate-300">Valor Contado: <span className="font-mono">R$ {(closeResult.physicalCount / 100).toFixed(2)}</span></p>
                                        <p className="text-sm text-slate-300">Total de Vendas: <span className="font-mono">R$ {(closeResult.totalVendas / 100).toFixed(2)}</span></p>
+<p className="text-sm text-slate-300">
+  Total de Vendas em Dinheiro: 
+  <span className="font-mono">
+    R$ {((closeResult.totalVendasCash ?? 0) / 100).toFixed(2)}
+  </span>
+</p>
                                        <p className="text-sm text-slate-300">Diferença: <span className="font-mono">R$ {(closeResult.difference / 100).toFixed(2)}</span></p>
                                        <div className="mt-2">
                                           <h4 className="text-sm font-bold text-accent mb-1">Vendas do Turno:</h4>
@@ -688,22 +747,25 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                                           </ul>
                                        </div>
                                     </div>
-                                 )}
+                                 )} */}
                               </div>
                            </div>
                         </div>
                      )}
-                               <div className="flex items-center gap-2">
-                                  <Badge variant="info">{cart.length} Ativos</Badge>
-                                  <button
-                                     title="Limpar carrinho"
-                                     onClick={handleClearCart}
-                                     className="ml-1 p-1  rounded hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors text-slate-400 hover:text-red-400"
-                                     style={{ display: cart.length > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
-                                  >
-                                     <span className='mr-1'>Limpar</span> <Trash2 size={14} />
-                                  </button>
-                               </div>
+
+
+
+                     <div className="flex items-center gap-2">
+                        <Badge variant="info">{cart.length} Ativos</Badge>
+                        <button
+                           title="Limpar carrinho"
+                           onClick={handleClearCart}
+                           className="ml-1 p-1  rounded hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors text-slate-400 hover:text-red-400"
+                           style={{ display: cart.length > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                           <span className='mr-1'>Limpar</span> <Trash2 size={14} />
+                        </button>
+                     </div>
                   </div>
                </div>
 
@@ -834,47 +896,49 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          <ReceiptModal
             isOpen={isReceiptModalOpen}
             lastSaleData={lastSaleData}
-            onClose={completeSaleFlow}
+            onClose={() => { }}
             onPrint={handlePrint}
          />
 
          {/* CLOSING MODAL */}
-             <ClosingModal
-                  isOpen={isClosingModalOpen}
-                  physicalCashInput={physicalCashInput}
-                  closeError={closeError}
-                  closeLoading={closeLoading}
-                  closeResult={closeResult}
-                  onClose={() => setIsClosingModalOpen(false)}
-                  onInputChange={setPhysicalCashInput}
-                  onConfirm={async () => {
-                     setCloseLoading(true);
-                     setCloseError('');
-                     try {
-                        const value = parseFloat(physicalCashInput) || 0;
-                        const res = await fetch('/api/cash/close', {
-                           method: 'POST',
-                           headers: { 'Content-Type': 'application/json' },
-                           body: JSON.stringify({ sessionId: cashSessionId, physicalCount: Math.round(value * 100) })
-                        });
-                        if (!res.ok) throw new Error('Erro ao fechar caixa');
-                        const data = await res.json();
-                        setCloseResult(data.closeResult);
-                        // Fechar modal e atualizar estado do caixa
-                        setTimeout(() => {
-                           setIsClosingModalOpen(false);
-                           setCashSessionId(null);
-                           setCloseResult(null);
-                           setPhysicalCashInput('');
-                           setCloseError('');
-                        }, 1200); // Mostra resumo por 1.2s antes de fechar
-                     } catch (err) {
-                        setCloseError('Erro ao fechar caixa. Tente novamente.');
-                     } finally {
-                        setCloseLoading(false);
-                     }
-                  }}
-             />
+         <ClosingModal
+            isOpen={isClosingModalOpen}
+            physicalCashInput={physicalCashInput}
+            closeError={closeError}
+            closeLoading={closeLoading}
+            closeResult={closeResult}
+            onClose={() => setIsClosingModalOpen(false)}
+            onInputChange={setPhysicalCashInput}
+            onConfirm={async () => {
+               setCloseLoading(true);
+               setCloseError('');
+               try {
+                  const value = parseFloat(physicalCashInput) || 0;
+                  const res = await fetch('/api/cash/close', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ sessionId: cashSessionId, physicalCount: Math.round(value * 100) })
+                  });
+                  if (!res.ok) throw new Error('Erro ao fechar caixa');
+                  const data = await res.json();
+                  setCloseResult(data.closeResult);
+                  // Fechar modal e atualizar estado do caixa
+                  // setTimeout(() => {
+                  //    setIsClosingModalOpen(false);
+                  //    setCashSessionId(null);
+                  //    setCloseResult(null);
+                  //    setPhysicalCashInput('');
+                  //    setCloseError('');
+                  // }, 1200);
+                  // Mostra resumo por 1.2s antes de fechar
+
+               } catch (err) {
+                  setCloseError('Erro ao fechar caixa. Tente novamente.');
+               } finally {
+                  setCloseLoading(false);
+               }
+            }}
+         />
 
          {/* OPENING MODAL */}
          <OpeningModal

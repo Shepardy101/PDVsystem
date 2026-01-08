@@ -15,6 +15,7 @@ async function fetchCashHistory() {
    const res = await fetch('/api/cash/history');
    if (!res.ok) throw new Error('Erro ao buscar histórico de caixas');
    const data = await res.json();
+   console.log('Cash history data:', data);
    return data.sessions || [];
 }
 
@@ -298,6 +299,7 @@ const CashManagement: React.FC = () => {
                         R$ {
                            (() => {
                               if (!session || !Array.isArray(session.transactions)) return '0.00';
+                              console.log('Calculando dinheiro em caixa para a sessão:', session);
                               // Saldo inicial do caixa
                               let initialBalanceCents = session.initial_balance ?? 0;
                               if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
@@ -572,14 +574,52 @@ const CashManagement: React.FC = () => {
                                  <Calculator size={18} className="text-accent" />
                                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Auditoria de Lastro Esperado</span>
                               </div>
-                              <span className="font-mono text-sm font-bold text-slate-100">R$ {typeof selectedHistory.expected_balance === 'number' ? (selectedHistory.expected_balance / 100).toFixed(2) : '0.00'}</span>
-                           </div>
-                           <div className={`p-5 rounded-2xl flex items-center justify-between border ${selectedHistory.status === 'success' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                              <span className="font-mono text-sm font-bold text-slate-100">
+                               
+                                  {
+                           (() => {
+                              if (!session || !Array.isArray(session.transactions)) return '0.00';
+                              console.log('Calculando dinheiro em caixa para a sessão:', session);
+                              // Saldo inicial do caixa
+                              let initialBalanceCents = session.initial_balance ?? 0;
+                              if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
+                                 initialBalanceCents = Math.round(initialBalanceCents * 100);
+                              }
+                              // Somar todas as vendas cujo método de pagamento seja 'cash'
+                              let totalVendasCash = 0;
+                              session.transactions.forEach(tx => {
+                                 // Caso 1: Estrutura nova, payments array
+                                 if (Array.isArray(tx.payments)) {
+                                    tx.payments.forEach(pay => {
+                                       if (pay.method === 'cash' && typeof pay.amount === 'number') {
+                                          totalVendasCash += pay.amount;
+                                       }
+                                    });
+                                    console.log(tx);
+                                    console.log('total de vendas cash até agora:', totalVendasCash);
+                                 }
+
+                                 // Caso 2: Estrutura antiga/backend, paymentMethod direto
+                                 else if (
+                                    (tx.type === 'sale' || tx.type === 'venda') &&
+                                    tx.paymentMethod === 'cash' &&
+                                    typeof tx.total === 'number'
+                                 ) {
+                                    totalVendasCash += tx.total;
+                                 }
+                              });
+                              const lastro = initialBalanceCents + totalVendasCash;
+                              return (lastro / 100).toFixed(2);
+                           })()
+                        }
+                              </span>
                               <div>
                                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Diferença de Caixa</p>
-                                 <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    R$ {typeof selectedHistory.physical_count_at_close === 'number' && typeof selectedHistory.expected_balance === 'number' ? ((selectedHistory.physical_count_at_close - selectedHistory.expected_balance) / 100).toFixed(2) : '0.00'}
-                                 </h5>
+                                                 <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                   {session && session.difference_at_close != null
+                                                      ? `R$ ${session.difference_at_close >= 0 ? '+' : '-'}${Math.abs(session.difference_at_close).toFixed(2)}`
+                                                      : 'R$ 0.00'}
+                                                 </h5>
                               </div>
                               <Badge variant={selectedHistory.status === 'success' ? 'success' : 'danger'}>
                                  {selectedHistory.status === 'success' ? 'Sessão Íntegra' : 'Quebra Identificada'}

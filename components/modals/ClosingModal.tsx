@@ -54,6 +54,12 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
               <p className="text-sm text-slate-300">Saldo Inicial: <span className="font-mono">R$ {(closeResult.initialBalance/100).toFixed(2)}</span></p>
               <p className="text-sm text-slate-300">Valor Contado: <span className="font-mono">R$ {(closeResult.physicalCount/100).toFixed(2)}</span></p>
               <p className="text-sm text-slate-300">Total de Vendas: <span className="font-mono">R$ {(closeResult.totalVendas/100).toFixed(2)}</span></p>
+              <p className="text-sm text-slate-300">
+  Total de Vendas em Dinheiro: 
+  <span className="font-mono">
+    R$ {((closeResult.totalVendasCash ?? 0) / 100).toFixed(2)}
+  </span>
+</p>
               <p className="text-sm text-slate-300">Diferença: <span className="font-mono">R$ {(closeResult.difference/100).toFixed(2)}</span></p>
               <div className="mt-2">
                 <h4 className="text-sm font-bold text-accent mb-1">Vendas do Turno:</h4>

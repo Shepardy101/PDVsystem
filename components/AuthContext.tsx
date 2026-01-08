@@ -1,10 +1,7 @@
+import { AuthUser } from '@/types';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-}
+
 
 interface AuthContextType {
   user: AuthUser | null;

@@ -23,6 +23,12 @@ export interface Product {
 export type UserRole = 'admin' | 'operator' | 'manager';
 export type UserStatus = 'active' | 'inactive' | 'blocked';
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface SystemUser {
   id: string;
   name: string;
