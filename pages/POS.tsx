@@ -68,6 +68,9 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    // Modais de Estado do Caixa
    const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
    const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
+   const [closeResult, setCloseResult] = useState<any>(null);
+   const [closeLoading, setCloseLoading] = useState(false);
+   const [closeError, setCloseError] = useState('');
    const [initialBalance, setInitialBalance] = useState('0.00');
    const [physicalCashInput, setPhysicalCashInput] = useState('');
 
@@ -554,12 +557,84 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                  <ShoppingCart size={16} className="text-accent" /> Buffer de Venda
               </h2>
               <div className="flex items-center gap-3">
-                 <button 
-                   onClick={() => setIsClosingModalOpen(true)}
-                   className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
-                 >
-                    Encerrar Turno
-                 </button>
+                         <button 
+                            onClick={() => setIsClosingModalOpen(true)}
+                            className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
+                         >
+                              Encerrar Turno
+                         </button>
+                        {/* MODAL DE FECHAMENTO DE CAIXA */}
+                        {isClosingModalOpen && (
+                           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                              <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={() => setIsClosingModalOpen(false)} />
+                              <div className="relative w-full max-w-md cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden">
+                                 <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/80">
+                                    <div className="flex items-center gap-4">
+                                       <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
+                                          <Lock className="text-accent" size={20} />
+                                       </div>
+                                       <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">Fechamento de Caixa</h2>
+                                    </div>
+                                    <button onClick={() => setIsClosingModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
+                                 </div>
+                                 <div className="p-8 space-y-6">
+                                    <Input 
+                                       label="Valor físico contado (R$)" 
+                                       value={physicalCashInput}
+                                       onChange={e => setPhysicalCashInput(e.target.value)}
+                                       placeholder="0.00" 
+                                       className="text-center text-3xl font-mono text-accent bg-dark-950/50"
+                                    />
+                                    {closeError && <div className="text-red-500 text-sm text-center">{closeError}</div>}
+                                    <Button 
+                                       onClick={async () => {
+                                          setCloseLoading(true);
+                                          setCloseError('');
+                                          try {
+                                             const value = parseFloat(physicalCashInput) || 0;
+                                             const res = await fetch('/api/cash/close', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ sessionId: cashSessionId, physicalCount: Math.round(value * 100) })
+                                             });
+                                             if (!res.ok) throw new Error('Erro ao fechar caixa');
+                                             const data = await res.json();
+                                             setCloseResult(data.closeResult);
+                                          } catch (err) {
+                                             setCloseError('Erro ao fechar caixa. Tente novamente.');
+                                          } finally {
+                                             setCloseLoading(false);
+                                          }
+                                       }}
+                                       className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
+                                       disabled={closeLoading}
+                                    >
+                                       {closeLoading ? 'Processando...' : 'Confirmar Fechamento'}
+                                    </Button>
+                                    {closeResult && (
+                                       <div className="mt-6 p-4 bg-dark-950/60 rounded-xl border border-accent/20">
+                                          <h3 className="text-lg font-bold text-accent mb-2">Resumo do Fechamento</h3>
+                                          <p className="text-sm text-slate-300">Operador: <span className="font-bold">{closeResult.operatorId}</span></p>
+                                          <p className="text-sm text-slate-300">Abertura: <span className="font-mono">{new Date(closeResult.openedAt).toLocaleString()}</span></p>
+                                          <p className="text-sm text-slate-300">Fechamento: <span className="font-mono">{new Date(closeResult.closedAt).toLocaleString()}</span></p>
+                                          <p className="text-sm text-slate-300">Saldo Inicial: <span className="font-mono">R$ {(closeResult.initialBalance/100).toFixed(2)}</span></p>
+                                          <p className="text-sm text-slate-300">Valor Contado: <span className="font-mono">R$ {(closeResult.physicalCount/100).toFixed(2)}</span></p>
+                                          <p className="text-sm text-slate-300">Total de Vendas: <span className="font-mono">R$ {(closeResult.totalVendas/100).toFixed(2)}</span></p>
+                                          <p className="text-sm text-slate-300">Diferença: <span className="font-mono">R$ {(closeResult.difference/100).toFixed(2)}</span></p>
+                                          <div className="mt-2">
+                                             <h4 className="text-sm font-bold text-accent mb-1">Vendas do Turno:</h4>
+                                             <ul className="text-xs text-slate-400 max-h-32 overflow-y-auto">
+                                                {closeResult.sales.map((s: any) => (
+                                                   <li key={s.id} className="mb-1">Venda #{s.id} - R$ {(s.total/100).toFixed(2)}</li>
+                                                ))}
+                                             </ul>
+                                          </div>
+                                       </div>
+                                    )}
+                                 </div>
+                              </div>
+                           </div>
+                        )}
                  <Badge variant="info">{cart.length} Ativos</Badge>
               </div>
            </div>

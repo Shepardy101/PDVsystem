@@ -1,7 +1,22 @@
 import { Router } from 'express';
-import { openCashSession, getOpenCashSession } from '../repositories/cash.repo.js';
+import { openCashSession, getOpenCashSession, closeCashSession } from '../repositories/cash.repo.js';
 
 export const cashRouter = Router();
+
+// Fechar sessão de caixa (encerrar turno)
+cashRouter.post('/close', (req, res) => {
+  try {
+    const { sessionId, physicalCount } = req.body;
+    if (!sessionId || typeof physicalCount !== 'number') {
+      return res.status(400).json({ error: 'sessionId e physicalCount obrigatórios' });
+    }
+    const result = closeCashSession(sessionId, physicalCount);
+    res.status(200).json({ closeResult: result });
+  } catch (err: any) {
+    console.error('[CASH] Erro ao fechar caixa:', err);
+    res.status(400).json({ error: { code: 'CASH_CLOSE_ERROR', message: err.message || 'Erro ao fechar caixa.' } });
+  }
+});
 
 // Abrir sessão de caixa
 cashRouter.post('/open', (req, res) => {

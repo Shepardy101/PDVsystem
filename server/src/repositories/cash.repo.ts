@@ -1,3 +1,26 @@
+export function closeCashSession(sessionId: string, physicalCount: number) {
+  const now = Date.now();
+  // Busca totais das vendas do caixa
+  const sales = db.prepare('SELECT * FROM sales WHERE cash_session_id = ?').all(sessionId);
+  const totalVendas = sales.reduce((acc, s) => acc + (s.total || 0), 0);
+  // Atualiza sessão de caixa como fechada
+  const session = db.prepare('SELECT * FROM cash_sessions WHERE id = ?').get(sessionId);
+  const difference = physicalCount - totalVendas;
+  db.prepare('UPDATE cash_sessions SET closed_at = ?, is_open = 0, physical_count_at_close = ?, difference_at_close = ?, updated_at = ? WHERE id = ?')
+    .run(now, physicalCount, difference, now, sessionId);
+  // Retorna resumo do fechamento
+  return {
+    sessionId,
+    operatorId: session.operator_id,
+    openedAt: session.opened_at,
+    closedAt: now,
+    initialBalance: session.initial_balance,
+    physicalCount,
+    totalVendas,
+    difference,
+    sales
+  };
+}
 import { db } from '../db/database';
 import { v4 as uuidv4 } from 'uuid';
 
