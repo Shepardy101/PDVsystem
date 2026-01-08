@@ -69,6 +69,9 @@ const CashManagement: React.FC = () => {
    const [sessionLoading, setSessionLoading] = useState(true);
    const [sessionError, setSessionError] = useState('');
 
+   // ao pressionar esc o setIsReceiptPreviewOpen setra false
+
+  
    //suprimentos
 
    useEffect(() => {
@@ -177,6 +180,17 @@ const CashManagement: React.FC = () => {
          setIsTxCategoryModalOpen(false);
       }
    };
+
+
+    useEffect(() => {
+      const handleEsc = (e: KeyboardEvent) => {
+         if (e.key === 'Escape') {
+            setIsReceiptPreviewOpen(false);
+         }
+      };
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+   }, [isReceiptPreviewOpen]);
 
    return (
       <div className="p-6 md:p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
@@ -665,7 +679,18 @@ const CashManagement: React.FC = () => {
                            </div>
                         )}
                         <div className="text-[9px] border-t border-black border-dashed pt-2 space-y-1 font-bold">
-                           <div className="flex justify-between text-xs"><span>TOTAL:</span><span>R$ {selectedTx.items && Array.isArray(selectedTx.items) ? (selectedTx.items.reduce((sum: number, item: any) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0) / 100).toFixed(2) : '0.00'}</span></div>
+                                        <div className="flex justify-between text-xs">
+                                           <span>TOTAL:</span>
+                                           <span>
+                                              R$ {
+                                                 selectedTx.type === 'suprimento'
+                                                    ? ((selectedTx.amount || 0) / 100).toFixed(2)
+                                                    : selectedTx.items && Array.isArray(selectedTx.items)
+                                                       ? (selectedTx.items.reduce((sum: number, item: any) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0) / 100).toFixed(2)
+                                                       : '0.00'
+                                              }
+                                           </span>
+                                        </div>
                         </div>
                      </>
                   )}
