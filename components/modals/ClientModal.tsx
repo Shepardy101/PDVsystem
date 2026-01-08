@@ -1,18 +1,26 @@
-import React, { useRef } from 'react';
+import React, { useRef , useEffect } from 'react';
 import { Users, X } from 'lucide-react';
 
 export interface ClientModalProps {
   isOpen: boolean;
   clientSearch: string;
   clientResults: any[];
-  selectedClientIndex: number;
+ selectedClientIndex: number;
+setSelectedClientIndex: React.Dispatch<React.SetStateAction<number>>;
+
   onClose: () => void;
   onSearch: (value: string) => void;
   onSelect: (client: any) => void;
 }
 
-const ClientModal: React.FC<ClientModalProps> = ({ isOpen, clientSearch, clientResults, selectedClientIndex, onClose, onSearch, onSelect }) => {
+const ClientModal: React.FC<ClientModalProps> = ({ isOpen, clientSearch, clientResults, selectedClientIndex, setSelectedClientIndex, onClose, onSearch, onSelect }) => {
   const clientInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => clientInputRef.current?.focus(), 10);
+    }
+  }, [isOpen]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -29,13 +37,36 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, clientSearch, clientR
         </div>
         <div className="p-8 space-y-4">
           <input
-            ref={clientInputRef}
-            type="text"
-            className="w-full bg-dark-950/50 border border-white/10 rounded-lg py-3 px-4 text-slate-100 outline-none text-lg focus:border-accent transition-all"
-            placeholder="Buscar cliente por nome ou CPF..."
-            value={clientSearch}
-            onChange={e => onSearch(e.target.value)}
-          />
+  ref={clientInputRef}
+  type="text"
+  className="w-full bg-dark-950/50 border border-white/10 rounded-lg py-3 px-4 text-slate-100 outline-none text-lg focus:border-accent transition-all"
+  placeholder="Buscar cliente por nome ou CPF..."
+  value={clientSearch}
+  onChange={e => onSearch(e.target.value)}
+  onKeyDown={e => {
+    if (clientResults.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedClientIndex(prev => (prev + 1) % clientResults.length);
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedClientIndex(prev => (prev - 1 + clientResults.length) % clientResults.length);
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const client = clientResults[selectedClientIndex];
+      if (client) {
+        onSelect(client);
+        onClose();
+      }
+    }
+  }}
+/>
+
           <div className="max-h-60 overflow-y-auto divide-y divide-white/5 mt-2">
             {clientResults.length === 0 && <div className="text-slate-500 text-sm text-center py-6">Nenhum cliente encontrado</div>}
             {clientResults.map((c, idx) => (

@@ -55,14 +55,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         if (!isOpen) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-           // console.log('[PaymentModal] keydown:', e.key, 'multiMode:', multiMode, 'isInputFocused:', document.activeElement);
+            // console.log('[PaymentModal] keydown:', e.key, 'multiMode:', multiMode, 'isInputFocused:', document.activeElement);
             const isInputFocused = (
                 inputRef.current && document.activeElement === inputRef.current
             ) || (
-                selectRef.current && document.activeElement === selectRef.current
-            ) || (
-                (document.activeElement as HTMLElement)?.closest("input, select")
-            );
+                    selectRef.current && document.activeElement === selectRef.current
+                ) || (
+                    (document.activeElement as HTMLElement)?.closest("input, select")
+                );
 
             // 🚨 IMPORTANTE:
             // Se está digitando → NÃO BLOQUEIE 1,2,3 e nem atalhos
@@ -76,6 +76,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                     e.preventDefault();
                     setMultiMode(false);
                     setFocusStep("input");
+                    return;
+                }
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                    setMultiMode(false);
+                    setFocusStep("input");
+                    setTimeout(() => {
+                        inputRef.current?.focus();
+                        inputRef.current?.select();
+                    }, 10);
                     return;
                 }
                 if (e.key === "Enter") {
@@ -115,15 +125,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
     }, [isOpen, multiMode, total, focusStep, onFinalize]);
 
     // Quando entrar no multiMode, foca o input imediatamente
-useEffect(() => {
-    if (multiMode) {
-        setTimeout(() => {
-            setFocusStep("input");
-            inputRef.current?.focus();
-            inputRef.current?.select();
-        }, 10); // pequeno delay evita conflito com o modalRef.focus()
-    }
-}, [multiMode]);
+    useEffect(() => {
+        if (multiMode) {
+            setTimeout(() => {
+                setFocusStep("input");
+                inputRef.current?.focus();
+                inputRef.current?.select();
+            }, 10); // pequeno delay evita conflito com o modalRef.focus()
+        }
+    }, [multiMode]);
 
 
     // Foco automático conforme etapa
@@ -193,9 +203,12 @@ useEffect(() => {
                                     <p className="text-center text-[8px] font-bold text-slate-600 tracking-widest uppercase">[{m.key}]</p>
                                 </div>
                             ))}
-                            <div className="col-span-3 text-center mt-4">
+                            <div className="col-span-3 text-center mt-4 flex flex-col items-center gap-2">
                                 <span className="text-xs text-slate-400">Pressione <b>/</b> para adicionar múltiplos pagamentos</span>
+                                <span className="text-xs text-slate-400">Pressione <b>C</b> para adicionar cliente</span>
+
                             </div>
+
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -212,7 +225,16 @@ useEffect(() => {
                                     onFocus={() => setFocusStep('input')}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') setFocusStep('select');
-                                        // NÃO bloquear 1,2,3 aqui!
+                                        // Permitir ESC sair do multipagamento mesmo com input focado
+                                        if (e.key === 'Tab') {
+                                            e.preventDefault();
+                                            setMultiMode(false);
+                                            setFocusStep('input');
+                                            setTimeout(() => {
+                                                inputRef.current?.focus();
+                                                inputRef.current?.select();
+                                            }, 10);
+                                        }
                                     }}
                                 />
                                 <select
@@ -279,7 +301,7 @@ useEffect(() => {
                                 }}
                             >Finalizar Venda</Button>
                             <div className="text-center mt-4">
-                                <span className="text-xs text-slate-400">ESC para voltar ao modo rápido</span>
+                                <span className="text-xs text-slate-400">TAB para voltar ao modo rápido</span>
                             </div>
                         </div>
                     )}

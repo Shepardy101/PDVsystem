@@ -22,17 +22,17 @@ interface POSProps {
 
 
 const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
-      // Funções auxiliares para controle do PaymentModal
-      const openPaymentModal = () => {
-         setIsPaymentModalOpen(true);
-      };
-      const closePaymentModal = () => {
-         setIsPaymentModalOpen(false);
-         setMultiMode(false);
-      };
-      const toggleMultiMode = () => {
-         setMultiMode(prev => !prev);
-      };
+   // Funções auxiliares para controle do PaymentModal
+   const openPaymentModal = () => {
+      setIsPaymentModalOpen(true);
+   };
+   const closePaymentModal = () => {
+      setIsPaymentModalOpen(false);
+      setMultiMode(false);
+   };
+   const toggleMultiMode = () => {
+      setMultiMode(prev => !prev);
+   };
    const [searchTerm, setSearchTerm] = useState('');
    const [isSearchFocused, setIsSearchFocused] = useState(false);
    const [cart, setCart] = useState<CartItem[]>([]);
@@ -247,73 +247,76 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    };
 
    useEffect(() => {
-   const handleKeyDown = (e: KeyboardEvent) => {
-      // 🚨 CORREÇÃO PRINCIPAL:
-      // Se o PaymentModal está aberto E está no multipagamento,
-      // nada do pai pode capturar teclas.
-      if (isPaymentModalOpen && multiMode) return;
-
-      // Log de todas as teclas
-      console.log('[POS] keydown:', e.key, 'isPaymentModalOpen:', isPaymentModalOpen, 'multiMode:', multiMode);
-
-      // Atalho para abrir modal de cliente
-      if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
-         console.log('[POS] Abrindo modal de cliente via tecla c');
-         setIsClientModalOpen(true);
-         return;
-      }
-
-      // Sempre previne o padrão do navegador para F10
-      if (e.key === 'F10') {
-         e.preventDefault();
-         if (!isPaymentModalOpen) {
-            openPaymentModal();
+      const handleKeyDown = (e: KeyboardEvent) => {
+         // 🚨 CORREÇÃO PRINCIPAL:
+         // Se o PaymentModal está aberto E está no multipagamento,
+         // nada do pai pode capturar teclas.
+         if (isPaymentModalOpen && multiMode) {
+            // Não deixa o POS capturar nada, inclusive atalhos de pagamento integral
             return;
          }
-      }
 
-      // Finalizar com atalho quando NÃO está no multiMode
-      if (isPaymentModalOpen && multiMode === false) {
-         const key = e.key.toLowerCase();
-         if (["1", "2", "3"].includes(key)) {
+         // Log de todas as teclas
+         console.log('[POS] keydown:', e.key, 'isPaymentModalOpen:', isPaymentModalOpen, 'multiMode:', multiMode);
+
+         // Atalho para abrir modal de cliente
+         if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
+            console.log('[POS] Abrindo modal de cliente via tecla c');
+            setIsClientModalOpen(true);
+            return;
+         }
+
+         // Sempre previne o padrão do navegador para F10
+         if (e.key === 'F10') {
             e.preventDefault();
-            if (key === "1") finalizeSale("card");
-            if (key === "2") finalizeSale("pix");
-            if (key === "3") finalizeSale("cash");
+            if (!isPaymentModalOpen) {
+               openPaymentModal();
+               return;
+            }
+         }
+
+         // Finalizar com atalho quando NÃO está no multiMode
+         if (isPaymentModalOpen && !multiMode) {
+            const key = e.key.toLowerCase();
+            if (["1", "2", "3"].includes(key)) {
+               e.preventDefault();
+               if (key === "1") finalizeSale("card");
+               if (key === "2") finalizeSale("pix");
+               if (key === "3") finalizeSale("cash");
+               return;
+            }
+         }
+
+         // Alternar modo multi pagamento (caso exista)
+         if (e.key === 'm' && isPaymentModalOpen) {
+            e.preventDefault();
+            toggleMultiMode();
             return;
          }
-      }
 
-      // Alternar modo multi pagamento (caso exista)
-      if (e.key === 'm' && isPaymentModalOpen) {
-         e.preventDefault();
-         toggleMultiMode();
-         return;
-      }
+         // Escape fecha modal
+         if (e.key === 'Escape' && isPaymentModalOpen) {
+            e.preventDefault();
+            closePaymentModal();
+            return;
+         }
 
-      // Escape fecha modal
-      if (e.key === 'Escape' && isPaymentModalOpen) {
-         e.preventDefault();
-         closePaymentModal();
-         return;
-      }
+         // Focar input principal se apertar qualquer número
+         if (!isPaymentModalOpen && /^[0-9]$/.test(e.key)) {
+            inputRef.current?.focus();
+         }
+      };
 
-      // Focar input principal se apertar qualquer número
-      if (!isPaymentModalOpen && /^[0-9]$/.test(e.key)) {
-         inputRef.current?.focus();
-      }
-   };
-
-  window.addEventListener('keydown', handleKeyDown);
-  return () => window.removeEventListener('keydown', handleKeyDown);
-}, [
-  isPaymentModalOpen,
-  multiMode,
-  finalizeSale,
-  openPaymentModal,
-  closePaymentModal,
-  toggleMultiMode,
-]);
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [
+      isPaymentModalOpen,
+      multiMode,
+      finalizeSale,
+      openPaymentModal,
+      closePaymentModal,
+      toggleMultiMode,
+   ]);
 
 
    // Busca produtos na API
@@ -760,16 +763,20 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
             onFinalize={payments => finalizeSale(payments)}
          />
 
-         {/* CLIENT MODAL */}
          <ClientModal
             isOpen={isClientModalOpen}
             clientSearch={clientSearch}
             clientResults={clientResults}
             selectedClientIndex={selectedClientIndex}
+            setSelectedClientIndex={setSelectedClientIndex}
             onClose={() => setIsClientModalOpen(false)}
             onSearch={setClientSearch}
-            onSelect={client => setSelectedClient(client)}
+            onSelect={client => {
+               setSelectedClient(client);
+               setIsClientModalOpen(false);
+            }}
          />
+
 
          {/* DISCOUNT MODAL */}
          <DiscountModal
