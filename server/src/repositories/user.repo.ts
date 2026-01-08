@@ -1,3 +1,7 @@
+// Busca usuário por email (para login)
+export async function findUserByEmail(email: string) {
+  return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+}
 import { db } from '../db/database';
 import { randomUUID } from 'crypto';
 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../components/AuthContext';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Button, Badge, Modal, Input } from '../components/UI';
@@ -60,7 +61,8 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    // Cash session state
    const [cashSessionId, setCashSessionId] = useState<string | null>(null);
-   const [operatorId, setOperatorId] = useState<string>('operador-1'); // TODO: Replace with real operator logic
+   const { user } = useAuth();
+   const [operatorId, setOperatorId] = useState<string>('');
    const [isLoadingSession, setIsLoadingSession] = useState(true);
 
    // Modais de Estado do Caixa
@@ -78,15 +80,26 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    // Fetch open cash session on mount or when cashOpen changes
    useEffect(() => {
-         if (!cashOpen) {
+         if (user && user.id) {
+           setOperatorId(user.id);
+         } else {
+           setOperatorId('');
+         }
+   }, [user]);
+
+   useEffect(() => {
+         if (!cashOpen || !operatorId) {
+             setIsLoadingSession(true);
              setCashSessionId(null);
-             setIsLoadingSession(false);
-             console.log('[PDV] cashOpen=false, caixa será fechado.');
+             setTimeout(() => {
+               setIsLoadingSession(false);
+             }, 500); // Garante spinner mínimo
+             console.log('[PDV] cashOpen=false ou operador não definido, caixa será fechado.');
              return;
          }
          setIsLoadingSession(true);
-         console.log('[PDV] Verificando se existe caixa aberto...');
-         fetch('/api/cash/open')
+         console.log('[PDV] Verificando se existe caixa aberto para operador:', operatorId);
+         fetch(`/api/cash/open?operatorId=${operatorId}`)
              .then(async res => {
                   if (res.ok) {
                      const data = await res.json();
@@ -110,8 +123,12 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
                   setIsOpeningModalOpen(true); // Abre modal para abrir caixa
                   console.log('[PDV] Falha ao consultar caixa aberto:', err);
              })
-             .finally(() => setIsLoadingSession(false));
-    }, [cashOpen]);
+             .finally(() => {
+               setTimeout(() => {
+                 setIsLoadingSession(false);
+               }, 500); // Garante spinner mínimo
+             });
+    }, [cashOpen, operatorId]);
 
    useEffect(() => {
       if (cashOpen) {

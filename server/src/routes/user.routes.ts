@@ -1,11 +1,38 @@
 import { Router } from 'express';
-import { createUser, listUsers, updateUser, deleteUser } from '../repositories/user.repo';
+import { createUser, listUsers, updateUser, deleteUser, findUserByEmail } from '../repositories/user.repo';
 import { createClient, listClients, updateClient, deleteClient } from '../repositories/client.repo';
 import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../repositories/supplier.repo';
 
 export const userRouter = Router();
 export const clientRouter = Router();
 export const supplierRouter = Router();
+
+// Login simples
+userRouter.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email e senha obrigatórios' });
+    }
+    const user = await findUserByEmail(email) as { id: string, name: string, email: string, password: string } | undefined;
+    console.log('[LOGIN] Email recebido:', email);
+    console.log('[LOGIN] Senha recebida:', password);
+    if (user) {
+      console.log('[LOGIN] Senha salva no banco:', user.password);
+    } else {
+      console.log('[LOGIN] Usuário não encontrado para o email:', email);
+    }
+    if (!user || user.password !== password) {
+      console.log('[LOGIN] Falha na autenticação.');
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
+    // Retorna dados básicos do usuário
+    console.log('[LOGIN] Autenticação bem-sucedida para:', email);
+    res.json({ id: user.id, name: user.name, email: user.email });
+  } catch (e: any) {
+    res.status(500).json({ error: 'Erro ao autenticar', details: e?.message || String(e) });
+  }
+});
 
 userRouter.put('/:id', async (req, res) => {
   try {

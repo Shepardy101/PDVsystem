@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '../components/AuthContext';
 import { Button, Input } from '../components/UI';
 import { LogIn, Key, Unlock } from 'lucide-react';
 
@@ -10,10 +11,20 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
   const [step, setStep] = useState<'login' | 'cashier'>('login');
   const [initialBalance, setInitialBalance] = useState('0.00');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { login } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('cashier');
+    setError('');
+    const ok = await login(email, password);
+    if (ok) {
+      setStep('cashier');
+    } else {
+      setError('Usuário ou senha inválidos');
+    }
   };
 
   const handleOpenCash = (e: React.FormEvent) => {
@@ -45,13 +56,18 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
                 label="Usuário" 
                 placeholder="nome@distribuidora.com" 
                 icon={<LogIn size={18} />} 
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
               <Input 
                 label="Senha" 
                 type="password" 
                 placeholder="••••••••" 
                 icon={<Key size={18} />} 
+                value={password}
+                onChange={e => setPassword(e.target.value)}
               />
+              {error && <div className="text-red-500 text-sm text-center">{error}</div>}
               <Button type="submit" className="w-full py-3" icon={<Unlock size={18} />}>
                 Entrar no Sistema
               </Button>

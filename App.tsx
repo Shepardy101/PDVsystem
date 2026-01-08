@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from './components/AuthContext';
 import { ShoppingCart, Package, Users, Wallet, BarChart3, LogOut, Settings as SettingsIcon, Bell, Menu, X, Command } from 'lucide-react';
 import { AppView } from './types';
 import Login from './pages/Login';
@@ -14,7 +15,24 @@ const App: React.FC = () => {
   const [view, setView] = useState<AppView>('login');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [cashOpen, setCashOpen] = useState(false);
-  const [user] = useState({ name: 'Operador Alfa', role: 'Controlador' });
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+
+  // Restaurar sessão do usuário e caixa aberto ao recarregar
+  useEffect(() => {
+    setLoading(true);
+    // Simula delay para UX melhor (pode ser removido ou ajustado)
+    setTimeout(() => {
+      if (user && user.id) {
+        setView('pos');
+        setCashOpen(true);
+      } else {
+        setView('login');
+        setCashOpen(false);
+      }
+      setLoading(false);
+    }, 600);
+  }, [user]);
 
   const handleOpenCash = (balance: number) => {
     setCashOpen(true);
@@ -29,6 +47,17 @@ const App: React.FC = () => {
     setView('login');
     setCashOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-dark-950">
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-accent" />
+          <span className="text-slate-400 text-lg font-bold tracking-tight">Carregando sistema...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'login') {
     return <Login onOpenCash={handleOpenCash} />;
