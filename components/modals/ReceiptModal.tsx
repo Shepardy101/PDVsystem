@@ -27,7 +27,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
   if (!isOpen) return null;
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Recibo de Transação">
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-6" >
         <div className="bg-white text-black p-8 rounded shadow-2xl w-full max-w-[80mm] font-mono receipt-assemble" id="thermal-receipt">
           <div className="text-center mb-4">
             <h2 className="text-lg font-bold">NOVABEV POS</h2>

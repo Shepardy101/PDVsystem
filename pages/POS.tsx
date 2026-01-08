@@ -895,10 +895,22 @@ useEffect(() => {
 
          {/* RECEIPT MODAL */}
          <ReceiptModal
-            isOpen={isReceiptModalOpen}
-            lastSaleData={lastSaleData}
-            onClose={() => { }}
-            onPrint={handlePrint}
+                  isOpen={isReceiptModalOpen}
+                  lastSaleData={lastSaleData}
+                  onClose={() => {
+                     setIsReceiptModalOpen(false);
+                     setCart([]);
+                     setLastSaleData(null);
+                     setSearchTerm('');
+                     setManualDiscount(0);
+                     setTempDiscount('0');
+                     setSelectedClient(null);
+                     //focar input de busca após fechar o recibo
+                     setTimeout(() => {
+                        inputRef.current?.focus();
+                     }, 100);
+                  }}
+                  onPrint={handlePrint}
          />
 
          {/* CLOSING MODAL */}
@@ -908,7 +920,14 @@ useEffect(() => {
             closeError={closeError}
             closeLoading={closeLoading}
             closeResult={closeResult}
-            onClose={() => setIsClosingModalOpen(false)}
+                  onClose={() => {
+                     setIsClosingModalOpen(false);
+                     setCashSessionId(null);
+                     setCloseResult(null);
+                     setPhysicalCashInput('');
+                     setCloseError('');
+                     onCloseCash();
+                  }}
             onInputChange={setPhysicalCashInput}
             onConfirm={async () => {
                setCloseLoading(true);
@@ -923,15 +942,7 @@ useEffect(() => {
                   if (!res.ok) throw new Error('Erro ao fechar caixa');
                   const data = await res.json();
                   setCloseResult(data.closeResult);
-                  // Após mostrar o resumo, fecha modal e força tela de abertura de caixa
-                  setTimeout(() => {
-                     setIsClosingModalOpen(false);
-                     setCashSessionId(null);
-                     setCloseResult(null);
-                     setPhysicalCashInput('');
-                     setCloseError('');
-                     onCloseCash();
-                  }, 4200);
+                  // Agora o modal só será fechado manualmente pelo usuário
                } catch (err) {
                   setCloseError('Erro ao fechar caixa. Tente novamente.');
                } finally {

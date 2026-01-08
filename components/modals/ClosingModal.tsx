@@ -14,6 +14,21 @@ export interface ClosingModalProps {
 }
 
 const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, closeError, closeLoading, closeResult, onClose, onInputChange, onConfirm }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (closeResult) {
+          onClose();
+        } else {
+          onConfirm();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onConfirm, onClose, closeResult]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -29,23 +44,26 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
           <button onClick={onClose} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
         </div>
         <div className="p-8 space-y-6">
-          <Input
-            label="Valor físico contado (R$)"
-            value={physicalCashInput}
-            onChange={e => onInputChange(e.target.value)}
-            placeholder="0.00"
-            className="text-center text-3xl font-mono text-accent bg-dark-950/50"
-            autoFocus
-          />
-          {closeError && <div className="text-red-500 text-sm text-center">{closeError}</div>}
-          <Button
-            onClick={onConfirm}
-            className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
-            disabled={closeLoading}
-          >
-            {closeLoading ? 'Processando...' : 'Confirmar Fechamento'}
-          </Button>
-          {closeResult && (
+          {!closeResult ? (
+            <>
+              <Input
+                label="Valor físico contado (R$)"
+                value={physicalCashInput}
+                onChange={e => onInputChange(e.target.value)}
+                placeholder="0.00"
+                className="text-center text-3xl font-mono text-accent bg-dark-950/50"
+                autoFocus
+              />
+              {closeError && <div className="text-red-500 text-sm text-center">{closeError}</div>}
+              <Button
+                onClick={onConfirm}
+                className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
+                disabled={closeLoading}
+              >
+                {closeLoading ? 'Processando...' : 'Confirmar Fechamento'}
+              </Button>
+            </>
+          ) : (
             <div className="mt-6 p-4 bg-dark-950/60 rounded-xl border border-accent/20">
               <h3 className="text-lg font-bold text-accent mb-2">Resumo do Fechamento</h3>
               <p className="text-sm text-slate-300">Operador: <span className="font-bold">{closeResult.operatorId}</span></p>
@@ -55,11 +73,11 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
               <p className="text-sm text-slate-300">Valor Contado: <span className="font-mono">R$ {(closeResult.physicalCount/100).toFixed(2)}</span></p>
               <p className="text-sm text-slate-300">Total de Vendas: <span className="font-mono">R$ {(closeResult.totalVendas/100).toFixed(2)}</span></p>
               <p className="text-sm text-slate-300">
-  Total de Vendas em Dinheiro: 
-  <span className="font-mono">
-    R$ {((closeResult.totalVendasCash ?? 0) / 100).toFixed(2)}
-  </span>
-</p>
+                Total de Vendas em Dinheiro: 
+                <span className="font-mono">
+                  R$ {((closeResult.totalVendasCash ?? 0) / 100).toFixed(2)}
+                </span>
+              </p>
               <p className="text-sm text-slate-300">Diferença: <span className="font-mono">R$ {(closeResult.difference/100).toFixed(2)}</span></p>
               <div className="mt-2">
                 <h4 className="text-sm font-bold text-accent mb-1">Vendas do Turno:</h4>
@@ -68,6 +86,9 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
                     <li key={s.id} className="mb-1">Venda #{s.id} - R$ {(s.total/100).toFixed(2)}</li>
                   ))}
                 </ul>
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button onClick={onClose} className="px-6 py-3 text-xs font-bold shadow-accent-glow">Fechar [ENTER]</Button>
               </div>
             </div>
           )}
