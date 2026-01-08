@@ -22,6 +22,17 @@ interface POSProps {
 
 
 const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
+      // Funções auxiliares para controle do PaymentModal
+      const openPaymentModal = () => {
+         setIsPaymentModalOpen(true);
+      };
+      const closePaymentModal = () => {
+         setIsPaymentModalOpen(false);
+         setMultiMode(false);
+      };
+      const toggleMultiMode = () => {
+         setMultiMode(prev => !prev);
+      };
    const [searchTerm, setSearchTerm] = useState('');
    const [isSearchFocused, setIsSearchFocused] = useState(false);
    const [cart, setCart] = useState<CartItem[]>([]);
@@ -236,57 +247,63 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    };
 
    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-         if (!cashOpen) return;
-         if (isDiscountModalOpen && e.key !== 'Enter' && e.key !== 'Escape') return;
-         if (isReceiptModalOpen) {
-            if (e.key === 'Enter') { e.preventDefault(); completeSaleFlow(); }
-            if (e.key.toLowerCase() === 'i') { e.preventDefault(); handlePrint(); }
+   const handleKeyDown = (e: KeyboardEvent) => {
+      // 🚨 CORREÇÃO PRINCIPAL:
+      // Se o PaymentModal está aberto E está no multipagamento,
+      // nada do pai pode capturar teclas.
+      if (isPaymentModalOpen && multiMode) return;
+
+      // Sempre previne o padrão do navegador para F10
+      if (e.key === 'F10') {
+         e.preventDefault();
+         if (!isPaymentModalOpen) {
+            openPaymentModal();
             return;
          }
-         if (e.key === '/' && document.activeElement !== inputRef.current && !isPaymentModalOpen && !isDiscountModalOpen && !isReceiptModalOpen) {
+      }
+
+      // Finalizar com atalho quando NÃO está no multiMode
+      if (isPaymentModalOpen && multiMode === false) {
+         const key = e.key.toLowerCase();
+         if (["1", "2", "3"].includes(key)) {
             e.preventDefault();
-            inputRef.current?.focus();
-            setSearchTerm('');
+            if (key === "1") finalizeSale("card");
+            if (key === "2") finalizeSale("pix");
+            if (key === "3") finalizeSale("cash");
+            return;
          }
-         // F10: Sempre previne comportamento padrão e controla fluxo dos modais
-         if (e.key === 'F10') {
-            e.preventDefault();
-            if (cart.length > 0 && !isPaymentModalOpen && !isDiscountModalOpen && !isReceiptModalOpen) {
-               setIsPaymentModalOpen(true);
-               return;
-            }
-            if (isPaymentModalOpen && !isClientModalOpen) {
-               setIsClientModalOpen(true);
-               setTimeout(() => clientInputRef.current?.focus(), 50);
-               return;
-            }
-         }
-         if (e.ctrlKey && e.key.toLowerCase() === 'd' && !isPaymentModalOpen && !isDiscountModalOpen && !isReceiptModalOpen) {
-            e.preventDefault();
-            setTempDiscount(manualDiscount.toString());
-            setIsDiscountModalOpen(true);
-            setTimeout(() => discountInputRef.current?.focus(), 50);
-         }
-         if (isPaymentModalOpen && multiMode === false) {
-            const key = e.key.toLowerCase();
-            if (['1', '2', '3'].includes(key)) {
-               e.preventDefault();
-               if (key === '1') finalizeSale('card');
-               if (key === '2') finalizeSale('pix');
-               if (key === '3') finalizeSale('cash');
-            }
-         }
-         if (e.key === 'Escape') {
-            if (isPaymentModalOpen) { e.preventDefault(); setIsPaymentModalOpen(false); setTimeout(() => inputRef.current?.focus(), 10); }
-            else if (isDiscountModalOpen) { e.preventDefault(); setIsDiscountModalOpen(false); setTimeout(() => inputRef.current?.focus(), 10); }
-            else if (isReceiptModalOpen) { e.preventDefault(); completeSaleFlow(); }
-            else { inputRef.current?.blur(); setIsSearchFocused(false); }
-         }
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-   }, [cart.length, isPaymentModalOpen, isDiscountModalOpen, isReceiptModalOpen, manualDiscount, finalizeSale, completeSaleFlow, handlePrint, cashOpen]);
+      }
+
+      // Alternar modo multi pagamento (caso exista)
+      if (e.key === 'm' && isPaymentModalOpen) {
+         e.preventDefault();
+         toggleMultiMode();
+         return;
+      }
+
+      // Escape fecha modal
+      if (e.key === 'Escape' && isPaymentModalOpen) {
+         e.preventDefault();
+         closePaymentModal();
+         return;
+      }
+
+      // Focar input principal se apertar qualquer número
+      if (!isPaymentModalOpen && /^[0-9]$/.test(e.key)) {
+         inputRef.current?.focus();
+      }
+   };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [
+  isPaymentModalOpen,
+  multiMode,
+  finalizeSale,
+  openPaymentModal,
+  closePaymentModal,
+  toggleMultiMode,
+]);
 
 
    // Busca produtos na API
