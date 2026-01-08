@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { getUserById, getOperatorNameById } from '../services/user';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import { CashSession, CashTransaction } from '../types';
@@ -95,7 +96,20 @@ const CashManagement: React.FC = () => {
   const [isSangriaModalOpen, setIsSangriaModalOpen] = useState(false);
   const [isPagamentoModalOpen, setIsPagamentoModalOpen] = useState(false);
   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
-  const [selectedTx, setSelectedTx] = useState<CashTransaction | null>(null);
+   const [selectedTx, setSelectedTx] = useState<CashTransaction | null>(null);
+   const [operatorName, setOperatorName] = useState<string>('');
+   // Buscar nome do operador ao abrir modal de venda
+   useEffect(() => {
+      async function fetchOperatorName() {
+         if (selectedTx && selectedTx.operator_id) {
+            const name = await getOperatorNameById(selectedTx.operator_id);
+            setOperatorName(name || '');
+         } else {
+            setOperatorName('');
+         }
+      }
+      fetchOperatorName();
+   }, [selectedTx]);
   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
   const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
 
@@ -222,7 +236,7 @@ const CashManagement: React.FC = () => {
                                                 const type = isSale ? 'sale' : tx.type;
                                                 const description = isSale ? `Venda #${tx.id}` : tx.description;
                                                 return (
-                                                   <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                   <tr key={tx.id} onClick={() => {setSelectedTx(tx); console.log('Transaction selected:', tx);}} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
                                                       <td className="px-6 py-4">
                                                          <div className="flex items-center gap-3">
                                                             <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>
@@ -533,10 +547,15 @@ const CashManagement: React.FC = () => {
                                           <span className="text-xs text-slate-300">Não informado</span>
                                        )}
                                     </div>
-                                    <div className="flex flex-col gap-1 mt-2">
-                                       <span className="text-xs font-bold text-slate-400">Operador Responsável:</span>
-                                       <span className="text-xs text-slate-300">{selectedTx.operator_id || 'Não informado'}</span>
-                                    </div>
+                                                      <div className="flex flex-col gap-1 mt-2">
+                                                          <span className="text-xs font-bold text-slate-400">Operador Responsável:</span>
+                                                          <span className="text-xs text-slate-300">
+                                                             {selectedTx.metadata?.operator
+                                                                || operatorName
+                                                                || session?.operator
+                                                                || 'Não informado'}
+                                                          </span>
+                                                      </div>
                                  </div>
                            </div>
                         </div>

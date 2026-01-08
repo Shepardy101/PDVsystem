@@ -1,11 +1,28 @@
 import { Router } from 'express';
 import { createUser, listUsers, updateUser, deleteUser, findUserByEmail } from '../repositories/user.repo';
+import { db } from '../db/database';
+
 import { createClient, listClients, updateClient, deleteClient } from '../repositories/client.repo';
 import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../repositories/supplier.repo';
 
 export const userRouter = Router();
 export const clientRouter = Router();
 export const supplierRouter = Router();
+// Buscar nome do operador pelo ID
+userRouter.get('/operator/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = db.prepare('SELECT name FROM users WHERE id = ?').get(id);
+    if (!row) {
+      return res.status(404).json({ error: 'Operador não encontrado' });
+    }
+    console.log('response operator name:', row);
+    res.json({ name: row.name });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao buscar operador', details: e && e.message ? e.message : e });
+  }
+});
+
 
 // Login simples
 userRouter.post('/login', async (req, res) => {

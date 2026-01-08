@@ -1,3 +1,26 @@
+// Busca nome do operador pelo ID
+export async function getOperatorNameById(operatorId: string): Promise<string> {
+  try {
+    const res = await fetch(`/api/users/operator/${operatorId}`);
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data.name || '';
+  } catch {
+    return '';
+  }
+}
+import { SystemUser } from '../types';
+
+export async function getUserById(userId: string): Promise<SystemUser | null> {
+  try {
+    const res = await fetch(`/api/users/${userId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.user || null;
+  } catch {
+    return null;
+  }
+}
 export async function deleteUser(id) {
   const res = await fetch(`/api/users/${id}`, {
     method: 'DELETE',
