@@ -19,6 +19,7 @@ cashRouter.post('/close', (req, res) => {
 });
 
 // Abrir sessão de caixa
+// Abrir sessão de caixa
 cashRouter.post('/open', (req, res) => {
   try {
     console.log('[CASH] POST /api/cash/open body:', req.body);

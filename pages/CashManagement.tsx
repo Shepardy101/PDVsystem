@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import { CashSession, CashTransaction } from '../types';
@@ -61,28 +61,35 @@ const CashManagement: React.FC = () => {
   const [isTxCategoryModalOpen, setIsTxCategoryModalOpen] = useState(false);
   const [newTxCategoryName, setNewTxCategoryName] = useState('');
 
-  const [session] = useState<CashSession>({
-    isOpen: true,
-    openedAt: new Date().toISOString(),
-    initialBalance: 200.00,
-    currentBalance: 1250.45,
-    transactions: [
-      { 
-        id: 'TX-1023', 
-        type: 'sale', 
-        amount: 150.00, 
-        description: 'Venda #1023', 
-        timestamp: new Date().toISOString(),
-        metadata: {
-          items: [{ name: 'Cerveja Pilsen Lata 350ml', qty: 24, price: 4.50 }, { name: 'Coca-Cola 2L', qty: 4, price: 9.50 }],
-          operator: 'Operador Alfa',
-          method: 'Pix'
-        }
-      },
-      { id: 'TX-SG01', type: 'sangria', amount: 50.00, description: 'Sangria de Emergência', timestamp: new Date().toISOString(), metadata: { operator: 'Gerente Comercial', category: 'Logística', method: 'Dinheiro' } },
-      { id: 'TX-SP01', type: 'suprimento', amount: 100.00, description: 'Suprimento de Troco', timestamp: new Date().toISOString(), metadata: { operator: 'Admin Root', method: 'Dinheiro' } },
-    ]
-  });
+   const [session, setSession] = useState<CashSession | null>(null);
+   const [sessionLoading, setSessionLoading] = useState(true);
+   const [sessionError, setSessionError] = useState('');
+
+   useEffect(() => {
+      setSessionLoading(true);
+      fetch('/api/cash/open')
+         .then(async res => {
+            if (!res.ok) throw new Error('Nenhum caixa aberto');
+            const data = await res.json();
+            // Buscar vendas do caixa aberto
+            const sessionId = data.session?.id;
+            if (sessionId) {
+               const salesRes = await fetch(`/api/pos/sales?cashSessionId=${sessionId}`);
+               const salesData = salesRes.ok ? await salesRes.json() : { sales: [] };
+               setSession({
+                  ...data.session,
+                  transactions: salesData.sales || []
+               });
+            } else {
+               setSession(null);
+            }
+         })
+         .catch(() => {
+            setSessionError('Nenhum caixa aberto ou erro ao buscar vendas.');
+            setSession(null);
+         })
+         .finally(() => setSessionLoading(false));
+   }, []);
 
   const [isSuprimentoModalOpen, setIsSuprimentoModalOpen] = useState(false);
   const [isSangriaModalOpen, setIsSangriaModalOpen] = useState(false);
@@ -172,7 +179,7 @@ const CashManagement: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0 mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
             <Card className="bg-dark-900/40 border-accent/20 shadow-accent-glow/10 p-4">
                <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Liquidez</p>
-               <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">R$ {session.currentBalance.toFixed(2)}</h3>
+               <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">R$ {session && session.currentBalance ? session.currentBalance.toFixed(2) : '0.00'}</h3>
             </Card>
             <Card className="bg-dark-900/40 border-white/5 p-4">
                <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
@@ -184,7 +191,7 @@ const CashManagement: React.FC = () => {
             </Card>
             <Card className="bg-dark-900/40 border-white/5 p-4">
                <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Lastro</p>
-               <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">R$ {session.initialBalance.toFixed(2)}</h3>
+               <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">R$ {session && session.initialBalance ? session.initialBalance.toFixed(2) : '0.00'}</h3>
             </Card>
           </div>
 
@@ -205,25 +212,36 @@ const CashManagement: React.FC = () => {
                           </tr>
                        </thead>
                        <tbody className="divide-y divide-white/5">
-                          {session.transactions.map(tx => (
-                             <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                <td className="px-6 py-4">
-                                   <div className="flex items-center gap-3">
-                                      <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(tx.type)}`}>
-                                         {getStatusIcon(tx.type)}
-                                      </div>
-                                      <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{tx.type}</span>
-                                   </div>
-                                </td>
-                                <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{tx.description}</td>
-                                <td className={`px-6 py-4 font-mono text-[11px] font-bold ${tx.type === 'sangria' || tx.type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
-                                   {tx.type === 'sangria' || tx.type === 'pagamento' ? '-' : '+'} R$ {tx.amount.toFixed(2)}
-                                </td>
-                                <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">
-                                   {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </td>
-                             </tr>
-                          ))}
+                                       {(session && Array.isArray(session.transactions))
+                                          ? session.transactions.map(tx => {
+                                                // Se for venda, usar dados detalhados
+                                                const isSale = tx.items && Array.isArray(tx.items);
+                                                const total = isSale
+                                                   ? tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0)
+                                                   : (typeof tx.amount === 'number' ? tx.amount : 0);
+                                                const type = isSale ? 'sale' : tx.type;
+                                                const description = isSale ? `Venda #${tx.id}` : tx.description;
+                                                return (
+                                                   <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                      <td className="px-6 py-4">
+                                                         <div className="flex items-center gap-3">
+                                                            <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>
+                                                               {getStatusIcon(type)}
+                                                            </div>
+                                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
+                                                         </div>
+                                                      </td>
+                                                      <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                      <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
+                                                         {type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}
+                                                      </td>
+                                                      <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">
+                                                         {new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                      </td>
+                                                   </tr>
+                                                );
+                                             })
+                                          : null}
                        </tbody>
                     </table>
                   </div>
@@ -478,51 +496,51 @@ const CashManagement: React.FC = () => {
                  <div className="text-right">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vlr Líquido</p>
                     <h3 className={`text-3xl font-mono font-bold ${selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
-                       {selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? '-' : '+'} R$ {selectedTx.amount.toFixed(2)}
+                       {selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? '-' : '+'} R$ {typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}
                     </h3>
                  </div>
               </div>
 
-              {/* Seção Específica para Vendas */}
-              {selectedTx.type === 'sale' ? (
-                <div className="space-y-6">
-                   <div className="p-6 bg-dark-950/80 rounded-2xl border-2 border-dashed border-white/5 space-y-4">
-                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 border-b border-white/5 pb-2">Manifesto da Venda</h4>
-                      <div className="space-y-3">
-                         {(selectedTx.metadata?.items || []).length > 0 ? (
-                           selectedTx.metadata?.items?.map((item: any, idx: number) => (
-                             <div key={idx} className="flex justify-between items-center text-sm font-mono">
-                                <span className="text-slate-400"><span className="text-accent">{item.qty}x</span> {item.name}</span>
-                                <span className="text-slate-200">R$ {(item.qty * item.price).toFixed(2)}</span>
-                             </div>
-                           ))
-                         ) : (
-                           <p className="text-[10px] text-slate-600 uppercase italic">Dados de itens não vinculados a esta transação.</p>
-                         )}
-                      </div>
-                      <div className="pt-4 border-t border-white/5 flex justify-between font-bold">
-                         <span className="text-slate-500 uppercase text-[10px] tracking-widest">Total Consolidado</span>
-                         <span className="text-accent font-mono text-lg">R$ {selectedTx.amount.toFixed(2)}</span>
-                      </div>
-                   </div>
-                   
-                   {/* Metadados Operacionais da Venda */}
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-white/2 rounded-xl border border-white/5">
-                         <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Protocolo de Saída</p>
-                         <p className="text-xs font-bold text-slate-300 uppercase tracking-tighter flex items-center gap-2">
-                           <CreditCard size={12} className="text-accent" /> {selectedTx.metadata?.method || 'Não Informado'}
-                         </p>
-                      </div>
-                      <div className="p-4 bg-white/2 rounded-xl border border-white/5">
-                         <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Operador Responsável</p>
-                         <p className="text-xs font-bold text-slate-300 flex items-center gap-2">
-                           <User size={12} className="text-accent" /> {selectedTx.metadata?.operator || 'Sistema'}
-                         </p>
-                      </div>
-                   </div>
-                </div>
-              ) : (
+                     {/* Seção completa de venda */}
+                     {selectedTx.items && selectedTx.items.length > 0 && selectedTx.payments.length > 0 ? (
+                        <div className="space-y-6">
+                              <div className="p-6 bg-dark-950/80 rounded-2xl border-2 border-dashed border-white/5 space-y-4">
+                                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 border-b border-white/5 pb-2">Produtos Vendidos</h4>
+                                 {selectedTx.items && Array.isArray(selectedTx.items) && selectedTx.items.length > 0 ? (
+                                    <div className="space-y-1">
+                                       {selectedTx.items.map((item: any, idx: number) => (
+                                          <div key={idx} className="flex justify-between items-center text-sm font-mono">
+                                             <span className="text-slate-400"><span className="text-accent">{item.quantity}x</span> {item.product_name_snapshot}</span>
+                                             <span className="text-slate-200">R$ {typeof item.line_total === 'number' ? (item.line_total / 100).toFixed(2) : '0.00'}</span>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 ) : (
+                                    <p className="text-[10px] text-slate-600 uppercase italic">Nenhum produto vinculado a esta venda.</p>
+                                 )}
+                                 <div className="pt-4 border-t border-white/5 flex flex-col gap-2 font-bold">
+                                    <div className="flex justify-between text-xs">
+                                       <span>Total da Venda:</span>
+                                       <span>R$ {typeof selectedTx.total === 'number' ? (selectedTx.total / 100).toFixed(2) : '0.00'}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 mt-2">
+                                       <span className="text-xs font-bold text-slate-400">Método de Pagamento:</span>
+                                       {selectedTx.payments && Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0 ? (
+                                          selectedTx.payments.map((pay: any, idx: number) => (
+                                             <span key={idx} className="text-xs text-slate-300">{pay.method}: R$ {typeof pay.amount === 'number' ? (pay.amount / 100).toFixed(2) : '0.00'}</span>
+                                          ))
+                                       ) : (
+                                          <span className="text-xs text-slate-300">Não informado</span>
+                                       )}
+                                    </div>
+                                    <div className="flex flex-col gap-1 mt-2">
+                                       <span className="text-xs font-bold text-slate-400">Operador Responsável:</span>
+                                       <span className="text-xs text-slate-300">{selectedTx.operator_id || 'Não informado'}</span>
+                                    </div>
+                                 </div>
+                           </div>
+                        </div>
+                     ) : (
                 /* Seção para Outras Movimentações (Sangria, Suprimento, Pagamento) */
                 <div className="space-y-6">
                    <div className="p-6 bg-dark-950/50 rounded-2xl border border-white/5 space-y-3">
@@ -560,30 +578,31 @@ const CashManagement: React.FC = () => {
       <Modal isOpen={isReceiptPreviewOpen} onClose={() => setIsReceiptPreviewOpen(false)} title="Visualização de Comprovante">
          <div className="flex flex-col items-center gap-6">
             <div className="bg-white text-black p-8 rounded shadow-2xl w-full max-w-[80mm] font-mono receipt-assemble" id="thermal-receipt">
-               {selectedTx && (
-                 <>
-                   <div className="text-center mb-4">
-                      <h2 className="text-lg font-bold tracking-tighter">NOVABEV POS</h2>
-                      <p className="text-[10px]">DISTRIBUIDORA DE BEBIDAS LTDA</p>
-                      <div className="border-b border-black border-dashed my-2"></div>
-                      <p className="text-[10px] font-bold uppercase">{selectedTx.type === 'sale' ? 'CUPOM FISCAL VIRTUAL' : 'VALE DE CAIXA'}</p>
-                      <p className="text-[9px]">{new Date(selectedTx.timestamp).toLocaleString()}</p>
-                   </div>
-                   {selectedTx.type === 'sale' && (
-                     <div className="text-[9px] space-y-1 mb-4">
-                        {selectedTx.metadata?.items?.map((item: any, idx: number) => (
-                           <div key={idx} className="flex justify-between">
-                              <span>{item.qty}x {item.name}</span>
-                              <span>{(item.qty * item.price).toFixed(2)}</span>
-                           </div>
-                        ))}
-                     </div>
-                   )}
-                   <div className="text-[9px] border-t border-black border-dashed pt-2 space-y-1 font-bold">
-                      <div className="flex justify-between text-xs"><span>TOTAL:</span><span>R$ {selectedTx.amount.toFixed(2)}</span></div>
-                   </div>
-                 </>
-               )}
+                      {selectedTx && (
+                         <>
+                            {console.log('selectedTx:', selectedTx)}
+                            <div className="text-center mb-4">
+                                 <h2 className="text-lg font-bold tracking-tighter">NOVABEV POS</h2>
+                                 <p className="text-[10px]">DISTRIBUIDORA DE BEBIDAS LTDA</p>
+                                 <div className="border-b border-black border-dashed my-2"></div>
+                                 <p className="text-[10px] font-bold uppercase">{selectedTx.type === 'sale' ? 'CUPOM FISCAL VIRTUAL' : 'VALE DE CAIXA'}</p>
+                                 <p className="text-[9px]">{new Date(selectedTx.timestamp).toLocaleString()}</p>
+                            </div>
+                            {selectedTx.items && Array.isArray(selectedTx.items) && selectedTx.items.length > 0 && (
+                               <div className="text-[9px] space-y-1 mb-4">
+                                    {selectedTx.items.map((item: any, idx: number) => (
+                                       <div key={idx} className="flex justify-between">
+                                          <span>{item.quantity}x {item.product_name_snapshot}</span>
+                                          <span>{typeof item.line_total === 'number' ? (item.line_total / 100).toFixed(2) : '0.00'}</span>
+                                       </div>
+                                    ))}
+                               </div>
+                            )}
+                            <div className="text-[9px] border-t border-black border-dashed pt-2 space-y-1 font-bold">
+                                 <div className="flex justify-between text-xs"><span>TOTAL:</span><span>R$ {selectedTx.items && Array.isArray(selectedTx.items) ? (selectedTx.items.reduce((sum: number, item: any) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0) / 100).toFixed(2) : '0.00'}</span></div>
+                            </div>
+                         </>
+                      )}
             </div>
             <div className="w-full flex gap-4 no-print">
                <Button variant="secondary" className="flex-1 py-4" icon={<X size={18} />} onClick={() => setIsReceiptPreviewOpen(false)}>Fechar</Button>

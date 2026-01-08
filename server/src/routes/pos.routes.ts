@@ -1,7 +1,32 @@
+
 import { Router } from 'express';
 import { finalizeSale } from '../repositories/pos.repo';
+import { db } from '../db/database';
 
 export const posRouter = Router();
+
+// Buscar vendas do turno por cashSessionId
+posRouter.get('/sales', (req, res) => {
+  try {
+    const { cashSessionId } = req.query;
+    if (!cashSessionId) return res.status(400).json({ error: 'cashSessionId é obrigatório' });
+    // Busca vendas do turno
+    const sales = db.prepare('SELECT * FROM sales WHERE cash_session_id = ? ORDER BY timestamp DESC').all(cashSessionId);
+    // Para cada venda, busca itens e pagamentos
+    const salesWithDetails = sales.map(sale => {
+      const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+      const payments = db.prepare('SELECT * FROM payments WHERE sale_id = ?').all(sale.id);
+      return {
+        ...sale,
+        items,
+        payments
+      };
+    });
+    res.json({ sales: salesWithDetails });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar vendas do turno' });
+  }
+});
 
 posRouter.post('/finalizeSale', (req, res) => {
   try {
