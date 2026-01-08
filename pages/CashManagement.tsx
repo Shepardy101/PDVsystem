@@ -102,8 +102,8 @@ const CashManagement: React.FC = () => {
                        : m.type
                   }))
                ];
-               // Ordenar por data/hora
-               allMovements.sort((a, b) => (a.timestamp || a.created_at) - (b.timestamp || b.created_at));
+               // Ordenar por data/hora decrescente (mais recente no topo)
+               allMovements.sort((a, b) => (b.timestamp || b.created_at) - (a.timestamp || a.created_at));
                setSession({
                   ...data.session,
                   transactions: allMovements
