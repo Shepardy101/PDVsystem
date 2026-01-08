@@ -933,7 +933,8 @@ useEffect(() => {
                setCloseLoading(true);
                setCloseError('');
                try {
-                  const value = parseFloat(physicalCashInput) || 0;
+                  // Corrige vírgula para ponto para aceitar 9,90 e 9.90
+                  const value = parseFloat(physicalCashInput.replace(',', '.')) || 0;
                   const res = await fetch('/api/cash/close', {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/json' },

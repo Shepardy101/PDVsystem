@@ -49,6 +49,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
 
     // controle de etapa do ciclo: 'input' | 'select' | 'add' | 'finalize'
     const [focusStep, setFocusStep] = useState<'input' | 'select' | 'add' | 'finalize'>('input');
+    // Estado para evitar duplo submit
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
 
 
@@ -318,15 +320,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                             <Button
                                 ref={finalizeBtnRef}
                                 className="w-full py-4 mt-6 font-bold text-xs uppercase tracking-widest shadow-accent-glow"
-                                disabled={partialPayments.reduce((acc, p) => acc + p.amount, 0) !== Math.round(total * 100)}
-                                onClick={() => onFinalize(partialPayments)}
+                                disabled={isSubmitting || partialPayments.reduce((acc, p) => acc + p.amount, 0) !== Math.round(total * 100)}
+                                onClick={() => {
+                                    if (isSubmitting) return;
+                                    setIsSubmitting(true);
+                                    Promise.resolve(onFinalize(partialPayments)).finally(() => {
+                                        setIsSubmitting(false);
+                                    });
+                                }}
                                 onFocus={() => setFocusStep('finalize')}
                                 onKeyDown={e => {
                                     if (e.key === 'Enter') {
-                                        if (finalizeBtnRef.current) finalizeBtnRef.current.click();
+                                        if (finalizeBtnRef.current && !isSubmitting) finalizeBtnRef.current.click();
                                     }
                                 }}
-                            >Finalizar Venda</Button>
+                            >{isSubmitting ? 'Processando...' : 'Finalizar Venda'}</Button>
                             <div className="text-center mt-4">
                                 <span className="text-xs text-slate-400">TAB para voltar ao modo rápido</span>
                             </div>

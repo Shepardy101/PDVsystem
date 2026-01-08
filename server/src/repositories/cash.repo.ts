@@ -107,9 +107,20 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
 
 
 
+  // Soma todas as sangrias realizadas na sessão
+  const sangrias = db.prepare(`
+    SELECT amount FROM cash_movements WHERE cash_session_id = ? AND type = 'withdraw_out'
+  `).all(sessionId);
+  const totalSangrias = sangrias.reduce((acc, s) => acc + (s.amount || 0), 0);
+  // Soma todos os suprimentos realizados na sessão
+  const suprimentos = db.prepare(`
+    SELECT amount FROM cash_movements WHERE cash_session_id = ? AND type = 'supply_in'
+  `).all(sessionId);
+  const totalSuprimentos = suprimentos.reduce((acc, s) => acc + (s.amount || 0), 0);
+  console.log('SANGRIAS:', sangrias, 'TOTAL SANGRIAS:', totalSangrias, 'SUPRIMENTOS:', suprimentos, 'TOTAL SUPRIMENTOS:', totalSuprimentos);
   // Atualiza sessão de caixa como fechada
   const session = db.prepare('SELECT * FROM cash_sessions WHERE id = ?').get(sessionId);
-  const difference = physicalCount - (session.initial_balance + totalVendasCash);
+  const difference = physicalCount - (session.initial_balance + totalVendasCash + totalSuprimentos - totalSangrias);
   db.prepare('UPDATE cash_sessions SET closed_at = ?, is_open = 0, physical_count_at_close = ?, difference_at_close = ?, updated_at = ? WHERE id = ?')
     .run(now, physicalCount, difference, now, sessionId);
   // Retorna resumo do fechamento
@@ -122,6 +133,8 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
     physicalCount,
     totalVendas,
     totalVendasCash,
+    totalSangrias,
+    totalSuprimentos,
     difference,
     sales
   };

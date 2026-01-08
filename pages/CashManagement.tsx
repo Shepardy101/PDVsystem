@@ -299,7 +299,6 @@ const CashManagement: React.FC = () => {
                         R$ {
                            (() => {
                               if (!session || !Array.isArray(session.transactions)) return '0.00';
-                              console.log('Calculando dinheiro em caixa para a sessão:', session);
                               // Saldo inicial do caixa
                               let initialBalanceCents = session.initial_balance ?? 0;
                               if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
@@ -307,7 +306,17 @@ const CashManagement: React.FC = () => {
                               }
                               // Somar todas as vendas cujo método de pagamento seja 'cash'
                               let totalVendasCash = 0;
+                              let totalSuprimentos = 0;
+                              let totalSangrias = 0;
                               session.transactions.forEach(tx => {
+                                 // Suprimentos
+                                 if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
+                                    totalSuprimentos += tx.amount;
+                                 }
+                                 // Sangrias
+                                 if (tx.type === 'sangria' && typeof tx.amount === 'number') {
+                                    totalSangrias += tx.amount;
+                                 }
                                  // Caso 1: Estrutura nova, payments array
                                  if (Array.isArray(tx.payments)) {
                                     tx.payments.forEach(pay => {
@@ -315,10 +324,7 @@ const CashManagement: React.FC = () => {
                                           totalVendasCash += pay.amount;
                                        }
                                     });
-                                    console.log(tx);
-                                    console.log('total de vendas cash até agora:', totalVendasCash);
                                  }
-
                                  // Caso 2: Estrutura antiga/backend, paymentMethod direto
                                  else if (
                                     (tx.type === 'sale' || tx.type === 'venda') &&
@@ -328,7 +334,7 @@ const CashManagement: React.FC = () => {
                                     totalVendasCash += tx.total;
                                  }
                               });
-                              const lastro = initialBalanceCents + totalVendasCash;
+                              const lastro = initialBalanceCents + totalVendasCash + totalSuprimentos - totalSangrias;
                               return (lastro / 100).toFixed(2);
                            })()
                         }
