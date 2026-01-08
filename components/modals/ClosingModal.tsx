@@ -169,8 +169,20 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
                           <span className="font-mono text-white">Venda {s.id.slice(0, 8)}...</span>
                           <span className="font-mono text-accent">R$ {(s.total/100).toFixed(2)}</span>
                           <span className="font-mono text-emerald-400 flex items-center gap-1"><ShoppingCart size={14} />{s.totalItens || 0}</span>
-                          {getPaymentIcon(s.tipoPagamento)}
                         </div>
+                        {/* Pagamentos detalhados */}
+                        {s.payments && s.payments.length > 0 && (
+                          <div className="ml-6 mt-1 flex flex-wrap gap-2">
+                            <span className="text-[11px] text-slate-400 font-bold">Pagamentos:</span>
+                            {s.payments.map((pay: any, i: number) => (
+                              <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-dark-950/60 border border-accent/10 font-mono">
+                                {getPaymentIcon(pay.method)}
+                                <span className="capitalize">{pay.method}</span>
+                                <span>R$ {(pay.amount/100).toFixed(2)}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {/* Produtos vendidos */}
                         {s.produtos && s.produtos.length > 0 && (
                           <div className="ml-6 mt-1">

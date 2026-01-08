@@ -92,8 +92,13 @@ export function addSuprimentoMovement({ amount, category, description, operatorI
 export function closeCashSession(sessionId: string, physicalCount: number) {
   const now = Date.now();
   // Busca totais das vendas do caixa
-  const sales = db.prepare('SELECT * FROM sales WHERE cash_session_id = ?').all(sessionId);
-  const totalVendas = sales.reduce((acc, s) => acc + (s.total || 0), 0);
+  const salesRaw = db.prepare('SELECT * FROM sales WHERE cash_session_id = ?').all(sessionId);
+  // Para cada venda, busca os pagamentos
+  const sales = salesRaw.map(sale => {
+    const payments = db.prepare('SELECT method, amount FROM payments WHERE sale_id = ?').all(sale.id);
+    return { ...sale, payments };
+  });
+  const totalVendas = salesRaw.reduce((acc, s) => acc + (s.total || 0), 0);
 
   // Soma todos os pagamentos em dinheiro (cash) das vendas desta sessão
   const cashPayments = db.prepare(`
