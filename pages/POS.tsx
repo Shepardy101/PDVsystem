@@ -565,6 +565,7 @@ useEffect(() => {
                                  if (data && data.session && data.session.id) {
                                     onOpenCash(value); // Só libera o PDV se o backend confirmou
                                     setIsOpeningModalOpen(false);
+                                    setCashSessionId(data.session.id); // Atualiza o estado para mostrar o terminal imediatamente
                                  } else {
                                     throw new Error('Sessão de caixa não foi aberta.');
                                  }
