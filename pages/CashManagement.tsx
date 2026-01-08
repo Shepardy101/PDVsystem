@@ -9,56 +9,32 @@ import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
 import { CashSession, CashTransaction } from '../types';
 
-// Mock de Histórico de Caixas Fechados com Transações Vinculadas
-const MOCK_CASH_HISTORY = [
-   {
-      id: 'CS-20231026-A',
-      openedAt: '2023-10-26T08:00:00Z',
-      closedAt: '2023-10-26T22:00:00Z',
-      operator: 'Operador Alfa',
-      initialBalance: 200.00,
-      finalBalance: 4580.50,
-      expectedBalance: 4580.50,
-      salesCount: 3,
-      salesTotal: 4450.50,
-      sangriasTotal: 100.00,
-      suprimentosTotal: 50.00,
-      paymentsTotal: 20.00,
-      status: 'success',
-      transactions: [
-         { id: 'TX-H1', type: 'sale', amount: 1500.00, description: 'Venda #1023', timestamp: '2023-10-26T09:30:00Z', metadata: { method: 'Pix', operator: 'Operador Alfa', items: [{ name: 'Cerveja Pilsen Lata 350ml', qty: 333, price: 4.50 }] } },
-         { id: 'TX-H2', type: 'sangria', amount: 100.00, description: 'Sangria Provedor', timestamp: '2023-10-26T14:15:00Z', metadata: { method: 'Dinheiro', operator: 'Gerente', category: 'Logística' } },
-         { id: 'TX-H3', type: 'sale', amount: 2950.50, description: 'Venda #1024', timestamp: '2023-10-26T18:45:00Z', metadata: { method: 'Cartão', operator: 'Operador Alfa', items: [{ name: 'Vodka Absolut 1L', qty: 30, price: 98.35 }] } },
-         { id: 'TX-H4', type: 'suprimento', amount: 50.00, description: 'Troco Inicial Extra', timestamp: '2023-10-26T08:05:00Z', metadata: { method: 'Dinheiro', operator: 'Admin' } },
-      ]
-   },
-   {
-      id: 'CS-20231025-A',
-      openedAt: '2023-10-25T08:00:00Z',
-      closedAt: '2023-10-25T21:45:00Z',
-      operator: 'Operador Beta',
-      initialBalance: 200.00,
-      finalBalance: 3120.00,
-      expectedBalance: 3125.00,
-      salesCount: 2,
-      salesTotal: 3000.00,
-      sangriasTotal: 50.00,
-      suprimentosTotal: 0.00,
-      paymentsTotal: 25.00,
-      status: 'warning',
-      transactions: [
-         { id: 'TX-H5', type: 'sale', amount: 2000.00, description: 'Venda #1021', timestamp: '2023-10-25T11:00:00Z', metadata: { method: 'Pix', operator: 'Operador Beta', items: [{ name: 'Whisky Red Label', qty: 1, price: 2000.00 }] } },
-         { id: 'TX-H6', type: 'sale', amount: 1000.00, description: 'Venda #1022', timestamp: '2023-10-25T16:20:00Z', metadata: { method: 'Dinheiro', operator: 'Operador Beta', items: [{ name: 'Cerveja Brahma', qty: 250, price: 4.00 }] } },
-         { id: 'TX-H7', type: 'pagamento', amount: 25.00, description: 'Café p/ Equipe', timestamp: '2023-10-25T17:00:00Z', metadata: { method: 'Dinheiro', operator: 'Operador Beta', category: 'Despesas Gerais' } },
-         { id: 'TX-H8', type: 'sangria', amount: 50.00, description: 'Sangria p/ Cofre', timestamp: '2023-10-25T21:00:00Z', metadata: { method: 'Dinheiro', operator: 'Admin', category: 'Retirada Lucro' } },
-      ]
-   }
-];
+
+// Função para buscar histórico real de caixas
+async function fetchCashHistory() {
+  const res = await fetch('/api/cash/history');
+  if (!res.ok) throw new Error('Erro ao buscar histórico de caixas');
+  const data = await res.json();
+  return data.sessions || [];
+}
 
 const INITIAL_TX_CATEGORIES = ['Logística', 'Infraestrutura', 'Retirada Lucro', 'Despesas Gerais', 'Marketing', 'Manutenção'];
 
 const CashManagement: React.FC = () => {
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+   const [cashHistory, setCashHistory] = useState([]);
+   const [cashHistoryLoading, setCashHistoryLoading] = useState(false);
+   const [cashHistoryError, setCashHistoryError] = useState('');
+      useEffect(() => {
+         if (activeTab === 'history') {
+            setCashHistoryLoading(true);
+            setCashHistoryError('');
+            fetchCashHistory()
+               .then(sessions => setCashHistory(sessions))
+               .catch(() => setCashHistoryError('Erro ao buscar histórico de caixas'))
+               .finally(() => setCashHistoryLoading(false));
+         }
+      }, [activeTab]);
    const [historyModalTab, setHistoryModalTab] = useState<'resumo' | 'movimentacoes'>('resumo');
    const [refreshFlag, setRefreshFlag] = useState(0);
 
@@ -425,45 +401,51 @@ const CashManagement: React.FC = () => {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                           {MOCK_CASH_HISTORY.map(history => (
-                              <tr
-                                 key={history.id}
-                                 className="group hover:bg-white/5 transition-all cursor-pointer"
-                                 onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
-                              >
-                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                       <div className="p-1.5 rounded bg-accent/10 border border-accent/20">
-                                          <Archive size={12} className="text-accent" />
-                                       </div>
-                                       <span className="text-[10px] font-mono font-bold text-slate-300">{history.id.split('-').pop()}</span>
-                                    </div>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                                       {new Date(history.openedAt).toLocaleDateString()}
-                                    </div>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <span className="text-[11px] font-medium text-slate-400">{history.operator}</span>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <span className="text-[11px] font-mono font-bold text-slate-200">R$ {history.finalBalance.toFixed(2)}</span>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    {history.status === 'success' ? (
-                                       <Badge variant="success">Consolidado</Badge>
-                                    ) : (
-                                       <Badge variant="danger">Atenção</Badge>
-                                    )}
-                                 </td>
-                                 <td className="px-6 py-4 text-right">
-                                    <button className="p-1.5 rounded-lg bg-white/2 text-slate-500 hover:text-accent transition-all flex items-center gap-2 ml-auto">
-                                       <Eye size={14} />
-                                    </button>
-                                 </td>
-                              </tr>
-                           ))}
+                           {cashHistoryLoading ? (
+                              <tr><td colSpan={6} className="text-center text-slate-500 py-8">Carregando histórico...</td></tr>
+                           ) : cashHistoryError ? (
+                              <tr><td colSpan={6} className="text-center text-red-500 py-8">{cashHistoryError}</td></tr>
+                           ) : (
+                              cashHistory.map((history: any) => {
+                                 return (
+                                    <tr
+                                       key={history.id}
+                                       className="group hover:bg-white/5 transition-all cursor-pointer"
+                                       onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
+                                    >
+                                       <td className="px-6 py-4">
+                                          <div className="flex items-center gap-3">
+                                             <div className="p-1.5 rounded bg-accent/10 border border-accent/20">
+                                                <Archive size={12} className="text-accent" />
+                                             </div>
+                                             <span className="text-[10px] font-mono font-bold text-slate-300">{String(history.id).split('-').pop()}</span>
+                                          </div>
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                                             {history.opened_at ? new Date(history.opened_at).toLocaleDateString() : '-'}
+                                          </div>
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          <span className="text-[11px] font-medium text-slate-400">{history.operator_id || '-'}</span>
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          <span className="text-[11px] font-mono font-bold text-slate-200">R$ {history.initial_balance ? (history.initial_balance/100).toFixed(2) : '0,00'}</span>
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          {history.closed_at ? (
+                                             <Badge variant="success">Consolidado</Badge>
+                                          ) : (
+                                             <Badge variant="warning">Aberto</Badge>
+                                          )}
+                                       </td>
+                                       <td className="px-6 py-4 text-right">
+                                          <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); }}>Ver</Button>
+                                       </td>
+                                    </tr>
+                                 );
+                              })
+                           )}
                         </tbody>
                      </table>
                   </div>

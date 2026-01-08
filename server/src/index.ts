@@ -5,6 +5,7 @@ import { healthRouter } from './routes/health.routes';
 import { productRouter } from './routes/product.routes';
 import { posRouter } from './routes/pos.routes';
 import { cashRouter } from './routes/cash.routes';
+import { cashHistoryRouter } from './routes/cash.history.routes';
 import { categoryRouter } from './routes/category.routes';
 import { userRouter } from './routes/user.routes';
 import { clientRouter } from './routes/user.routes';
@@ -30,6 +31,7 @@ app.use('/api/suppliers', supplierRouter);
 
 
 app.use('/api/cash', cashRouter);
+app.use('/api/cash', cashHistoryRouter);
 app.use('/api/pos', posRouter);
 
 // Static serving (prod)
