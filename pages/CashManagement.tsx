@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { getUserById, getOperatorNameById } from '../services/user';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus } from 'lucide-react';
@@ -66,6 +67,8 @@ const CashManagement: React.FC = () => {
    const [sessionLoading, setSessionLoading] = useState(true);
    const [sessionError, setSessionError] = useState('');
 
+   
+
    useEffect(() => {
       setSessionLoading(true);
       fetch('/api/cash/open')
@@ -98,6 +101,21 @@ const CashManagement: React.FC = () => {
   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
    const [selectedTx, setSelectedTx] = useState<CashTransaction | null>(null);
    const [operatorName, setOperatorName] = useState<string>('');
+   
+      // Fecha o modal de auditoria de movimentação ao pressionar ESC
+   useEffect(() => {
+      if (!selectedTx) return;
+      const handleEsc = (e: KeyboardEvent) => {
+         if (e.key === 'Escape') {
+            setSelectedTx(null);
+         }
+      };
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+   }, [selectedTx]);
+   
+   
+   
    // Buscar nome do operador ao abrir modal de venda
    useEffect(() => {
       async function fetchOperatorName() {
@@ -508,10 +526,21 @@ const CashManagement: React.FC = () => {
                     </div>
                  </div>
                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vlr Líquido</p>
-                    <h3 className={`text-3xl font-mono font-bold ${selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
-                       {selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? '-' : '+'} R$ {typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}
-                    </h3>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vlr Líquido</p>
+                              <h3 className={`text-3xl font-mono font-bold ${selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
+                                  {(() => {
+                                     if (selectedTx.type === 'sale' || (selectedTx.items && Array.isArray(selectedTx.items) && selectedTx.items.length > 0)) {
+                                        // Para vendas, mostrar total - desconto
+                                        const total = typeof selectedTx.total === 'number' ? selectedTx.total : 0;
+                                        const discount = typeof selectedTx.discount_total === 'number' ? selectedTx.discount_total : 0;
+                                        return `+ R$ ${((total ) / 100).toFixed(2)}`;
+                                     }
+                                     if (selectedTx.type === 'sangria' || selectedTx.type === 'pagamento') {
+                                        return `- R$ ${typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}`;
+                                     }
+                                     return `+ R$ ${typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}`;
+                                  })()}
+                              </h3>
                  </div>
               </div>
 
@@ -533,9 +562,10 @@ const CashManagement: React.FC = () => {
                                     <p className="text-[10px] text-slate-600 uppercase italic">Nenhum produto vinculado a esta venda.</p>
                                  )}
                                  <div className="pt-4 border-t border-white/5 flex flex-col gap-2 font-bold">
+                                    
                                     <div className="flex justify-between text-xs">
-                                       <span>Total da Venda:</span>
-                                       <span>R$ {typeof selectedTx.total === 'number' ? (selectedTx.total / 100).toFixed(2) : '0.00'}</span>
+                                       <span>Descontos Aplicados:</span>
+                                       <span className="text-red-400">- R$ {typeof selectedTx.discount_total === 'number' ? (selectedTx.discount_total / 100).toFixed(2) : '0.00'}</span>
                                     </div>
                                     <div className="flex flex-col gap-1 mt-2">
                                        <span className="text-xs font-bold text-slate-400">Método de Pagamento:</span>
@@ -547,15 +577,15 @@ const CashManagement: React.FC = () => {
                                           <span className="text-xs text-slate-300">Não informado</span>
                                        )}
                                     </div>
-                                                      <div className="flex flex-col gap-1 mt-2">
-                                                          <span className="text-xs font-bold text-slate-400">Operador Responsável:</span>
-                                                          <span className="text-xs text-slate-300">
-                                                             {selectedTx.metadata?.operator
-                                                                || operatorName
-                                                                || session?.operator
-                                                                || 'Não informado'}
-                                                          </span>
-                                                      </div>
+                                    <div className="flex flex-col gap-1 mt-2">
+                                       <span className="text-xs font-bold text-slate-400">Operador Responsável:</span>
+                                       <span className="text-xs text-slate-300">
+                                          {selectedTx.metadata?.operator
+                                             || operatorName
+                                             || session?.operator
+                                             || 'Não informado'}
+                                       </span>
+                                    </div>
                                  </div>
                            </div>
                         </div>

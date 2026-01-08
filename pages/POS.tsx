@@ -267,6 +267,14 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
 
    useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+         // Abrir modal de desconto com Ctrl + D se houver venda no buffer
+         if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+            if (cart && cart.length > 0) {
+               e.preventDefault();
+               setIsDiscountModalOpen(true);
+               return;
+            }
+         }
          // 🚨 CORREÇÃO PRINCIPAL:
          // Se o PaymentModal está aberto E está no multipagamento,
          // nada do pai pode capturar teclas.

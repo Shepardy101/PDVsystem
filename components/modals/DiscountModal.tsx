@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Button, Input } from '../UI';
 
 export interface DiscountModalProps {
@@ -11,7 +11,18 @@ export interface DiscountModalProps {
 
 const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, tempDiscount, onClose, onChange, onApply }) => {
   const discountInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (isOpen && discountInputRef.current) {
+      discountInputRef.current.focus();
+      discountInputRef.current.select();
+    }
+  }, [isOpen]);
   if (!isOpen) return null;
+  // Função para bloquear propagação de eventos de teclado para o pai
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') onApply();
+  };
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={onClose} />
@@ -25,7 +36,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, tempDiscount, onC
             className="text-center text-3xl font-mono text-accent"
             value={tempDiscount}
             onChange={e => onChange(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && onApply()}
+            onKeyDown={handleKeyDown}
           />
         </div>
         <div className="flex gap-4 p-6">
