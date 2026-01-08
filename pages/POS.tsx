@@ -761,6 +761,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
             setMultiMode={setMultiMode}
             onClose={() => setIsPaymentModalOpen(false)}
             onFinalize={payments => finalizeSale(payments)}
+            selectedClient={selectedClient}
          />
 
          <ClientModal

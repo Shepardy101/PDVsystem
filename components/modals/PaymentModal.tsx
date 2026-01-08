@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Wallet, X, Zap, CreditCard, DollarSign } from 'lucide-react';
 import { Button, Input } from '../UI';
-
+import { useState as useReactState, useEffect as useReactEffect, useRef as useReactRef, useContext } from 'react';
+import POSContext from '../../pages/POS';
 export interface PaymentModalProps {
     isOpen: boolean;
     total: number;
@@ -9,6 +10,7 @@ export interface PaymentModalProps {
     setMultiMode: (v: boolean) => void;
     onClose: () => void;
     onFinalize: (payments: { method: string, amount: number }[]) => void;
+    selectedClient?: { name: string; cpf?: string } | null;
 }
 
 const paymentOptions = [
@@ -17,7 +19,9 @@ const paymentOptions = [
     { id: 'cash', label: 'Dinheiro', key: '3', icon: DollarSign, color: 'text-emerald-400' },
 ];
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, setMultiMode, onClose, onFinalize }) => {
+
+
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, setMultiMode, onClose, onFinalize, selectedClient }) => {
     const [partialPayments, setPartialPayments] = useState<{ method: string, amount: number }[]>([]);
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -153,6 +157,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
 
     if (!isOpen) return null;
 
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={onClose} />
@@ -161,6 +166,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                 tabIndex={-1}
                 className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden"
             >
+                
                 <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
@@ -307,7 +313,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                     )}
                 </div>
                 <div className="p-6 border-t border-white/10 bg-dark-950/80 rounded-b-2xl text-center">
-                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">Protocolo de Segurança Ativo // ESC para cancelar</p>
+                    {selectedClient ? (
+                        <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent">Cliente Vinculado</span>
+                            <span className="text-xs font-mono text-slate-300">{selectedClient.name}</span>
+                            {selectedClient.cpf && <span className="text-xs font-mono text-slate-400">CPF: {selectedClient.cpf}</span>}
+                        </div>
+                    ) : (
+                        <p className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">Protocolo de Segurança Ativo // ESC para cancelar</p>
+                    )}
                 </div>
                 <div className="border-animation absolute bottom-0 left-0 w-full"></div>
             </div>
