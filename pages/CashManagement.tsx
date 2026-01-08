@@ -1,3 +1,4 @@
+import SangriaModal from '../components/modals/SangriaModal';
 
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -93,7 +94,10 @@ const CashManagement: React.FC = () => {
                   ...(salesData.sales || []),
                   ...(suprimentosData.movements || []).map((m: any) => ({
                      ...m,
-                     type: m.type === 'supply_in' ? 'suprimento' : m.type
+                     type:
+                       m.type === 'supply_in' ? 'suprimento'
+                       : m.type === 'withdraw_out' ? 'sangria'
+                       : m.type
                   }))
                ];
                // Ordenar por data/hora
@@ -713,37 +717,15 @@ const CashManagement: React.FC = () => {
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
          />
 
-         <Modal isOpen={isSangriaModalOpen} onClose={() => setIsSangriaModalOpen(false)} title="Sangria de Emergência">
-            <div className="space-y-6 animate-in zoom-in-95 duration-200">
-               <Input
-                  label="Valor da Retirada"
-                  placeholder="0.00"
-                  icon={<DollarSign size={18} className="text-red-400" />}
-                  className="bg-dark-950/50 border-red-500/10 text-xl font-mono text-red-400"
-               />
-               <div className="space-y-2">
-                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Alocação / Categoria</label>
-                  <div className="flex gap-2">
-                     <select className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all">
-                        {txCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                     </select>
-                     <button onClick={() => setIsTxCategoryModalOpen(true)} className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/20 transition-all">
-                        <FolderPlus size={18} />
-                     </button>
-                  </div>
-               </div>
-               <Input
-                  label="Motivo / Destino"
-                  placeholder="Ex: Retirada p/ depósito em cofre"
-                  icon={<MessageSquare size={16} className="text-slate-500" />}
-                  className="bg-dark-950/50"
-               />
-               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                  <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => setIsSangriaModalOpen(false)}>Abortar</Button>
-                  <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-red-500/10 bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20" icon={<Zap size={18} />} onClick={() => setIsSangriaModalOpen(false)}>Executar Sangria</Button>
-               </div>
-            </div>
-         </Modal>
+         <SangriaModal
+            isOpen={isSangriaModalOpen}
+            onClose={() => {
+               setIsSangriaModalOpen(false);
+               setRefreshFlag(f => f + 1);
+            }}
+            txCategories={txCategories}
+            onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+         />
 
          <Modal isOpen={isPagamentoModalOpen} onClose={() => setIsPagamentoModalOpen(false)} title="Quitação de Despesas">
             <div className="space-y-6 animate-in zoom-in-95 duration-200">

@@ -1,3 +1,31 @@
+// Adiciona movimentação de sangria
+export function addSangriaMovement({ amount, category, description, operatorId, cashSessionId }: {
+  amount: number;
+  category: string;
+  description: string;
+  operatorId: string;
+  cashSessionId: string;
+}) {
+  const now = Date.now();
+  const id = uuidv4();
+  // Armazena em centavos
+  const value = Math.round(amount * 100);
+  db.prepare(`INSERT INTO cash_movements (id, type, direction, amount, category, description, operator_id, cash_session_id, timestamp, reference_type, reference_id, metadata_json, created_at)
+    VALUES (?, 'withdraw_out', 'out', ?, ?, ?, ?, ?, ?, 'manual', NULL, NULL, ?)
+  `).run(id, value, category, description, operatorId, cashSessionId, now, now);
+  return {
+    id,
+    type: 'sangria',
+    direction: 'out',
+    amount: value,
+    category,
+    description,
+    operator_id: operatorId,
+    cash_session_id: cashSessionId,
+    timestamp: now,
+    created_at: now
+  };
+}
 // Busca todas as movimentações do caixa atual
 export function getCashMovementsBySession(cashSessionId: string) {
   return db.prepare('SELECT * FROM cash_movements WHERE cash_session_id = ? ORDER BY timestamp ASC').all(cashSessionId);

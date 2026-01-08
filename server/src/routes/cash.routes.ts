@@ -1,7 +1,39 @@
 import { Router } from 'express';
-import { openCashSession, getOpenCashSession, closeCashSession, addSuprimentoMovement } from '../repositories/cash.repo.js';
+import { openCashSession, getOpenCashSession, closeCashSession, addSuprimentoMovement, addSangriaMovement } from '../repositories/cash.repo.js';
 
 export const cashRouter = Router();
+// Adicionar movimentação de sangria
+cashRouter.post('/sangria', async (req, res) => {
+  try {
+    const { amount, category, description, operatorId, cashSessionId } = req.body;
+    if (!amount || !category || !description) {
+      return res.status(400).json({ error: 'Campos obrigatórios: amount, category, description' });
+    }
+    // Buscar sessão aberta se não informado
+    let sessionId = cashSessionId;
+    if (!sessionId) {
+      const session = getOpenCashSession();
+      if (!session) return res.status(400).json({ error: 'Nenhuma sessão de caixa aberta' });
+      sessionId = session.id;
+    }
+    // Buscar operador
+    const opId = operatorId || (getOpenCashSession()?.operator_id);
+    // Chamar repo para registrar sangria
+    const tx = await addSangriaMovement({
+      amount,
+      category,
+      description,
+      operatorId: opId,
+      cashSessionId: sessionId
+    });
+    res.status(201).json({ transaction: tx });
+  } catch (err) {
+    console.error('[CASH] Erro ao registrar sangria:', err);
+    res.status(400).json({ error: err.message || 'Erro ao registrar sangria.' });
+  }
+});
+
+
 
 // Buscar todas as movimentações do caixa atual
 cashRouter.get('/movements', (req, res) => {
