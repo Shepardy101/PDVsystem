@@ -1,3 +1,4 @@
+import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
 
 
@@ -97,6 +98,7 @@ const CashManagement: React.FC = () => {
                      type:
                        m.type === 'supply_in' ? 'suprimento'
                        : m.type === 'withdraw_out' ? 'sangria'
+                       : m.type === 'adjustment' ? 'pagamento'
                        : m.type
                   }))
                ];
@@ -727,37 +729,15 @@ const CashManagement: React.FC = () => {
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
          />
 
-         <Modal isOpen={isPagamentoModalOpen} onClose={() => setIsPagamentoModalOpen(false)} title="Quitação de Despesas">
-            <div className="space-y-6 animate-in zoom-in-95 duration-200">
-               <Input
-                  label="Valor do Lançamento"
-                  placeholder="0.00"
-                  icon={<DollarSign size={18} className="text-amber-500" />}
-                  className="bg-dark-950/50 border-amber-500/10 text-xl font-mono text-amber-500"
-               />
-               <div className="space-y-2">
-                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Alocação / Categoria</label>
-                  <div className="flex gap-2">
-                     <select className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all">
-                        {txCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                     </select>
-                     <button onClick={() => setIsTxCategoryModalOpen(true)} className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 hover:bg-amber-500/20 transition-all">
-                        <FolderPlus size={18} />
-                     </button>
-                  </div>
-               </div>
-               <Input
-                  label="Detalhes da Despesa"
-                  placeholder="Ex: Pagamento de fornecedor de gelo"
-                  icon={<MessageSquare size={16} className="text-slate-500" />}
-                  className="bg-dark-950/50"
-               />
-               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                  <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => setIsPagamentoModalOpen(false)}>Cancelar</Button>
-                  <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-amber-500/10 bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20" icon={<CreditCard size={18} />} onClick={() => setIsPagamentoModalOpen(false)}>Efetuar Pagamento</Button>
-               </div>
-            </div>
-         </Modal>
+         <PagamentoModal
+            isOpen={isPagamentoModalOpen}
+            onClose={() => {
+               setIsPagamentoModalOpen(false);
+               setRefreshFlag(f => f + 1);
+            }}
+            txCategories={txCategories}
+            onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+         />
 
          {/* MODAL CRIAR CATEGORIA DE TRANSAÇÃO */}
          <Modal

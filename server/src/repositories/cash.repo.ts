@@ -1,3 +1,34 @@
+import { db } from '../db/database';
+import { v4 as uuidv4 } from 'uuid';
+
+// Adiciona movimentação de pagamento
+export function addPagamentoMovement({ amount, category, description, operatorId, cashSessionId }: {
+  amount: number;
+  category: string;
+  description: string;
+  operatorId: string;
+  cashSessionId: string;
+}) {
+  const now = Date.now();
+  const id = uuidv4();
+  // Armazena em centavos
+  const value = Math.round(amount * 100);
+  db.prepare(`INSERT INTO cash_movements (id, type, direction, amount, category, description, operator_id, cash_session_id, timestamp, reference_type, reference_id, metadata_json, created_at)
+    VALUES (?, 'adjustment', 'out', ?, ?, ?, ?, ?, ?, 'manual', NULL, NULL, ?)
+  `).run(id, value, category, description, operatorId, cashSessionId, now, now);
+  return {
+    id,
+    type: 'pagamento',
+    direction: 'out',
+    amount: value,
+    category,
+    description,
+    operator_id: operatorId,
+    cash_session_id: cashSessionId,
+    timestamp: now,
+    created_at: now
+  };
+}
 // Adiciona movimentação de sangria
 export function addSangriaMovement({ amount, category, description, operatorId, cashSessionId }: {
   amount: number;
@@ -81,8 +112,7 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
     sales
   };
 }
-import { db } from '../db/database';
-import { v4 as uuidv4 } from 'uuid';
+
 
 export function openCashSession(operatorId: string, initialBalance: number) {
   const now = Date.now();
@@ -109,6 +139,21 @@ export function openCashSession(operatorId: string, initialBalance: number) {
   return session;
 }
 
-export function getOpenCashSession() {
-  return db.prepare('SELECT * FROM cash_sessions WHERE is_open = 1 ORDER BY opened_at DESC LIMIT 1').get();
+export interface CashSession {
+  id: string;
+  operator_id: string;
+  opened_at: number;
+  closed_at: number | null;
+  initial_balance: number;
+  is_open: number;
+  physical_count_at_close: number | null;
+  difference_at_close: number | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export function getOpenCashSession(): CashSession | undefined {
+  const session = db.prepare('SELECT * FROM cash_sessions WHERE is_open = 1 ORDER BY opened_at DESC LIMIT 1').get();
+  if (!session) return undefined;
+  return session as CashSession;
 }
