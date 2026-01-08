@@ -45,6 +45,16 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    const [selectedClientIndex, setSelectedClientIndex] = useState(0);
    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
    const clientInputRef = useRef<HTMLInputElement>(null);
+
+
+   //ficar input de busca de produtos quando o componente montar
+   useEffect(() => {
+      if (inputRef.current) {
+         inputRef.current.focus();
+         inputRef.current.value = '';
+      }
+   }, []);
+
    // Buscar clientes ao digitar no mini modal
    useEffect(() => {
       if (!isClientModalOpen) return;
@@ -60,6 +70,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
          setClientResults(items);
       }).catch(() => setClientResults([]));
    }, [clientSearch, isClientModalOpen]);
+
    const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
    const [lastSaleData, setLastSaleData] = useState<any>(null);

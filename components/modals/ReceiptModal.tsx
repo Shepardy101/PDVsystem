@@ -10,6 +10,20 @@ export interface ReceiptModalProps {
 }
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClose, onPrint }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        onPrint();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onPrint]);
   if (!isOpen) return null;
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Recibo de Transação">

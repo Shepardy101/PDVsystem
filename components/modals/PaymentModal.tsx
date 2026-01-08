@@ -247,16 +247,37 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                     ref={selectRef}
                                     value={paymentMethod}
                                     onChange={e => setPaymentMethod(e.target.value)}
-                                    className="p-3 rounded-xl border border-white/10 bg-dark-950/50 text-xs font-bold text-slate-400"
+                                    className="p-3 rounded-xl border border-white/10 bg-dark-950/50 text-xs font-bold text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/40 custom-select"
                                     onFocus={() => setFocusStep('select')}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') setFocusStep('add');
                                     }}
+                                    style={{
+                                        minWidth: '140px',
+                                        appearance: 'none',
+                                        WebkitAppearance: 'none',
+                                        MozAppearance: 'none',
+                                        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'16\' height=\'16\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M4 6l4 4 4-4\' stroke=\'%23a78bfa\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 0.75rem center',
+                                        backgroundSize: '1.25em',
+                                        color: '#a5b4fc',
+                                    }}
                                 >
-                                    <option value="cash">Dinheiro</option>
-                                    <option value="card">Cartão</option>
-                                    <option value="pix">Pix</option>
+                                    <option value="cash" className="bg-dark-950 text-emerald-400">Dinheiro</option>
+                                    <option value="card" className="bg-dark-950 text-purple-400">Cartão</option>
+                                    <option value="pix" className="bg-dark-950 text-blue-400">Pix</option>
                                 </select>
+                                <style>{`
+                                    select.custom-select option {
+                                        background: #181926;
+                                        color: #a5b4fc;
+                                    }
+                                    select.custom-select:focus {
+                                        outline: none;
+                                        box-shadow: 0 0 0 2px #a78bfa44;
+                                    }
+                                `}</style>
                                 <Button
                                     ref={addBtnRef}
                                     className="py-3 px-6"
