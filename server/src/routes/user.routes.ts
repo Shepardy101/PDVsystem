@@ -17,8 +17,8 @@ userRouter.get('/operator/:id', async (req, res) => {
       return res.status(404).json({ error: 'Operador não encontrado' });
     }
     console.log('response operator name:', row);
-    res.json({ name: row.name });
-  } catch (e) {
+    res.json({ name: (row as { name: string }).name });
+  } catch (e: any) {
     res.status(500).json({ error: 'Erro ao buscar operador', details: e && e.message ? e.message : e });
   }
 });
