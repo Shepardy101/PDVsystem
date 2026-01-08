@@ -12,10 +12,10 @@ import { CashSession, CashTransaction } from '../types';
 
 // Função para buscar histórico real de caixas
 async function fetchCashHistory() {
-  const res = await fetch('/api/cash/history');
-  if (!res.ok) throw new Error('Erro ao buscar histórico de caixas');
-  const data = await res.json();
-  return data.sessions || [];
+   const res = await fetch('/api/cash/history');
+   if (!res.ok) throw new Error('Erro ao buscar histórico de caixas');
+   const data = await res.json();
+   return data.sessions || [];
 }
 
 const INITIAL_TX_CATEGORIES = ['Logística', 'Infraestrutura', 'Retirada Lucro', 'Despesas Gerais', 'Marketing', 'Manutenção'];
@@ -25,16 +25,16 @@ const CashManagement: React.FC = () => {
    const [cashHistory, setCashHistory] = useState([]);
    const [cashHistoryLoading, setCashHistoryLoading] = useState(false);
    const [cashHistoryError, setCashHistoryError] = useState('');
-      useEffect(() => {
-         if (activeTab === 'history') {
-            setCashHistoryLoading(true);
-            setCashHistoryError('');
-            fetchCashHistory()
-               .then(sessions => setCashHistory(sessions))
-               .catch(() => setCashHistoryError('Erro ao buscar histórico de caixas'))
-               .finally(() => setCashHistoryLoading(false));
-         }
-      }, [activeTab]);
+   useEffect(() => {
+      if (activeTab === 'history') {
+         setCashHistoryLoading(true);
+         setCashHistoryError('');
+         fetchCashHistory()
+            .then(sessions => setCashHistory(sessions))
+            .catch(() => setCashHistoryError('Erro ao buscar histórico de caixas'))
+            .finally(() => setCashHistoryLoading(false));
+      }
+   }, [activeTab]);
    const [historyModalTab, setHistoryModalTab] = useState<'resumo' | 'movimentacoes'>('resumo');
    const [refreshFlag, setRefreshFlag] = useState(0);
 
@@ -49,7 +49,7 @@ const CashManagement: React.FC = () => {
 
    // ao pressionar esc o setIsReceiptPreviewOpen setra false
 
-  
+
    //suprimentos
 
    useEffect(() => {
@@ -72,10 +72,10 @@ const CashManagement: React.FC = () => {
                   ...(suprimentosData.movements || []).map((m: any) => ({
                      ...m,
                      type:
-                       m.type === 'supply_in' ? 'suprimento'
-                       : m.type === 'withdraw_out' ? 'sangria'
-                       : m.type === 'adjustment' ? 'pagamento'
-                       : m.type
+                        m.type === 'supply_in' ? 'suprimento'
+                           : m.type === 'withdraw_out' ? 'sangria'
+                              : m.type === 'adjustment' ? 'pagamento'
+                                 : m.type
                   }))
                ];
                // Ordenar por data/hora decrescente (mais recente no topo)
@@ -128,12 +128,30 @@ const CashManagement: React.FC = () => {
       }
       fetchOperatorName();
    }, [selectedTx]);
+
+
+
    const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
    const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
 
    const handlePrint = useCallback(() => {
       window.print();
    }, []);
+
+
+   const [operatorNameHistory, setOperatorNameHistory] = useState('');
+
+   useEffect(() => {
+      async function fetchOperatorNameHistory() {
+         if (selectedHistory && selectedHistory.operator_id) {
+            const name = await getOperatorNameById(selectedHistory.operator_id);
+            setOperatorNameHistory(name || selectedHistory.operator_id);
+         } else {
+            setOperatorNameHistory('');
+         }
+      }
+      fetchOperatorNameHistory();
+   }, [selectedHistory]);
 
    const getStatusColor = (type: string) => {
       switch (type) {
@@ -164,7 +182,7 @@ const CashManagement: React.FC = () => {
    };
 
 
-    useEffect(() => {
+   useEffect(() => {
       const handleEsc = (e: KeyboardEvent) => {
          if (e.key === 'Escape') {
             setIsReceiptPreviewOpen(false);
@@ -196,8 +214,8 @@ const CashManagement: React.FC = () => {
             <button
                onClick={() => setActiveTab('current')}
                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${activeTab === 'current'
-                     ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
-                     : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+                  ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+                  : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
                   }`}
             >
                <Zap size={14} />
@@ -206,8 +224,8 @@ const CashManagement: React.FC = () => {
             <button
                onClick={() => setActiveTab('history')}
                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${activeTab === 'history'
-                     ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
-                     : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+                  ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+                  : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
                   }`}
             >
                <History size={14} />
@@ -219,84 +237,100 @@ const CashManagement: React.FC = () => {
             <>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0 mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
                   <Card className="bg-dark-900/40 border-accent/20 shadow-accent-glow/10 p-4">
-                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Liquidez</p>
-                               <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">
-                                  R$ {
-                                     (() => {
-                                        if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                        // Filtra apenas vendas: objetos com campo 'status' e array 'items'
-                                        const vendas = session.transactions.filter(tx => tx.status && Array.isArray(tx.items));
-                                        const totalVendas = vendas.reduce((acc, venda) => {
-                                           if (typeof venda.total === 'number') {
-                                              return acc + venda.total;
-                                           }
-                                           if (Array.isArray(venda.items)) {
-                                              return acc + venda.items.reduce((sum, item) => sum + (item.line_total || item.lineTotal || 0), 0);
-                                           }
-                                           return acc;
-                                        }, 0);
-                                        return (totalVendas / 100).toFixed(2);
-                                     })()
-                                  }
-                               </h3>
+                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Total de vendas</p>
+                     <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">
+                        R$ {
+                           (() => {
+                              if (!session || !Array.isArray(session.transactions)) return '0.00';
+                              // Filtra apenas vendas: objetos com campo 'status' e array 'items'
+                              const vendas = session.transactions.filter(tx => tx.status && Array.isArray(tx.items));
+                              const totalVendas = vendas.reduce((acc, venda) => {
+                                 if (typeof venda.total === 'number') {
+                                    return acc + venda.total;
+                                 }
+                                 if (Array.isArray(venda.items)) {
+                                    return acc + venda.items.reduce((sum, item) => sum + (item.line_total || item.lineTotal || 0), 0);
+                                 }
+                                 return acc;
+                              }, 0);
+                              return (totalVendas / 100).toFixed(2);
+                           })()
+                        }
+                     </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
                      <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
-                               <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">
-                                  + R$ {
-                                     (() => {
-                                        if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                        let totalSuprimentos = 0;
-                                        session.transactions.forEach(tx => {
-                                           if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
-                                              totalSuprimentos += tx.amount;
-                                           }
-                                        });
-                                        return (totalSuprimentos / 100).toFixed(2);
-                                     })()
-                                  }
-                               </h3>
+                     <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">
+                        + R$ {
+                           (() => {
+                              if (!session || !Array.isArray(session.transactions)) return '0.00';
+                              let totalSuprimentos = 0;
+                              session.transactions.forEach(tx => {
+                                 if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
+                                    totalSuprimentos += tx.amount;
+                                 }
+                              });
+                              return (totalSuprimentos / 100).toFixed(2);
+                           })()
+                        }
+                     </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
                      <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
-                               <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">
-                                  - R$ {
-                                     (() => {
-                                        if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                        let totalDeducoes = 0;
-                                        session.transactions.forEach(tx => {
-                                           if ((tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number') {
-                                              totalDeducoes += tx.amount;
-                                           }
-                                        });
-                                        return (totalDeducoes / 100).toFixed(2);
-                                     })()
-                                  }
-                               </h3>
+                     <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">
+                        - R$ {
+                           (() => {
+                              if (!session || !Array.isArray(session.transactions)) return '0.00';
+                              let totalDeducoes = 0;
+                              session.transactions.forEach(tx => {
+                                 if ((tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number') {
+                                    totalDeducoes += tx.amount;
+                                 }
+                              });
+                              return (totalDeducoes / 100).toFixed(2);
+                           })()
+                        }
+                     </h3>
                   </Card>
                   <Card className="bg-dark-900/40 border-white/5 p-4">
-                               <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Lastro</p>
-                              <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
-                                   R$ {
-                                      (() => {
-                                         if (!session) return '0.00';
-                                         // Detecta se o saldo inicial já está em centavos (ex: 1000 ou 10.00)
-                                         let initialBalanceCents = session.initial_balance ?? 0;
-                                         if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
-                                           // Exemplo: 10.50 -> 1050
-                                           initialBalanceCents = Math.round(initialBalanceCents * 100);
-                                         }
-                                         const totalSangrias = session.transactions.reduce((acc, tx) => {
-                                            if (tx.type === 'sangria' && typeof tx.amount === 'number') {
-                                               return acc + tx.amount;
-                                            }
-                                            return acc;
-                                         }, 0);
-                                         const lastro = initialBalanceCents - totalSangrias;
-                                         return (lastro / 100).toFixed(2);
-                                      })()
-                                   }
-                              </h3>
+                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
+                     <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
+                        R$ {
+                           (() => {
+                              if (!session || !Array.isArray(session.transactions)) return '0.00';
+                              // Saldo inicial do caixa
+                              let initialBalanceCents = session.initial_balance ?? 0;
+                              if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
+                                 initialBalanceCents = Math.round(initialBalanceCents * 100);
+                              }
+                              // Somar todas as vendas cujo método de pagamento seja 'cash'
+                              let totalVendasCash = 0;
+                              session.transactions.forEach(tx => {
+                                 // Caso 1: Estrutura nova, payments array
+                                 if (Array.isArray(tx.payments)) {
+                                    tx.payments.forEach(pay => {
+                                       if (pay.method === 'cash' && typeof pay.amount === 'number') {
+                                          totalVendasCash += pay.amount;
+                                       }
+                                    });
+                                    console.log(tx);
+                                    console.log('total de vendas cash até agora:', totalVendasCash);
+                                 }
+
+                                 // Caso 2: Estrutura antiga/backend, paymentMethod direto
+                                 else if (
+                                    (tx.type === 'sale' || tx.type === 'venda') &&
+                                    tx.paymentMethod === 'cash' &&
+                                    typeof tx.total === 'number'
+                                 ) {
+                                    totalVendasCash += tx.total;
+                                 }
+                              });
+                              const lastro = initialBalanceCents + totalVendasCash;
+                              return (lastro / 100).toFixed(2);
+                           })()
+                        }
+                     </h3>
                   </Card>
                </div>
 
@@ -317,40 +351,40 @@ const CashManagement: React.FC = () => {
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-white/5">
-                                {(session && Array.isArray(session.transactions))
-                                  ? session.transactions
-                                      .filter(tx => {
-                                        // Exibir apenas vendas, suprimentos, sangrias e pagamentos
-                                        const type = tx.items && Array.isArray(tx.items) ? 'sale' : tx.type;
-                                        return (
-                                          type === 'sale' ||
-                                          type === 'suprimento' ||
-                                          type === 'sangria' ||
-                                          type === 'pagamento'
-                                        );
-                                      })
-                                      .map(tx => {
-                                        const isSale = tx.items && Array.isArray(tx.items);
-                                        const type = isSale ? 'sale' : tx.type;
-                                        const total = isSale
-                                          ? tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0)
-                                          : (typeof tx.amount === 'number' ? tx.amount : 0);
-                                        const description = isSale ? `Venda #${tx.id}` : tx.description;
-                                        return (
-                                          <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                            <td className="px-6 py-4">
-                                              <div className="flex items-center gap-3">
-                                                <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
-                                                <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
-                                              </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
-                                            <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                            <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                          </tr>
-                                        );
-                                      })
-                                  : null}
+                                 {(session && Array.isArray(session.transactions))
+                                    ? session.transactions
+                                       .filter(tx => {
+                                          // Exibir apenas vendas, suprimentos, sangrias e pagamentos
+                                          const type = tx.items && Array.isArray(tx.items) ? 'sale' : tx.type;
+                                          return (
+                                             type === 'sale' ||
+                                             type === 'suprimento' ||
+                                             type === 'sangria' ||
+                                             type === 'pagamento'
+                                          );
+                                       })
+                                       .map(tx => {
+                                          const isSale = tx.items && Array.isArray(tx.items);
+                                          const type = isSale ? 'sale' : tx.type;
+                                          const total = isSale
+                                             ? tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0)
+                                             : (typeof tx.amount === 'number' ? tx.amount : 0);
+                                          const description = isSale ? `Venda #${tx.id}` : tx.description;
+                                          return (
+                                             <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                <td className="px-6 py-4">
+                                                   <div className="flex items-center gap-3">
+                                                      <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
+                                                      <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
+                                                   </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                             </tr>
+                                          );
+                                       })
+                                    : null}
                               </tbody>
                            </table>
                         </div>
@@ -430,7 +464,7 @@ const CashManagement: React.FC = () => {
                                           <span className="text-[11px] font-medium text-slate-400">{history.operator_id || '-'}</span>
                                        </td>
                                        <td className="px-6 py-4">
-                                          <span className="text-[11px] font-mono font-bold text-slate-200">R$ {history.initial_balance ? (history.initial_balance/100).toFixed(2) : '0,00'}</span>
+                                          <span className="text-[11px] font-mono font-bold text-slate-200">R$ {history.initial_balance ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
                                        </td>
                                        <td className="px-6 py-4">
                                           {history.closed_at ? (
@@ -484,38 +518,51 @@ const CashManagement: React.FC = () => {
 
                   {historyModalTab === 'resumo' ? (
                      <div className="space-y-8 animate-in fade-in duration-300">
+                        {console.log(selectedHistory)}
                         <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 relative overflow-hidden gap-6">
                            <div className="flex items-center gap-5 relative z-10 w-full md:w-auto">
-                              <div className={`p-4 rounded-2xl shrink-0 ${selectedHistory.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                                 {selectedHistory.status === 'success' ? <CheckCircle2 size={32} /> : <AlertTriangle size={32} />}
+                              <div className={`p-4 rounded-2xl shrink-0 ${selectedHistory.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                 {selectedHistory.status === 'success' ? <CheckCircle2 size={32} /> : <Shield size={32} />}
                               </div>
                               <div>
-                                 <h3 className="text-xl font-bold text-slate-100 font-mono tracking-tighter uppercase">{selectedHistory.id}</h3>
-                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Operador: {selectedHistory.operator}</p>
+                                 <h3 className="text-xl font-bold text-slate-100 font-mono tracking-tighter uppercase">{selectedHistory.is_open === 0 ? 'Caixa Fechado' : 'Caixa Aberto'}</h3>
+                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Operador: {operatorNameHistory || '-'}</p>
+
+
                               </div>
                            </div>
                            <div className="text-right relative z-10 w-full md:w-auto">
-                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Declarado</p>
-                              <h3 className="text-3xl font-mono font-bold text-accent shadow-accent-glow">R$ {selectedHistory.finalBalance.toFixed(2)}</h3>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Fechamento</p>
+                              <h3 className="text-3xl font-mono font-bold text-accent shadow-accent-glow">
+                                 R$ {
+                                    typeof selectedHistory.initial_balance === 'number' &&
+                                       typeof selectedHistory.sales_total === 'number' &&
+                                       typeof selectedHistory.sangrias_total === 'number'
+                                       ? (
+                                          (selectedHistory.initial_balance + selectedHistory.sales_total - selectedHistory.sangrias_total) / 100
+                                       ).toFixed(2)
+                                       : '0.00'
+                                 }
+                              </h3>
                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1">
                               <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Abertura</p>
-                              <p className="text-xs font-mono font-bold text-slate-300">{new Date(selectedHistory.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="text-xs font-mono font-bold text-slate-300">{selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
                            </div>
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1">
                               <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Encerramento</p>
-                              <p className="text-xs font-mono font-bold text-slate-300">{new Date(selectedHistory.closedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="text-xs font-mono font-bold text-slate-300">{selectedHistory.closed_at ? new Date(selectedHistory.closed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
                            </div>
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1 text-emerald-500/80">
                               <p className="text-[8px] font-bold uppercase tracking-widest">Vendas Totais</p>
-                              <p className="text-xs font-mono font-bold">R$ {selectedHistory.salesTotal.toFixed(2)}</p>
+                              <p className="text-xs font-mono font-bold">R$ {typeof selectedHistory.sales_total === 'number' ? (selectedHistory.sales_total / 100).toFixed(2) : '0.00'}</p>
                            </div>
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1 text-red-500/80">
                               <p className="text-[8px] font-bold uppercase tracking-widest">Sangrias</p>
-                              <p className="text-xs font-mono font-bold">R$ {selectedHistory.sangriasTotal.toFixed(2)}</p>
+                              <p className="text-xs font-mono font-bold">R$ {typeof selectedHistory.sangrias_total === 'number' ? (selectedHistory.sangrias_total / 100).toFixed(2) : '0.00'}</p>
                            </div>
                         </div>
 
@@ -525,13 +572,13 @@ const CashManagement: React.FC = () => {
                                  <Calculator size={18} className="text-accent" />
                                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Auditoria de Lastro Esperado</span>
                               </div>
-                              <span className="font-mono text-sm font-bold text-slate-100">R$ {selectedHistory.expectedBalance.toFixed(2)}</span>
+                              <span className="font-mono text-sm font-bold text-slate-100">R$ {typeof selectedHistory.expected_balance === 'number' ? (selectedHistory.expected_balance / 100).toFixed(2) : '0.00'}</span>
                            </div>
                            <div className={`p-5 rounded-2xl flex items-center justify-between border ${selectedHistory.status === 'success' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
                               <div>
                                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Diferença de Caixa</p>
                                  <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    R$ {(selectedHistory.finalBalance - selectedHistory.expectedBalance).toFixed(2)}
+                                    R$ {typeof selectedHistory.physical_count_at_close === 'number' && typeof selectedHistory.expected_balance === 'number' ? ((selectedHistory.physical_count_at_close - selectedHistory.expected_balance) / 100).toFixed(2) : '0.00'}
                                  </h5>
                               </div>
                               <Badge variant={selectedHistory.status === 'success' ? 'success' : 'danger'}>
@@ -615,10 +662,10 @@ const CashManagement: React.FC = () => {
                                  const total = typeof selectedTx.total === 'number' ? selectedTx.total : 0;
                                  return `+ R$ ${((total) / 100).toFixed(2)}`;
                               }
-                              else if(selectedTx.type === 'suprimento') {
+                              else if (selectedTx.type === 'suprimento') {
                                  return `+ R$ ${typeof selectedTx.amount === 'number' ? (selectedTx.amount / 100).toFixed(2) : '0.00'}`;
                               }
-                             else  if (selectedTx.type === 'sangria' || selectedTx.type === 'pagamento') {
+                              else if (selectedTx.type === 'sangria' || selectedTx.type === 'pagamento') {
                                  return `- R$ ${typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}`;
                               }
                               return `+ R$ ${typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}`;
@@ -731,18 +778,18 @@ const CashManagement: React.FC = () => {
                            </div>
                         )}
                         <div className="text-[9px] border-t border-black border-dashed pt-2 space-y-1 font-bold">
-                                        <div className="flex justify-between text-xs">
-                                           <span>TOTAL:</span>
-                                           <span>
-                                              R$ {
-                                                 selectedTx.type === 'suprimento'
-                                                    ? ((selectedTx.amount || 0) / 100).toFixed(2)
-                                                    : selectedTx.items && Array.isArray(selectedTx.items)
-                                                       ? (selectedTx.items.reduce((sum: number, item: any) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0) / 100).toFixed(2)
-                                                       : '0.00'
-                                              }
-                                           </span>
-                                        </div>
+                           <div className="flex justify-between text-xs">
+                              <span>TOTAL:</span>
+                              <span>
+                                 R$ {
+                                    selectedTx.type === 'suprimento'
+                                       ? ((selectedTx.amount || 0) / 100).toFixed(2)
+                                       : selectedTx.items && Array.isArray(selectedTx.items)
+                                          ? (selectedTx.items.reduce((sum: number, item: any) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0) / 100).toFixed(2)
+                                          : '0.00'
+                                 }
+                              </span>
+                           </div>
                         </div>
                      </>
                   )}
