@@ -1,3 +1,4 @@
+import CashSalesBreakdown from '../components/CashSalesBreakdown';
 // Função para buscar vendas e movimentações de caixa de uma sessão
 export async function fetchSessionTransactions(cashSessionId: string): Promise<{ sales: SaleTransaction[]; movements: MovementTransaction[] }> {
    // Buscar vendas
@@ -579,12 +580,12 @@ const CashManagement: React.FC = () => {
             size="3xl"
          >
             {selectedHistory && (
-               <div className="flex flex-col h-full space-y-6">
+               <div className="flex flex-col h-full space-y-2">
                   {/* Navegação Interna do Modal (Abas) */}
-                  <div className="flex items-center gap-1 border-b border-white/5 shrink-0 px-2 -mx-8 -mt-8 pt-4 bg-dark-950/40">
+                  <div className="flex items-center gap-1 border-b border-white/5 shrink-0 px-2 -mx-8 -mt-8  bg-dark-950/40">
                      <button
                         onClick={() => setHistoryModalTab('resumo')}
-                        className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'resumo' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
+                        className={`px-6  text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'resumo' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
                         Consolidado Financeiro
@@ -597,6 +598,14 @@ const CashManagement: React.FC = () => {
                      >
                         Datalhamento de Movimentos
                         {historyModalTab === 'movimentacoes' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-accent-glow" />}
+                     </button>
+                     <button
+                        onClick={() => setHistoryModalTab('vendas')}
+                        className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'vendas' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
+                           }`}
+                     >
+                        Detalhamento de Vendas
+                        {historyModalTab === 'vendas' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-accent-glow" />}
                      </button>
                   </div>
 
@@ -617,7 +626,7 @@ const CashManagement: React.FC = () => {
                            </div>
                            <div className="text-right relative z-10 w-full md:w-auto">
                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Fechamento</p>
-                              <h3 className="text-3xl font-mono font-bold text-accent shadow-accent-glow">
+                              <h3 className="text-3xl font-mono font-bold text-accent ">
                                  R$ {
                                     typeof selectedHistory.initial_balance === 'number' &&
                                        typeof selectedHistory.sales_total === 'number' &&
@@ -711,7 +720,7 @@ const CashManagement: React.FC = () => {
                            </div>
                         </div>
                      </div>
-                  ) : (
+                  ) : historyModalTab === 'movimentacoes' ? (
                      <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
                         <div className="bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col flex-1 shadow-inner">
                            <div className="overflow-y-auto flex-1 custom-scrollbar">
@@ -816,7 +825,14 @@ const CashManagement: React.FC = () => {
                            </div>
                         </div>
                      </div>
-                  )}
+                  ) : historyModalTab === 'vendas' ? (
+                     <div className="flex-1 animate-in fade-in duration-300 min-h-0 flex flex-col">
+                        {/* Componente externo para detalhamento de vendas */}
+                        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
+                          <CashSalesBreakdown sales={sales} movements={movements} />
+                        </div>
+                     </div>
+                  ) : null}
 
                   <div className="flex flex-col sm:flex-row gap-4 pt-4 shrink-0">
                      <Button variant="secondary" className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest" onClick={() => setSelectedHistory(null)}>Fechar Auditoria</Button>
