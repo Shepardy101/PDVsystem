@@ -96,7 +96,8 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
   // Para cada venda, busca os pagamentos
   const sales = salesRaw.map(sale => {
     const payments = db.prepare('SELECT method, amount FROM payments WHERE sale_id = ?').all(sale.id);
-    return { ...sale, payments };
+    const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+    return { ...sale, payments, items };
   });
   const totalVendas = salesRaw.reduce((acc, s) => acc + (s.total || 0), 0);
 

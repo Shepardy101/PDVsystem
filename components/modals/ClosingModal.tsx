@@ -14,6 +14,8 @@ export interface ClosingModalProps {
 }
 
 const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, closeError, closeLoading, closeResult, onClose, onInputChange, onConfirm }) => {
+    // Estado para expandir/recolher vendas
+    const [expandedSale, setExpandedSale] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -32,8 +34,13 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
  
   // Abas: 0 = Resumo, 1 = Vendas
   const [tab, setTab] = React.useState(0);
-  // Quantidade total de itens vendidos (soma de todos os itens de todas as vendas)
-  const totalItensVendidos = closeResult?.sales?.reduce((acc: number, venda: any) => acc + (venda.totalItens || 0), 0);
+  // Quantidade total de unidades de produtos vendidos (soma das quantidades de todos os itens de todas as vendas)
+  const totalItensVendidos = closeResult?.sales?.reduce((acc: number, venda: any) => {
+    if (Array.isArray(venda.items)) {
+      return acc + venda.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+    }
+    return acc;
+  }, 0);
   // Função para ícone de pagamento
   const getPaymentIcon = (tipo: string) => {
     if (tipo === 'dinheiro') return <DollarSign className="text-emerald-400" size={18} title="Dinheiro" />;
@@ -163,52 +170,66 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
                   <h4 className="text-base font-bold text-accent mb-4">Vendas do Turno</h4>
                   <ul className="text-xs text-slate-300 space-y-4">
                     {closeResult.sales.map((s: any, idx: number) => (
-                      <li key={s.id} className="border-b border-accent/10 pb-2">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-accent">#{idx+1}</span>
-                          <span className="font-mono text-white">Venda {s.id.slice(0, 8)}...</span>
-                          <span className="font-mono text-accent">R$ {(s.total/100).toFixed(2)}</span>
-                          <span className="font-mono text-emerald-400 flex items-center gap-1"><ShoppingCart size={14} />{s.totalItens || 0}</span>
-                        </div>
-                        {/* Pagamentos detalhados */}
-                        {s.payments && s.payments.length > 0 && (
-                          <div className="ml-6 mt-1 flex flex-wrap gap-2">
-                            <span className="text-[11px] text-slate-400 font-bold">Pagamentos:</span>
-                            {s.payments.map((pay: any, i: number) => (
-                              <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-dark-950/60 border border-accent/10 font-mono">
-                                {getPaymentIcon(pay.method)}
-                                <span className="capitalize">{pay.method}</span>
-                                <span>R$ {(pay.amount/100).toFixed(2)}</span>
-                              </span>
-                            ))}
+                      <React.Fragment key={s.id}>
+                        <li
+                          className="border-b border-accent/10 pb-2 cursor-pointer hover:bg-accent/5 rounded transition-all"
+                          onClick={() => setExpandedSale(expandedSale === s.id ? null : s.id)}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono text-accent">#{idx+1}</span>
+                            <span className="font-mono text-white">Venda {s.id.slice(0, 8)}...</span>
+                            <span className="font-mono text-accent">R$ {(s.total/100).toFixed(2)}</span>
+                            <span className="font-mono text-emerald-400 flex items-center gap-1"><ShoppingCart size={14} />{(s.items ? s.items.reduce((acc: number, item: any) => acc + (item.quantity || 0), 0) : 0)}</span>
+                            <span className="font-mono text-slate-400 ml-2">{s.timestamp ? new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
+                            <span className="ml-auto text-[10px] text-slate-500">{expandedSale === s.id ? 'Clique para recolher' : 'Clique para expandir'}</span>
                           </div>
-                        )}
-                        {/* Produtos vendidos */}
-                        {s.produtos && s.produtos.length > 0 && (
-                          <div className="ml-6 mt-1">
-                            <span className="text-[11px] text-slate-400 font-bold">Produtos:</span>
-                            <ul className="ml-2">
-                              {s.produtos.map((p: any) => (
-                                <li key={p.id} className="text-[11px] text-slate-300 flex gap-2">
-                                  <span>{p.nome}</span>
-                                  <span className="font-mono text-accent">x{p.quantidade}</span>
-                                </li>
+                          {/* Pagamentos detalhados */}
+                          {s.payments && s.payments.length > 0 && (
+                            <div className="ml-6 mt-1 flex flex-wrap gap-2">
+                              <span className="text-[11px] text-slate-400 font-bold">Pagamentos:</span>
+                              {s.payments.map((pay: any, i: number) => (
+                                <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-dark-950/60 border border-accent/10 font-mono">
+                                  {getPaymentIcon(pay.method)}
+                                  <span className="capitalize">{pay.method}</span>
+                                  <span>R$ {(pay.amount/100).toFixed(2)}</span>
+                                </span>
                               ))}
-                            </ul>
-                          </div>
-                        )}
-                        {/* Suprimentos, sangrias, pagamentos */}
-                        {s.tipoOperacao && (
-                          <div className="ml-6 mt-1 flex items-center gap-2">
-                            {getOperationIcon(s.tipoOperacao)}
-                            <span className="text-[11px] font-bold text-slate-400">{s.tipoOperacao.charAt(0).toUpperCase() + s.tipoOperacao.slice(1)}</span>
-                          </div>
-                        )}
-                      </li>
+                            </div>
+                          )}
+                          {/* Produtos vendidos - expandido */}
+                          {expandedSale === s.id && s.items && s.items.length > 0 && (
+                            (() => {
+                              console.log('Venda expandida:', s.id, 'Itens:', s.items);
+                              return (
+                                <div className="ml-6 mt-2">
+                                  <span className="text-[11px] text-slate-400 font-bold">Produtos:</span>
+                                  <ul className="ml-2">
+                                    {Array.isArray(s.items) && s.items.length > 0 ? s.items.map((p: any, idx: number) => (
+                                      <li key={p.id || idx} className="text-[11px] text-slate-300 flex gap-4 items-center">
+                                        <span className="font-mono text-slate-400">{p.product_internal_code_snapshot || p.codigo || '-'}</span>
+                                        <span className="font-mono text-accent">{p.product_name_snapshot || p.nome}</span>
+                                        <span className="font-mono text-emerald-400">x{p.quantity}</span>
+                                        <span className="font-mono text-slate-400">R$ {(p.line_total/100).toFixed(2)}</span>
+                                      </li>
+                                    )) : <li className="text-[11px] text-red-400">Nenhum item encontrado nesta venda.</li>}
+                                  </ul>
+                                </div>
+                              );
+                            })()
+                          )}
+                          {/* Suprimentos, sangrias, pagamentos */}
+                          {s.tipoOperacao && (
+                            <div className="ml-6 mt-1 flex items-center gap-2">
+                              {getOperationIcon(s.tipoOperacao)}
+                              <span className="text-[11px] font-bold text-slate-400">{s.tipoOperacao.charAt(0).toUpperCase() + s.tipoOperacao.slice(1)}</span>
+                            </div>
+                          )}
+                        </li>
+                      </React.Fragment>
                     ))}
                   </ul>
                 </div>
-              )}
+                )}
             </>
           )}
         </div>

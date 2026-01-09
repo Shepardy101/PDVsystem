@@ -59,6 +59,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    const [initialBalance, setInitialBalance] = useState('0.00');
    const [physicalCashInput, setPhysicalCashInput] = useState('');
 
+
    // Notification State
    const [notification, setNotification] = useState<{ show: boolean, msg: string, sub: string } | null>(null);
 
@@ -845,10 +846,16 @@ useEffect(() => {
             closeLoading={closeLoading}
             closeResult={closeResult}
                   onClose={() => {
-                     setIsClosingModalOpen(false);
-                     setCloseResult(null);
-                     setPhysicalCashInput('');
-                     setCloseError('');
+                      setIsClosingModalOpen(false);
+                      setPhysicalCashInput('');
+                      setCloseError('');
+                      // Só setar cashSessionId como null se o modal está mostrando o resumo (closeResult existe)
+                      if (closeResult) {
+                         setCashSessionId(null);
+                         setCloseResult(null);
+                      } else {
+                         setCloseResult(null);
+                      }
                   }}
             onInputChange={setPhysicalCashInput}
             onConfirm={async () => {
@@ -865,7 +872,7 @@ useEffect(() => {
                   if (!res.ok) throw new Error('Erro ao fechar caixa');
                   const data = await res.json();
                   setCloseResult(data.closeResult);
-                  // Agora o modal só será fechado manualmente pelo usuário
+                  // NÃO setar cashSessionId(null) aqui! Só depois que fechar o modal de resumo.
                } catch (err) {
                   setCloseError('Erro ao fechar caixa. Tente novamente.');
                } finally {
