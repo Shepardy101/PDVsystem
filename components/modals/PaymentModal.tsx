@@ -9,7 +9,7 @@ export interface PaymentModalProps {
     multiMode: boolean;
     setMultiMode: (v: boolean) => void;
     onClose: () => void;
-    onFinalize: (payments: { method: string, amount: number }[]) => void;
+    onFinalize: (payments: { method: string, amount: number, metadata?: any }[]) => void;
     selectedClient?: { name: string; cpf?: string } | null;
 }
 
@@ -22,6 +22,42 @@ const paymentOptions = [
 
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, setMultiMode, onClose, onFinalize, selectedClient }) => {
+        // Mini modal para dinheiro
+        const [showCashChangeModal, setShowCashChangeModal] = useState(false);
+        const [cashReceived, setCashReceived] = useState('');
+        const [cashError, setCashError] = useState('');
+        const cashInputRef = useRef<HTMLInputElement>(null);
+
+        const totalCents = Math.round(total * 100);
+        const cashReceivedCents = Math.round(parseFloat(cashReceived.replace(',', '.')) * 100) || 0;
+        const changeCents = cashReceivedCents - totalCents;
+
+        // Abre mini modal ao clicar ou pressionar '3'
+        const openCashChangeModal = () => {
+            setCashReceived((total).toFixed(2));
+            setShowCashChangeModal(true);
+            setTimeout(() => {
+                cashInputRef.current?.focus();
+                cashInputRef.current?.select();
+            }, 10);
+        };
+
+        // Fecha mini modal
+        const closeCashChangeModal = () => {
+            setShowCashChangeModal(false);
+            setCashError('');
+        };
+
+        // Confirma pagamento dinheiro
+        const confirmCashPayment = () => {
+            if (cashReceivedCents < totalCents) {
+                setCashError('Valor recebido deve ser maior ou igual ao total da venda.');
+                return;
+            }
+            setCashError('');
+            setShowCashChangeModal(false);
+            onFinalize([{ method: 'cash', amount: totalCents, metadata: { cashReceivedCents, changeCents } }]);
+        };
     const [partialPayments, setPartialPayments] = useState<{ method: string, amount: number }[]>([]);
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -112,7 +148,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
             if (["1", "2", "3"].includes(e.key)) {
                 e.preventDefault();
                 const opt = paymentOptions.find(o => o.key === e.key);
-                if (opt) onFinalize([{ method: opt.id, amount: Math.round(total * 100) }]);
+                if (opt?.id === 'cash') {
+                    openCashChangeModal();
+                } else if (opt) {
+                    onFinalize([{ method: opt.id, amount: Math.round(total * 100) }]);
+                }
                 return;
             }
 
@@ -168,7 +208,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                 tabIndex={-1}
                 className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden"
             >
-                
                 <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
@@ -192,16 +231,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Crédito Exigido</p>
                         <h3 className="text-5xl font-mono font-bold text-accent ">R$ {total.toFixed(2)}</h3>
                         {multiMode && (
-
                             <p className="text-xs text-slate-400 mt-2">Valor restante: <span className="font-bold text-accent">R$ {(remaining / 100).toFixed(2)}</span></p>
                         )}
                     </div>
                     {!multiMode ? (
+                        <>
                         <div className="grid grid-cols-3 gap-6">
                             {paymentOptions.map(m => (
                                 <div key={m.id} className="space-y-3 assemble-text">
                                     <button
-                                        onClick={() => onFinalize([{ method: m.id, amount: Math.round(total * 100) }])}
+                                        onClick={() => m.id === 'cash' ? openCashChangeModal() : onFinalize([{ method: m.id, amount: Math.round(total * 100) }])}
                                         className="w-full flex flex-col items-center gap-4 p-8 border border-white/5 bg-dark-950/50 rounded-2xl hover:border-accent/40 hover:bg-accent/5 transition-all group relative overflow-hidden"
                                     >
                                         <m.icon size={28} className={`${m.color} group-hover:scale-110 transition-transform relative z-10`} />
@@ -214,10 +253,52 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                             <div className="col-span-3 text-center mt-4 flex flex-col items-center gap-2">
                                 <span className="text-xs text-slate-400">Pressione <b>/</b> para adicionar múltiplos pagamentos</span>
                                 <span className="text-xs text-slate-400">Pressione <b>C</b> para adicionar cliente</span>
-
                             </div>
-
                         </div>
+                        {/* MINI MODAL DINHEIRO */}
+                        {showCashChangeModal && (
+                            <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                                <div className="absolute inset-0 bg-black/60" onClick={closeCashChangeModal} />
+                                <div className="relative bg-dark-900 rounded-xl border border-accent/30 shadow-2xl p-8 min-w-[320px] flex flex-col items-center">
+                                    <h3 className="text-lg font-bold text-accent mb-4">Pagamento em Dinheiro</h3>
+                                    <label className="w-full mb-2 text-xs text-slate-400">Valor recebido</label>
+                                    <input
+                                        ref={cashInputRef}
+                                        type="number"
+                                        step="0.01"
+                                        min={total.toFixed(2)}
+                                        className="w-full p-3 text-xl font-mono text-center rounded border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent text-slate-800 placeholder:text-slate-500"
+                                        value={cashReceived}
+                                        onChange={e => {
+                                            setCashReceived(e.target.value);
+                                            setCashError('');
+                                        }}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') confirmCashPayment();
+                                            if (e.key === 'Escape') closeCashChangeModal();
+                                        }}
+                                        autoFocus
+                                    />
+                                    <div className="w-full text-center mt-2 text-lg font-bold text-emerald-400">
+                                        Troco: R$ {(changeCents > 0 ? (changeCents / 100).toFixed(2) : '0,00')}
+                                    </div>
+                                    {cashError && <div className="text-red-400 text-xs mt-2">{cashError}</div>}
+                                    <div className="flex gap-4 mt-6">
+                                        <Button
+                                            className="px-6 py-2 font-bold"
+                                            disabled={cashReceivedCents < totalCents}
+                                            onClick={confirmCashPayment}
+                                        >Confirmar</Button>
+                                        <Button
+                                            className="px-6 py-2"
+                                            variant="secondary"
+                                            onClick={closeCashChangeModal}
+                                        >Cancelar</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        </>
                     ) : (
                         <div className="space-y-4">
                             <div className="flex gap-4 items-end">

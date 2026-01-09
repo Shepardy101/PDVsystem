@@ -29,10 +29,26 @@ export function finalizeSale(saleData: any) {
         VALUES (?, ?, ?, ?, ?, ?)`)
         .run(uuidv4(), saleId, pay.method, pay.amount, pay.metadataJson || null, now);
     }
+
     // 6. Grava movimento de caixa
-    db.prepare(`INSERT INTO cash_movements (id, cash_session_id, type, direction, amount, description, timestamp, reference_type, reference_id, metadata_json, created_at)
-      VALUES (?, ?, 'sale_inflow', 'in', ?, 'Venda', ?, 'sale', ?, NULL, ?)`)
-      .run(uuidv4(), cashSessionId, total, now, saleId, now);
+    let cashMovementRegistered = false;
+    for (const pay of payments) {
+      if (pay.method === 'cash' && pay.metadataJson) {
+        const meta = JSON.parse(pay.metadataJson);
+        const cashReceivedCents = meta.cashReceivedCents;
+        // Entrada: valor recebido
+        db.prepare(`INSERT INTO cash_movements (id, cash_session_id, type, direction, amount, description, timestamp, reference_type, reference_id, metadata_json, created_at)
+          VALUES (?, ?, 'sale_inflow', 'in', ?, 'Venda (dinheiro recebido)', ?, 'sale', ?, ?, ?)`)
+          .run(uuidv4(), cashSessionId, cashReceivedCents, now, saleId, pay.metadataJson, now);
+        cashMovementRegistered = true;
+      }
+    }
+    // Se não registrou cash custom, registra entrada padrão (Pix/Cartão ou cash sem metadata)
+    if (!cashMovementRegistered) {
+      db.prepare(`INSERT INTO cash_movements (id, cash_session_id, type, direction, amount, description, timestamp, reference_type, reference_id, metadata_json, created_at)
+        VALUES (?, ?, 'sale_inflow', 'in', ?, 'Venda', ?, 'sale', ?, NULL, ?)`)
+        .run(uuidv4(), cashSessionId, total, now, saleId, now);
+    }
     return saleId;
   });
   return tx();

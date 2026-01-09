@@ -39,9 +39,6 @@ const App: React.FC = () => {
     setView('pos');
   };
 
-  const handleCloseCash = () => {
-    setCashOpen(false);
-  };
 
   const handleLogout = () => {
     setView('login');

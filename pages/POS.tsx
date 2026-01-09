@@ -251,7 +251,7 @@ useEffect(() => {
       const paymentsPayload = payments.map(p => ({
          method: p.method,
          amount: p.amount,
-         metadataJson: null
+         metadataJson: p.metadata ? JSON.stringify(p.metadata) : null
       }));
       const payload = {
          operatorId,
@@ -335,6 +335,11 @@ useEffect(() => {
 
          // Finalizar com atalho quando NÃO está no multiMode
          if (isPaymentModalOpen && !multiMode) {
+            // Se algum input ou textarea está focado, não executa atalhos de pagamento
+            const active = document.activeElement;
+            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+               return;
+            }
             const key = e.key.toLowerCase();
             if (["1", "2", "3"].includes(key)) {
                e.preventDefault();
