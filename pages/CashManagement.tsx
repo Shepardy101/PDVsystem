@@ -374,8 +374,9 @@ const CashManagement: React.FC = () => {
                                        .map(tx => {
                                           const isSale = tx.items && Array.isArray(tx.items);
                                           const type = isSale ? 'sale' : tx.type;
+                                          // Valor líquido: se existir tx.total (com desconto), usa ele; senão soma dos itens
                                           const total = isSale
-                                             ? tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0)
+                                             ? (typeof tx.total === 'number' ? tx.total : tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0))
                                              : (typeof tx.amount === 'number' ? tx.amount : 0);
                                           const description = isSale ? `Venda #${tx.id}` : tx.description;
                                           return (
@@ -526,7 +527,7 @@ const CashManagement: React.FC = () => {
 
                   {historyModalTab === 'resumo' ? (
                      <div className="space-y-8 animate-in fade-in duration-300">
-                        {console.log(selectedHistory)}
+                        {console.log('Selected history for resumo tab:', selectedHistory)}
                         <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 relative overflow-hidden gap-6">
                            <div className="flex items-center gap-5 relative z-10 w-full md:w-auto">
                               <div className={`p-4 rounded-2xl shrink-0 ${selectedHistory.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-500/10 text-emerald-500'}`}>
@@ -573,6 +574,13 @@ const CashManagement: React.FC = () => {
                               <p className="text-xs font-mono font-bold">R$ {typeof selectedHistory.sangrias_total === 'number' ? (selectedHistory.sangrias_total / 100).toFixed(2) : '0.00'}</p>
                            </div>
                         </div>
+                        {/* Exibe valor contado apenas se caixa estiver fechado e houver valor, como card destacado abaixo */}
+                        {selectedHistory.is_open === 0 && typeof selectedHistory.physical_count_at_close === 'number' && (
+                           <div className="mt-4 p-4 bg-dark-950/50 border border-white/5 rounded-xl flex flex-col items-start">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">Valor Contado no Fechamento</p>
+                              <span className="text-lg font-mono font-bold text-slate-400">R$ {(selectedHistory.physical_count_at_close / 100).toFixed(2)}</span>
+                           </div>
+                        )}
 
                         <div className="p-6 bg-dark-900/40 rounded-3xl border border-white/5 shadow-2xl space-y-4">
                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
@@ -581,51 +589,46 @@ const CashManagement: React.FC = () => {
                                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Auditoria de Lastro Esperado</span>
                               </div>
                               <span className="font-mono text-sm font-bold text-slate-100">
-                               
-                                  {
-                           (() => {
-                              if (!session || !Array.isArray(session.transactions)) return '0.00';
-                              console.log('Calculando dinheiro em caixa para a sessão:', session);
-                              // Saldo inicial do caixa
-                              let initialBalanceCents = session.initial_balance ?? 0;
-                              if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
-                                 initialBalanceCents = Math.round(initialBalanceCents * 100);
-                              }
-                              // Somar todas as vendas cujo método de pagamento seja 'cash'
-                              let totalVendasCash = 0;
-                              session.transactions.forEach(tx => {
-                                 // Caso 1: Estrutura nova, payments array
-                                 if (Array.isArray(tx.payments)) {
-                                    tx.payments.forEach(pay => {
-                                       if (pay.method === 'cash' && typeof pay.amount === 'number') {
-                                          totalVendasCash += pay.amount;
-                                       }
-                                    });
-                                    console.log(tx);
-                                    console.log('total de vendas cash até agora:', totalVendasCash);
-                                 }
 
-                                 // Caso 2: Estrutura antiga/backend, paymentMethod direto
-                                 else if (
-                                    (tx.type === 'sale' || tx.type === 'venda') &&
-                                    tx.paymentMethod === 'cash' &&
-                                    typeof tx.total === 'number'
-                                 ) {
-                                    totalVendasCash += tx.total;
+                                 {
+                                    (() => {
+                                       // Se estiver visualizando um histórico fechado, usar selectedHistory
+                                       if (selectedHistory && selectedHistory.is_open === 0) {
+                                          const initial = typeof selectedHistory.initial_balance === 'number' ? selectedHistory.initial_balance : 0;
+                                          const vendas = typeof selectedHistory.sales_total === 'number' ? selectedHistory.sales_total : 0;
+                                          const sangrias = typeof selectedHistory.sangrias_total === 'number' ? selectedHistory.sangrias_total : 0;
+                                          return ((initial + vendas - sangrias) / 100).toFixed(2);
+                                       }
+                                       // Caso contrário, usar sessão atual
+                                       if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                       let initialBalanceCents = session.initial_balance ?? 0;
+                                       if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
+                                          initialBalanceCents = Math.round(initialBalanceCents * 100);
+                                       }
+                                       let totalVendasCash = 0;
+                                       let totalSangrias = 0;
+                                       session.transactions.forEach(tx => {
+                                          if (Array.isArray(tx.payments)) {
+                                             tx.payments.forEach(pay => {
+                                                if (pay.method === 'cash' && typeof pay.amount === 'number') {
+                                                   totalVendasCash += pay.amount;
+                                                }
+                                             });
+                                          }
+                                          if (tx.type === 'sangria' && typeof tx.amount === 'number') {
+                                             totalSangrias += tx.amount;
+                                          }
+                                       });
+                                       const lastro = initialBalanceCents + totalVendasCash - totalSangrias;
+                                       return (lastro / 100).toFixed(2);
+                                    })()
                                  }
-                              });
-                              const lastro = initialBalanceCents + totalVendasCash;
-                              return (lastro / 100).toFixed(2);
-                           })()
-                        }
                               </span>
                               <div>
                                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Diferença de Caixa</p>
-                                                 <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                   {session && session.difference_at_close != null
-                                                      ? `R$ ${session.difference_at_close >= 0 ? '+' : '-'}${Math.abs(session.difference_at_close).toFixed(2)}`
-                                                      : 'R$ 0.00'}
-                                                 </h5>
+                                 <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                   {selectedHistory.difference_at_close ? `R$ ${(selectedHistory.difference_at_close / 100).toFixed(2)}` : 'R$ 0.00'}
+                                 </h5>
                               </div>
                               <Badge variant={selectedHistory.status === 'success' ? 'success' : 'danger'}>
                                  {selectedHistory.status === 'success' ? 'Sessão Íntegra' : 'Quebra Identificada'}
