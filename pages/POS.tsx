@@ -14,14 +14,14 @@ import OpeningModal from '../components/modals/OpeningModal';
 
 
 interface POSProps {
-   onFinishSale: (sale: Sale) => void;
+  
    cashOpen: boolean;
    onOpenCash: (balance: number) => void;
-   onCloseCash: () => void;
+  
 }
 
 
-const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCash }) => {
+const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    const [searchTerm, setSearchTerm] = useState('');
    const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -200,6 +200,8 @@ useEffect(() => {
          }, 50);
       }
    }, [cashOpen, isClosingModalOpen]);
+
+   
 
 
    const triggerNotification = (msg: string, sub: string) => {
@@ -783,7 +785,7 @@ useEffect(() => {
                      </Button>
 
                      <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">
-                        PDV-SYS CORE v3.1 // READY
+                        Ctrl + D = Aplicar Desconto  
                      </p>
                   </div>
                </div>
@@ -860,7 +862,7 @@ useEffect(() => {
                       if (closeResult) {
                          setCashSessionId(null);
                          setCloseResult(null);
-                         setInitialBalance('0.00');
+                         setInitialBalance('');
                       } else {
                          setCloseResult(null);
                       }

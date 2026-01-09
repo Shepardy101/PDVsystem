@@ -167,10 +167,9 @@ const App: React.FC = () => {
           <div className="h-full relative z-10 flex flex-col">
             {view === 'pos' && (
               <POS 
-                onFinishSale={(s) => console.log('Transação Processada:', s)} 
                 cashOpen={cashOpen}
                 onOpenCash={handleOpenCash}
-                onCloseCash={handleCloseCash}
+                
               />
             )}
             {view === 'products' && <Products />}
