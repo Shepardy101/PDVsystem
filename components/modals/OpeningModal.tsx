@@ -11,6 +11,13 @@ export interface OpeningModalProps {
 }
 
 const OpeningModal: React.FC<OpeningModalProps> = ({ isOpen, initialBalance, onClose, onChange, onConfirm }) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+    }
+  }, [isOpen]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -32,19 +39,9 @@ const OpeningModal: React.FC<OpeningModalProps> = ({ isOpen, initialBalance, onC
             onChange={e => onChange(e.target.value)}
             placeholder="0.00"
             className="text-center text-3xl font-mono text-accent bg-dark-950/50"
+            ref={inputRef}
           />
-          <div className="grid grid-cols-2 gap-3">
-            {['50.00', '100.00', '150.00', '200.00'].map(val => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => onChange(val)}
-                className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:border-accent hover:text-accent transition-all uppercase tracking-widest"
-              >
-                R$ {val}
-              </button>
-            ))}
-          </div>
+          
           <Button
             onClick={onConfirm}
             className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"

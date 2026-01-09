@@ -56,7 +56,7 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
    const [closeResult, setCloseResult] = useState<any>(null);
    const [closeLoading, setCloseLoading] = useState(false);
    const [closeError, setCloseError] = useState('');
-   const [initialBalance, setInitialBalance] = useState('0.00');
+   const [initialBalance, setInitialBalance] = useState('');
    const [physicalCashInput, setPhysicalCashInput] = useState('');
 
 
@@ -83,11 +83,23 @@ const POS: React.FC<POSProps> = ({ onFinishSale, cashOpen, onOpenCash, onCloseCa
       }
    }, [user]);
 
+
+// se cashSessionId for null, entao ao pressionar 'enter' ou 'space' abre o modal de abertura de caixa
+// se pressionar 'esc' com o modal de abertura de caixa aberto, ele será fechado
 useEffect(() => {
-   console.log('closeResult atualizado:', closeResult);
-}, [closeResult]);
-
-
+   const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !cashSessionId && !isOpeningModalOpen && !isClosingModalOpen) {
+         e.preventDefault();
+         setIsOpeningModalOpen(true);
+      }
+      if (e.key === 'Escape' && isOpeningModalOpen) {
+         e.preventDefault();
+         setIsOpeningModalOpen(false);
+      }
+   };
+   window.addEventListener('keydown', handleKeyDown);
+   return () => window.removeEventListener('keydown', handleKeyDown);
+}, [cashSessionId, isOpeningModalOpen, isClosingModalOpen]);
 
    // Função para limpar o carrinho e focar no input
    const handleClearCart = () => {
@@ -158,18 +170,18 @@ useEffect(() => {
                   console.log('[PDV] Caixa aberto encontrado:', data.session.id);
                } else {
                   setCashSessionId(null);
-                  setIsOpeningModalOpen(true); // Abre modal para abrir caixa
-                  console.log('[PDV] Nenhum caixa aberto encontrado, solicitando abertura.');
+                  // NÃO abrir modal automaticamente!
+                  console.log('[PDV] Nenhum caixa aberto encontrado.');
                }
             } else {
                setCashSessionId(null);
-               setIsOpeningModalOpen(true); // Abre modal para abrir caixa
-               console.log('[PDV] Erro ao consultar caixa aberto, solicitando abertura.');
+               // NÃO abrir modal automaticamente!
+               console.log('[PDV] Erro ao consultar caixa aberto.');
             }
          })
          .catch((err) => {
             setCashSessionId(null);
-            setIsOpeningModalOpen(true); // Abre modal para abrir caixa
+            // NÃO abrir modal automaticamente!
             console.log('[PDV] Falha ao consultar caixa aberto:', err);
          })
          .finally(() => {
@@ -200,24 +212,6 @@ useEffect(() => {
 
 
 
-   const completeSaleFlow = useCallback(() => {
-      if (lastSaleData) {
-         onFinishSale(lastSaleData);
-         triggerNotification("VENDA PROCESSADA", `TRANS ID: ${lastSaleData.id}`);
-      }
-      setCart([]);
-      setLastSaleData(null);
-      setIsReceiptModalOpen(false);
-      setSearchTerm('');
-      setManualDiscount(0);
-      setTempDiscount('0');
-      setTimeout(() => {
-         if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.value = '';
-         }
-      }, 50);
-   }, [lastSaleData, onFinishSale]);
 
 
 
@@ -320,9 +314,7 @@ useEffect(() => {
             return;
          }
 
-         // Log de todas as teclas
-         console.log('[POS] keydown:', e.key, 'isPaymentModalOpen:', isPaymentModalOpen, 'multiMode:', multiMode);
-
+      
          // Atalho para abrir modal de cliente
          if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
             console.log('[POS] Abrindo modal de cliente via tecla c');
@@ -533,23 +525,38 @@ useEffect(() => {
                      <div className="p-8 space-y-6">
                         <Input
                            label="Saldo Inicial (R$)"
+                           autoFocus={true}
                            value={initialBalance}
                            onChange={(e) => setInitialBalance(e.target.value)}
                            placeholder="0.00"
                            className="text-center text-3xl font-mono text-accent bg-dark-950/50"
+                           onKeyDown={async (e) => {
+                              if (e.key === 'Enter') {
+                                 const value = parseFloat(initialBalance.replace(',', '.')) || 0;
+                                 try {
+                                    const res = await fetch('/api/cash/open', {
+                                       method: 'POST',
+                                       headers: { 'Content-Type': 'application/json' },
+                                       body: JSON.stringify({ operatorId: operatorId || 'operador-1', initialBalance: value })
+                                    });
+                                    if (!res.ok) throw new Error('Erro ao abrir caixa');
+                                    // Confirma se a sessão foi realmente aberta
+                                    const check = await fetch('/api/cash/open');
+                                    const data = await check.json();
+                                    if (data && data.session && data.session.id) {
+                                       onOpenCash(value); // Só libera o PDV se o backend confirmou
+                                       setIsOpeningModalOpen(false);
+                                       setCashSessionId(data.session.id); // Atualiza o estado para mostrar o terminal imediatamente
+                                    } else {
+                                       throw new Error('Sessão de caixa não foi aberta.');
+                                    }
+                                 } catch (err) {
+                                    alert('Erro ao abrir caixa. Tente novamente.');
+                                 }
+                              }
+                           }}
                         />
-                        <div className="grid grid-cols-2 gap-3">
-                           {['50.00', '100.00', '150.00', '200.00'].map(val => (
-                              <button
-                                 key={val}
-                                 type="button"
-                                 onClick={() => setInitialBalance(val)}
-                                 className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:border-accent hover:text-accent transition-all uppercase tracking-widest"
-                              >
-                                 R$ {val}
-                              </button>
-                           ))}
-                        </div>
+                       
                         <Button
                            onClick={async () => {
                               const value = parseFloat(initialBalance) || 0;
@@ -853,6 +860,7 @@ useEffect(() => {
                       if (closeResult) {
                          setCashSessionId(null);
                          setCloseResult(null);
+                         setInitialBalance('0.00');
                       } else {
                          setCloseResult(null);
                       }
@@ -881,14 +889,7 @@ useEffect(() => {
             }}
          />
 
-         {/* OPENING MODAL */}
-         <OpeningModal
-            isOpen={isOpeningModalOpen}
-            initialBalance={initialBalance}
-            onClose={() => setIsOpeningModalOpen(false)}
-            onChange={setInitialBalance}
-            onConfirm={() => {/* lógica de abertura de caixa */ }}
-         />
+         
 
          {/* NOTIFICATION TOAST (SALE PROCESSED FEEDBACK) */}
          {notification && notification.show && (
