@@ -1,7 +1,40 @@
+// Rota para retornar todas as sessões e movimentações do banco de dados
+
 import { Router, Request, Response } from 'express';
 import { addPagamentoMovement, openCashSession, getOpenCashSession, closeCashSession, addSuprimentoMovement, addSangriaMovement } from '../repositories/cash.repo.js';
+import { db } from '../db/database.js';
+
 
 export const cashRouter = Router();
+
+cashRouter.get('/sessions-movements', async (req, res) => {
+  try {
+    // Buscar todas as sessões de caixa
+    const sessions = db.prepare('SELECT * FROM cash_sessions ORDER BY opened_at DESC').all();
+
+    // Buscar todas as movimentações
+    const movements = db.prepare('SELECT * FROM cash_movements ORDER BY timestamp DESC').all();
+
+    // Buscar todas as vendas (caso estejam em outra tabela, ex: sales)
+    let sales = [];
+    try {
+      sales = db.prepare('SELECT * FROM sales ORDER BY timestamp DESC').all();
+      // Buscar pagamentos e itens de cada venda, se existirem
+      sales = sales.map(sale => {
+        const payments = db.prepare('SELECT * FROM sale_payments WHERE sale_id = ?').all(sale.id);
+        const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+        return { ...sale, payments, items };
+      });
+    } catch (e) {
+      // Se não existir tabela de vendas, ignora
+    }
+
+    res.json({ sessions, movements, sales });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar dados do banco de dados', details: err.message });
+  }
+});
+
 // POST /api/cash/pagamento
 cashRouter.post('/pagamento', (req: Request, res: Response) => {
   try {

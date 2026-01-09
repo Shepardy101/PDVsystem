@@ -1,3 +1,4 @@
+import CashPerformanceTrends from '../components/CashPerformanceTrends';
 import CashSalesBreakdown from '../components/CashSalesBreakdown';
 // Função para buscar vendas e movimentações de caixa de uma sessão
 export async function fetchSessionTransactions(cashSessionId: string): Promise<{ sales: SaleTransaction[]; movements: MovementTransaction[] }> {
@@ -20,7 +21,7 @@ import SangriaModal from '../components/modals/SangriaModal';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { getUserById, getOperatorNameById } from '../services/user';
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus, TrendingUp } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
 import { CashSession, SaleTransaction, MovementTransaction } from '../types';
@@ -300,6 +301,16 @@ const CashManagement: React.FC = () => {
                <History size={14} />
                <span className="text-[9px] font-bold uppercase tracking-widest">Histórico</span>
             </button>
+            <button
+               onClick={() => setActiveTab('performance')}
+               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${activeTab === 'performance'
+                  ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+                  : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+                  }`}
+            >
+               <TrendingUp size={14} />
+               <span className="text-[9px] font-bold uppercase tracking-widest">Desempenho</span>
+            </button>
          </div>
 
          {activeTab === 'current' ? (
@@ -494,7 +505,7 @@ const CashManagement: React.FC = () => {
                   </div>
                </div>
             </>
-         ) : (
+         ) : activeTab === 'history' ? (
             /* ABA DE HISTÓRICO */
             <div className="flex-1 flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-600">
                <div className="flex items-center justify-between mb-4 px-2">
@@ -570,7 +581,14 @@ const CashManagement: React.FC = () => {
                   </div>
                </div>
             </div>
-         )}
+         ) : activeTab === 'performance' ? (
+            <div className="flex-1 animate-in fade-in duration-300 min-h-0 flex flex-col">
+               {/* Componente externo para desempenho ao longo do tempo */}
+               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
+                  <CashPerformanceTrends />
+               </div>
+            </div>
+         ) : null}
 
          {/* MODAL DETALHADO DE HISTÓRICO (AUDITORIA RETROATIVA) */}
          <Modal
