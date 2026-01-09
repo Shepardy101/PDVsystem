@@ -64,38 +64,80 @@ export interface CartItem {
   appliedDiscount: number;
 }
 
-export interface Sale {
+
+// Venda detalhada (completa)
+export interface SaleTransaction {
   id: string;
-  timestamp: string;
-  items: CartItem[];
+  timestamp: number;
+  operator_id: string;
+  cash_session_id: string;
   subtotal: number;
-  discount: number;
+  discount_total: number;
   total: number;
-  paymentMethod: 'cash' | 'pix' | 'card' | 'credit';
-  clientId?: string;
+  status: string;
+  created_at: number;
+  client_id: string | null;
+  items: SaleItem[];
+  payments: Payment[];
 }
 
-export interface CashSession {
-  isOpen: boolean;
-  openedAt?: string;
-  initialBalance: number;
-  currentBalance: number;
-  transactions: CashTransaction[];
-}
-
-export interface CashTransaction {
+export interface SaleItem {
   id: string;
-  type: 'sale' | 'sangria' | 'suprimento' | 'pagamento';
+  sale_id: string;
+  product_id: string;
+  product_name_snapshot: string;
+  product_internal_code_snapshot: string;
+  product_ean_snapshot: string;
+  unit_snapshot: string;
+  quantity: number;
+  unit_price_at_sale: number;
+  auto_discount_applied: number;
+  manual_discount_applied: number;
+  final_unit_price: number;
+  line_total: number;
+}
+
+export interface Payment {
+  id: string;
+  sale_id: string;
+  method: string;
+  amount: number;
+  metadata_json: string;
+  created_at: number;
+}
+
+// Movimentação de caixa (não-venda)
+export interface MovementTransaction {
+  id: string;
+  cash_session_id: string;
+  type: string;
+  direction: string;
   amount: number;
   description: string;
-  timestamp: string;
-  // Detalhes estendidos para o modal
-  metadata?: {
-    items?: { name: string; qty: number; price: number }[];
-    operator?: string;
-    method?: string;
-    category?: string;
-  };
+  timestamp: number;
+  reference_type: string;
+  reference_id: string | null;
+  metadata_json: string;
+  created_at: number;
+  category: string | null;
+  operator_id: string | null;
 }
+
+
+export interface CashSession {
+  id: string;
+  operator_id: string;
+  opened_at: number;
+  closed_at: number | null;
+  initial_balance: number;
+  is_open: number;
+  physical_count_at_close: number | null;
+  difference_at_close: number | null;
+  created_at: number;
+  updated_at: number;
+  transactions: (SaleTransaction | MovementTransaction)[];
+}
+
+// CashTransaction antigo removido, pois agora usamos SaleTransaction | MovementTransaction
 
 export type AppView = 'login' | 'pos' | 'products' | 'entities' | 'cash' | 'reports' | 'settings';

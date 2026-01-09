@@ -1,3 +1,18 @@
+// Função para buscar vendas e movimentações de caixa de uma sessão
+export async function fetchSessionTransactions(cashSessionId: string): Promise<{ sales: SaleTransaction[]; movements: MovementTransaction[] }> {
+   // Buscar vendas
+   const salesRes = await fetch(`/api/pos/sales?cashSessionId=${cashSessionId}`);
+   if (!salesRes.ok) throw new Error('Erro ao buscar vendas do caixa');
+   const salesData = await salesRes.json();
+   // Buscar movimentações
+   const movementsRes = await fetch(`/api/cash/movements?cashSessionId=${cashSessionId}`);
+   if (!movementsRes.ok) throw new Error('Erro ao buscar movimentações do caixa');
+   const movementsData = await movementsRes.json();
+   return {
+      sales: salesData.sales || [],
+      movements: movementsData.movements || []
+   };
+}
 import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
 
@@ -7,7 +22,7 @@ import { getUserById, getOperatorNameById } from '../services/user';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
-import { CashSession, CashTransaction } from '../types';
+import { CashSession, SaleTransaction, MovementTransaction } from '../types';
 
 
 // Função para buscar histórico real de caixas
@@ -26,16 +41,11 @@ const CashManagement: React.FC = () => {
    const [cashHistory, setCashHistory] = useState([]);
    const [cashHistoryLoading, setCashHistoryLoading] = useState(false);
    const [cashHistoryError, setCashHistoryError] = useState('');
-   useEffect(() => {
-      if (activeTab === 'history') {
-         setCashHistoryLoading(true);
-         setCashHistoryError('');
-         fetchCashHistory()
-            .then(sessions => setCashHistory(sessions))
-            .catch(() => setCashHistoryError('Erro ao buscar histórico de caixas'))
-            .finally(() => setCashHistoryLoading(false));
-      }
-   }, [activeTab]);
+
+   const [sales, setSales] = useState<SaleTransaction[]>([]);
+   const [movements, setMovements] = useState<MovementTransaction[]>([]);
+
+
    const [historyModalTab, setHistoryModalTab] = useState<'resumo' | 'movimentacoes'>('resumo');
    const [refreshFlag, setRefreshFlag] = useState(0);
 
@@ -48,11 +58,63 @@ const CashManagement: React.FC = () => {
    const [sessionLoading, setSessionLoading] = useState(true);
    const [sessionError, setSessionError] = useState('');
 
-   // ao pressionar esc o setIsReceiptPreviewOpen setra false
+   const [isSuprimentoModalOpen, setIsSuprimentoModalOpen] = useState(false);
+   const [isSangriaModalOpen, setIsSangriaModalOpen] = useState(false);
+   const [isPagamentoModalOpen, setIsPagamentoModalOpen] = useState(false);
+   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
+   const [selectedTx, setSelectedTx] = useState<SaleTransaction | MovementTransaction | null>(null);
+   const [operatorName, setOperatorName] = useState<string>('');
+   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
+   const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
+   const [operatorNameHistory, setOperatorNameHistory] = useState('');
+
+   const [cashSessionDetailsId, setCashSessionDetailsId] = useState<string | null>(null);
+
+   const [error, setError] = useState<string>('');
+
+   // Buscar vendas e movimentações da sessão de caixa aberta
+   const fetchAndSetSessionTransactions = useCallback(async () => {
+      if (selectedHistory) {
+         try {
+            const { sales, movements } = await fetchSessionTransactions(selectedHistory.id);
+            setSales(sales);
+            setMovements(movements);
+            console.log('Vendas da sessão:', sales);
+            console.log('Movimentações da sessão:', movements);
+         } catch (error: any) {
+            setSales([]);
+            setMovements([]);
+            setError('Erro ao buscar vendas e movimentações da sessão de caixa.' + (error?.message ? ` ${error.message}` : ''));
+         }
+      }
+   }, [selectedHistory]);
+
+   useEffect(() => {
+      fetchAndSetSessionTransactions();
+   }, [fetchAndSetSessionTransactions]);
 
 
-   //suprimentos
+   // Buscar histórico de caixas ao mudar para a aba de histórico
+   useEffect(() => {
+      if (activeTab === 'history') {
+         setCashHistoryLoading(true);
+         setCashHistoryError('');
+         fetchCashHistory()
+            .then(sessions => setCashHistory(sessions))
+            .catch(() => setCashHistoryError('Erro ao buscar histórico de caixas'))
+            .finally(() => setCashHistoryLoading(false));
+      }
 
+
+   }, [activeTab]);
+
+
+
+
+
+
+
+   // Buscar sessão de caixa aberta e suas transações
    useEffect(() => {
       setSessionLoading(true);
       fetch('/api/cash/open')
@@ -96,12 +158,7 @@ const CashManagement: React.FC = () => {
          .finally(() => setSessionLoading(false));
    }, [refreshFlag]);
 
-   const [isSuprimentoModalOpen, setIsSuprimentoModalOpen] = useState(false);
-   const [isSangriaModalOpen, setIsSangriaModalOpen] = useState(false);
-   const [isPagamentoModalOpen, setIsPagamentoModalOpen] = useState(false);
-   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
-   const [selectedTx, setSelectedTx] = useState<CashTransaction | null>(null);
-   const [operatorName, setOperatorName] = useState<string>('');
+
 
    // Fecha o modal de auditoria de movimentação ao pressionar ESC
    useEffect(() => {
@@ -132,16 +189,14 @@ const CashManagement: React.FC = () => {
 
 
 
-   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
-   const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
+
 
    const handlePrint = useCallback(() => {
       window.print();
    }, []);
 
 
-   const [operatorNameHistory, setOperatorNameHistory] = useState('');
-
+   // Buscar nome do operador ao abrir modal de histórico
    useEffect(() => {
       async function fetchOperatorNameHistory() {
          if (selectedHistory && selectedHistory.operator_id) {
@@ -182,7 +237,7 @@ const CashManagement: React.FC = () => {
       }
    };
 
-
+   // Fecha o modal de visualização de recibo ao pressionar ESC
    useEffect(() => {
       const handleEsc = (e: KeyboardEvent) => {
          if (e.key === 'Escape') {
@@ -192,6 +247,18 @@ const CashManagement: React.FC = () => {
       window.addEventListener('keydown', handleEsc);
       return () => window.removeEventListener('keydown', handleEsc);
    }, [isReceiptPreviewOpen]);
+
+   if (error) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-dark-950">
+            <div className="flex flex-col items-center gap-4">
+               <AlertTriangle size={48} className="text-red-500" />
+               <h1 className="text-2xl font-bold text-white">Erro</h1>
+               <p className="text-slate-400 text-center max-w-md">{error}</p>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="p-6 md:p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
@@ -244,7 +311,9 @@ const CashManagement: React.FC = () => {
                            (() => {
                               if (!session || !Array.isArray(session.transactions)) return '0.00';
                               // Filtra apenas vendas: objetos com campo 'status' e array 'items'
-                              const vendas = session.transactions.filter(tx => tx.status && Array.isArray(tx.items));
+                              const vendas = session.transactions.filter(
+                                 (tx): tx is SaleTransaction => 'status' in tx && Array.isArray((tx as SaleTransaction).items)
+                              );
                               const totalVendas = vendas.reduce((acc, venda) => {
                                  if (typeof venda.total === 'number') {
                                     return acc + venda.total;
@@ -309,29 +378,18 @@ const CashManagement: React.FC = () => {
                               let totalSuprimentos = 0;
                               let totalSangrias = 0;
                               session.transactions.forEach(tx => {
-                                 // Suprimentos
-                                 if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
+                                 if ('type' in tx && tx.type === 'suprimento' && 'amount' in tx && typeof tx.amount === 'number') {
                                     totalSuprimentos += tx.amount;
                                  }
-                                 // Sangrias
-                                 if (tx.type === 'sangria' && typeof tx.amount === 'number') {
+                                 if ('type' in tx && tx.type === 'sangria' && 'amount' in tx && typeof tx.amount === 'number') {
                                     totalSangrias += tx.amount;
                                  }
-                                 // Caso 1: Estrutura nova, payments array
-                                 if (Array.isArray(tx.payments)) {
+                                 if ('payments' in tx && Array.isArray(tx.payments)) {
                                     tx.payments.forEach(pay => {
                                        if (pay.method === 'cash' && typeof pay.amount === 'number') {
                                           totalVendasCash += pay.amount;
                                        }
                                     });
-                                 }
-                                 // Caso 2: Estrutura antiga/backend, paymentMethod direto
-                                 else if (
-                                    (tx.type === 'sale' || tx.type === 'venda') &&
-                                    tx.paymentMethod === 'cash' &&
-                                    typeof tx.total === 'number'
-                                 ) {
-                                    totalVendasCash += tx.total;
                                  }
                               });
                               const lastro = initialBalanceCents + totalVendasCash + totalSuprimentos - totalSangrias;
@@ -347,6 +405,8 @@ const CashManagement: React.FC = () => {
                      <div className="flex items-center justify-between mb-3 shrink-0 px-2">
                         <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Fluxo Transacional</h2>
                      </div>
+
+                     {/* Tabela de Movimentações */}
                      <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-2xl backdrop-blur-md">
                         <div className="overflow-y-auto flex-1 custom-scrollbar">
                            <table className="w-full text-left border-collapse">
@@ -359,39 +419,53 @@ const CashManagement: React.FC = () => {
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-white/5">
+                                 {console.log('Sessão atual:', session)}
                                  {(session && Array.isArray(session.transactions))
                                     ? session.transactions
                                        .filter(tx => {
                                           // Exibir apenas vendas, suprimentos, sangrias e pagamentos
-                                          const type = tx.items && Array.isArray(tx.items) ? 'sale' : tx.type;
-                                          return (
-                                             type === 'sale' ||
-                                             type === 'suprimento' ||
-                                             type === 'sangria' ||
-                                             type === 'pagamento'
-                                          );
+                                          if ('status' in tx && Array.isArray(tx.items)) return true; // SaleTransaction
+                                          if ('type' in tx && ['suprimento', 'sangria', 'pagamento'].includes(tx.type)) return true; // MovementTransaction
+                                          return false;
                                        })
                                        .map(tx => {
-                                          const isSale = tx.items && Array.isArray(tx.items);
-                                          const type = isSale ? 'sale' : tx.type;
-                                          // Valor líquido: se existir tx.total (com desconto), usa ele; senão soma dos itens
-                                          const total = isSale
-                                             ? (typeof tx.total === 'number' ? tx.total : tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0))
-                                             : (typeof tx.amount === 'number' ? tx.amount : 0);
-                                          const description = isSale ? `Venda #${tx.id}` : tx.description;
-                                          return (
-                                             <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                                <td className="px-6 py-4">
-                                                   <div className="flex items-center gap-3">
-                                                      <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
-                                                      <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
-                                                   </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
-                                                <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                             </tr>
-                                          );
+                                          if ('status' in tx && Array.isArray(tx.items)) {
+                                             // SaleTransaction
+                                             const total = typeof tx.total === 'number' ? tx.total : tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0);
+                                             const description = `Venda #${tx.id}`;
+                                             return (
+                                                <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                   <td className="px-6 py-4">
+                                                      <div className="flex items-center gap-3">
+                                                         <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor('sale')}`}>{getStatusIcon('sale')}</div>
+                                                         <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">sale</span>
+                                                      </div>
+                                                   </td>
+                                                   <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                   <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                   <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                </tr>
+                                             );
+                                          } else if ('type' in tx) {
+                                             // MovementTransaction
+                                             const type = tx.type;
+                                             const total = typeof tx.amount === 'number' ? tx.amount : 0;
+                                             const description = tx.description;
+                                             return (
+                                                <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                   <td className="px-6 py-4">
+                                                      <div className="flex items-center gap-3">
+                                                         <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
+                                                         <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
+                                                      </div>
+                                                   </td>
+                                                   <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                   <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                   <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                </tr>
+                                             );
+                                          }
+                                          return null;
                                        })
                                     : null}
                               </tbody>
@@ -399,7 +473,7 @@ const CashManagement: React.FC = () => {
                         </div>
                      </div>
                   </div>
-
+                  {/* Painel de Comandos */}
                   <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 animate-in fade-in slide-in-from-right-4 duration-700 overflow-y-auto lg:overflow-visible custom-scrollbar">
                      <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 px-2 shrink-0">Comandos</h2>
                      <div className="flex flex-col gap-3 shrink-0">
@@ -430,6 +504,7 @@ const CashManagement: React.FC = () => {
                   </div>
                </div>
 
+               {/* Tabela de Histórico de Caixas */}
                <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col min-h-0">
                   <div className="overflow-y-auto flex-1 custom-scrollbar">
                      <table className="w-full text-left border-collapse">
@@ -500,7 +575,7 @@ const CashManagement: React.FC = () => {
          <Modal
             isOpen={!!selectedHistory}
             onClose={() => setSelectedHistory(null)}
-            title={`Auditoria de Turno: ${selectedHistory?.id || ''}`}
+            title={`Relatório de Caixa: ${selectedHistory ? (selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleDateString() : '-') : ''}`}
             size="3xl"
          >
             {selectedHistory && (
@@ -627,7 +702,7 @@ const CashManagement: React.FC = () => {
                               <div>
                                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Diferença de Caixa</p>
                                  <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                   {selectedHistory.difference_at_close ? `R$ ${(selectedHistory.difference_at_close / 100).toFixed(2)}` : 'R$ 0.00'}
+                                    {selectedHistory.difference_at_close ? `R$ ${(selectedHistory.difference_at_close / 100).toFixed(2)}` : 'R$ 0.00'}
                                  </h5>
                               </div>
                               <Badge variant={selectedHistory.status === 'success' ? 'success' : 'danger'}>
@@ -643,30 +718,99 @@ const CashManagement: React.FC = () => {
                               <table className="w-full text-left border-collapse">
                                  <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
                                     <tr className="text-slate-600 text-[8px] uppercase font-bold tracking-[0.2em]">
-                                       <th className="px-6 py-4">Evento</th>
-                                       <th className="px-6 py-4">Descrição</th>
-                                       <th className="px-6 py-4 text-right">Montante</th>
-                                       <th className="px-6 py-4 text-right">Horário</th>
+                                       <th className="px-4 py-3">Evento</th>
+                                       <th className="px-4 py-3">Descrição</th>
+                                       <th className="px-4 py-3">Operador</th>
+                                       <th className="px-4 py-3">Valor</th>
+                                       <th className="px-4 py-3">Horário</th>
                                     </tr>
                                  </thead>
-                                 <tbody className="divide-y divide-white/5">
-                                    {selectedHistory.transactions?.map((tx: any) => (
+                                 <tbody className="divide-y divide-white/10">
+                                    {/* Caixa inicial */}
+                                    <tr className="bg-dark-950/60">
+                                       <td className="px-4 py-3 font-bold text-slate-400">Abertura</td>
+                                       <td className="px-4 py-3 text-slate-300">Caixa inicial</td>
+                                       <td className="px-4 py-3 text-slate-400">{operatorNameHistory || selectedHistory?.operator_id || '-'}</td>
+                                       <td className="px-4 py-3 font-mono font-bold text-blue-400">R$ {selectedHistory?.initial_balance ? (selectedHistory.initial_balance / 100).toFixed(2) : '0,00'}</td>
+                                       <td className="px-4 py-3 text-slate-400">{selectedHistory?.opened_at ? new Date(selectedHistory.opened_at).toLocaleString() : '-'}</td>
+                                    </tr>
+                                    {/* Vendas principais */}
+                                    {sales.map((tx: any) => (
                                        <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer">
-                                          <td className="px-6 py-4">
+                                          <td className="px-4 py-3">
                                              <div className="flex items-center gap-2">
-                                                <div className={`p-1 rounded bg-white/2 border border-white/5 ${getStatusColor(tx.type)}`}>
-                                                   {getStatusIcon(tx.type)}
-                                                </div>
-                                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{tx.type}</span>
+                                                <div className={`p-1 rounded bg-white/2 border border-white/5 text-accent`}>{getStatusIcon('sale')}</div>
+                                                <span className="text-[9px] font-bold uppercase tracking-widest text-accent">Venda</span>
                                              </div>
                                           </td>
-                                          <td className="px-6 py-4 text-[10px] text-slate-300 truncate max-w-[200px]">{tx.description}</td>
-                                          <td className={`px-6 py-4 text-right font-mono text-[11px] font-bold ${tx.type === 'sangria' || tx.type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
-                                             {tx.type === 'sangria' || tx.type === 'pagamento' ? '-' : '+'} R$ {tx.amount.toFixed(2)}
-                                          </td>
-                                          <td className="px-6 py-4 text-right text-[9px] font-mono text-slate-600">{new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                          <td className="px-4 py-3 text-[10px] text-slate-300 truncate max-w-[200px]">{`Venda #${tx.id}`}</td>
+                                          <td className="px-4 py-3 text-slate-400">{operatorNameHistory || '-'}</td>
+                                          <td className="px-4 py-3 text-right font-mono font-bold text-accent">+ R$ {typeof tx.total === 'number' ? (tx.total / 100).toFixed(2) : (tx.items ? (tx.items.reduce((sum: number, item: any) => sum + (item.line_total || 0), 0) / 100).toFixed(2) : '0.00')}</td>
+                                          <td className="px-4 py-3 text-right text-[9px] font-mono text-slate-600">{tx.timestamp ? new Date(tx.timestamp).toLocaleString() : '-'}</td>
                                        </tr>
                                     ))}
+                                    {/* Movimentações principais (suprimento, sangria, pagamento, ajuste) */}
+                                    {movements.filter((tx: any) => ['suprimento', 'sangria', 'pagamento', 'supply_in', 'withdraw_out', 'adjustment'].includes(tx.type)).map((tx: any) => {
+                                       let color = '';
+                                       let label = '';
+                                       if (tx.type === 'suprimento' || tx.type === 'supply_in') {
+                                          color = 'text-blue-400';
+                                          label = 'Suprimento';
+                                       } else if (tx.type === 'sangria' || tx.type === 'withdraw_out') {
+                                          color = 'text-red-400';
+                                          label = 'Sangria';
+                                       } else if (tx.type === 'pagamento' || tx.type === 'adjustment') {
+                                          color = 'text-amber-400';
+                                          label = 'Pagamento';
+                                       } else {
+                                          color = 'text-slate-400';
+                                          label = tx.type;
+                                       }
+                                       return (
+                                          <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer">
+                                             <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                   <div className={`p-1 rounded bg-white/2 border border-white/5 ${color}`}>{getStatusIcon(tx.type)}</div>
+                                                   <span className={`text-[9px] font-bold uppercase tracking-widest ${color}`}>{label}</span>
+                                                </div>
+                                             </td>
+                                             <td className="px-4 py-3 text-[10px] text-slate-300 truncate max-w-[200px]">{tx.description}</td>
+                                             <td className="px-4 py-3 text-slate-400">{operatorNameHistory || '-'}</td>
+                                             <td className={`px-4 py-3 text-right font-mono font-bold ${color}`}>{(tx.type === 'sangria' || tx.type === 'withdraw_out' || tx.type === 'pagamento' || tx.type === 'adjustment') ? '- ' : '+ '}R$ {typeof tx.amount === 'number' ? (tx.amount / 100).toFixed(2) : '0.00'}</td>
+                                             <td className="px-4 py-3 text-right text-[9px] font-mono text-slate-600">{tx.timestamp ? new Date(tx.timestamp).toLocaleString() : '-'}</td>
+                                          </tr>
+                                       );
+                                    })}
+                                    {/* Linha de total de vendas consolidado */}
+                                    <tr className="bg-dark-950/80 font-bold">
+                                       <td className="px-4 py-3 text-accent">Total de Vendas</td>
+                                       <td className="px-4 py-3 text-slate-300">—</td>
+                                       <td className="px-4 py-3 text-slate-400">—</td>
+                                       <td className="px-4 py-3 text-right font-mono text-accent">
+                                          {(() => {
+                                             let totalVendas = 0;
+                                             sales.forEach((tx: any) => {
+                                                if (typeof tx.total === 'number') {
+                                                   totalVendas += tx.total;
+                                                } else if (Array.isArray(tx.items)) {
+                                                   totalVendas += tx.items.reduce((sum: number, item: any) => sum + (item.line_total || item.lineTotal || 0), 0);
+                                                }
+                                             });
+                                             return `R$ ${(totalVendas / 100).toFixed(2)}`;
+                                          })()}
+                                       </td>
+                                       <td className="px-4 py-3">—</td>
+                                    </tr>
+                                    {/* Fechamento do caixa */}
+                                    {selectedHistory.closed_at && (
+                                       <tr className="bg-dark-950/60">
+                                          <td className="px-4 py-3 font-bold text-slate-400">Fechamento</td>
+                                          <td className="px-4 py-3 text-slate-300">Caixa fechado</td>
+                                          <td className="px-4 py-3 text-slate-400">{operatorNameHistory || selectedHistory.operator_id || '-'}</td>
+                                          <td className="px-4 py-3 font-mono font-bold text-green-400">R$ {selectedHistory.physical_count_at_close ? (selectedHistory.physical_count_at_close / 100).toFixed(2) : '-'}</td>
+                                          <td className="px-4 py-3 text-slate-400">{selectedHistory.closed_at ? new Date(selectedHistory.closed_at).toLocaleString() : '-'}</td>
+                                       </tr>
+                                    )}
                                  </tbody>
                               </table>
                            </div>
