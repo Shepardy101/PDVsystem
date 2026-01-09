@@ -183,71 +183,76 @@ const CashPerformanceTrends: React.FC = () => {
   }
 
   return (
-    <div className="p-8">
-      <h2 className="text-xl font-bold text-accent mb-4">Desempenho de Vendas</h2>
-      <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8">
-        <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1">Período</label>
-          <select value={periodType} onChange={handlePeriodTypeChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-3 py-2 text-sm">
-            <option value="day">Dia</option>
-            <option value="week">Semana</option>
-            <option value="month">Mês</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1">Data Inicial</label>
-          <input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1">Data Final</label>
-          <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-3 py-2 text-sm" />
+    <div className="p-4 md:p-6 w-full h-full flex flex-col">
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <h2 className="text-lg md:text-xl font-bold text-accent">Desempenho de Vendas</h2>
+        <div className="flex items-center gap-2 bg-dark-900/40 rounded-xl px-2 py-1 border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.08)]">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 mb-0.5">Período</label>
+            <select value={periodType} onChange={handlePeriodTypeChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs">
+              <option value="day">Dia</option>
+              <option value="week">Semana</option>
+              <option value="month">Mês</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 mb-0.5">Inicial</label>
+            <input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 mb-0.5">Final</label>
+            <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs" />
+          </div>
         </div>
       </div>
 
-      {/* Cards de totais por método */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className={`rounded-xl p-6 shadow-inner border-2 flex flex-col items-center ${palette.cash}`}>
-          <span className="text-[10px] font-bold uppercase tracking-widest mb-2">Dinheiro</span>
-          <span className="text-2xl font-mono font-bold">{formatBRL(totals.cash)}</span>
+      {/* Cards compactos futuristas */}
+      <div className="flex gap-2 mb-4 md:mb-6">
+        <div className={`flex-1 min-w-[90px] rounded-xl px-2 py-2 shadow-[0_0_12px_rgba(16,185,129,0.10)] border border-emerald-500/20 bg-gradient-to-br from-emerald-900/40 to-dark-950/60 backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden`}>
+          <div className="absolute inset-0 pointer-events-none bg-emerald-500/5 rounded-xl" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400 mb-0.5">Dinheiro</span>
+          <span className="text-base font-mono font-bold text-emerald-200">{formatBRL(totals.cash)}</span>
         </div>
-        <div className={`rounded-xl p-6 shadow-inner border-2 flex flex-col items-center ${palette.card}`}>
-          <span className="text-[10px] font-bold uppercase tracking-widest mb-2">Cartão</span>
-          <span className="text-2xl font-mono font-bold">{formatBRL(totals.card)}</span>
+        <div className={`flex-1 min-w-[90px] rounded-xl px-2 py-2 shadow-[0_0_12px_rgba(59,130,246,0.10)] border border-blue-500/20 bg-gradient-to-br from-blue-900/40 to-dark-950/60 backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden`}>
+          <div className="absolute inset-0 pointer-events-none bg-blue-500/5 rounded-xl" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 mb-0.5">Cartão</span>
+          <span className="text-base font-mono font-bold text-blue-200">{formatBRL(totals.card)}</span>
         </div>
-        <div className={`rounded-xl p-6 shadow-inner border-2 flex flex-col items-center ${palette.pix}`}>
-          <span className="text-[10px] font-bold uppercase tracking-widest mb-2">Pix</span>
-          <span className="text-2xl font-mono font-bold">{formatBRL(totals.pix)}</span>
+        <div className={`flex-1 min-w-[90px] rounded-xl px-2 py-2 shadow-[0_0_12px_rgba(251,191,36,0.10)] border border-amber-500/20 bg-gradient-to-br from-amber-900/40 to-dark-950/60 backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden`}>
+          <div className="absolute inset-0 pointer-events-none bg-amber-500/5 rounded-xl" />
+          <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400 mb-0.5">Pix</span>
+          <span className="text-base font-mono font-bold text-amber-200">{formatBRL(totals.pix)}</span>
         </div>
       </div>
 
       {/* Gráfico de barras */}
-      <div className="rounded-2xl bg-dark-900/40 border border-white/10 p-8 mb-8">
-        <h3 className="text-lg font-bold text-accent mb-4">Vendas por {getPeriodLabel(periodType)}</h3>
-        <div className="overflow-x-auto">
-          <div className="flex items-end gap-4 min-h-[180px]">
+      <div className="flex-1 rounded-2xl bg-dark-900/40 border border-white/10 p-4 md:p-6 mb-2 flex flex-col justify-center">
+        <h3 className="text-base md:text-lg font-bold text-accent mb-2 md:mb-4">Vendas por {getPeriodLabel(periodType)}</h3>
+        <div className="overflow-x-auto w-full">
+          <div className="flex items-end gap-2 min-h-[120px] md:min-h-[160px]">
             {chartData.length === 0 ? (
               <div className="text-slate-500 text-sm">Sem dados para o período selecionado.</div>
             ) : (
               chartData.map((d, idx) => (
-                <div key={d.label} className="flex flex-col items-center min-w-[60px]">
+                <div key={d.label} className="flex flex-col items-center min-w-[40px] md:min-w-[60px]">
                   {/* Barras: Itens vendidos (cinza) e Total vendido (colorido) */}
-                  <div className="flex gap-1 items-end h-32">
+                  <div className="flex gap-0.5 items-end h-20 md:h-32">
                     <div
-                      className="w-5 rounded-t-lg bg-slate-600/60"
-                      style={{ height: `${Math.max(8, d.items * 8)}px` }}
+                      className="w-3 md:w-5 rounded-t-lg bg-slate-600/60"
+                      style={{ height: `${Math.max(6, d.items * 6)}px` }}
                       title={`Itens vendidos: ${d.items}`}
                     />
                     <div
-                      className="w-5 rounded-t-lg bg-accent"
-                      style={{ height: `${Math.max(8, d.total / 500)}px` }}
+                      className="w-3 md:w-5 rounded-t-lg bg-accent"
+                      style={{ height: `${Math.max(6, d.total / 700)}px` }}
                       title={`Total vendido: ${formatBRL(d.total)}`}
                     />
                   </div>
-                  <div className="mt-2 text-xs font-mono text-slate-400 text-center">
+                  <div className="mt-1 md:mt-2 text-[10px] md:text-xs font-mono text-slate-400 text-center">
                     {d.label}
                   </div>
-                  <div className="text-[10px] text-slate-500">{d.items} itens</div>
-                  <div className="text-[10px] text-accent">{formatBRL(d.total)}</div>
+                  <div className="text-[9px] md:text-[10px] text-slate-500">{d.items} itens</div>
+                  <div className="text-[9px] md:text-[10px] text-accent">{formatBRL(d.total)}</div>
                 </div>
               ))
             )}
