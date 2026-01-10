@@ -688,13 +688,6 @@ useEffect(() => {
                         Encerrar Turno
                      </button>
 
-
-
-                     {/* MODAL DE FECHAMENTO DE CAIXA */}
-                     
-
-
-
                      <div className="flex items-center gap-2">
                         <Badge variant="info">{cart.length} Ativos</Badge>
                         <button

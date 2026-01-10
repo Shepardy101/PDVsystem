@@ -455,7 +455,7 @@ const CashManagement: React.FC = () => {
                                                          <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">sale</span>
                                                       </div>
                                                    </td>
-                                                   <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                   <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description.toString().slice(0, 15)}</td>
                                                    <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
                                                    <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                 </tr>
@@ -502,7 +502,14 @@ const CashManagement: React.FC = () => {
                         </Button>
                      </div>
                      <div className="mt-auto lg:mt-6 pt-4 border-t border-white/5 shrink-0">
-                        <Button onClick={() => setIsClosureModalOpen(true)} variant="danger" className="w-full py-5 text-[10px] font-bold tracking-[0.2em] uppercase shadow-glass hover:shadow-red-500/10" icon={<DollarSign size={18} />}>FECHAR TURNO [F12]</Button>
+                        <div className="bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center shadow-inner">
+                           <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Abertura do Caixa</p>
+                           <h3 className="text-lg md:text-xl font-mono font-bold text-accent">
+                              {session && session.opened_at
+                                 ? new Date(session.opened_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                                 : '--'}
+                           </h3>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -619,7 +626,7 @@ const CashManagement: React.FC = () => {
                         className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'movimentacoes' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
-                        Datalhamento de Movimentos
+                        Detalhamento de Movimentos
                         {historyModalTab === 'movimentacoes' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-accent-glow" />}
                      </button>
                      <button
@@ -775,7 +782,7 @@ const CashManagement: React.FC = () => {
                                                 <span className="text-[9px] font-bold uppercase tracking-widest text-accent">Venda</span>
                                              </div>
                                           </td>
-                                          <td className="px-4 py-3 text-[10px] text-slate-300 truncate max-w-[200px]">{`Venda #${tx.id}`}</td>
+                                          <td className="px-4 py-3 text-[10px] text-slate-300 truncate max-w-[200px]">{`Venda #${tx.id?.toString().slice(0, 8)}`}</td>
                                           <td className="px-4 py-3 text-slate-400">{operatorNameHistory || '-'}</td>
                                           <td className="px-4 py-3 text-right font-mono font-bold text-accent">+ R$ {typeof tx.total === 'number' ? (tx.total / 100).toFixed(2) : (tx.items ? (tx.items.reduce((sum: number, item: any) => sum + (item.line_total || 0), 0) / 100).toFixed(2) : '0.00')}</td>
                                           <td className="px-4 py-3 text-right text-[9px] font-mono text-slate-600">{tx.timestamp ? new Date(tx.timestamp).toLocaleString() : '-'}</td>
@@ -874,6 +881,8 @@ const CashManagement: React.FC = () => {
          >
             {selectedTx && (
                <div className="space-y-8 animate-in zoom-in-95 duration-200">
+                                {console.log('Selected transaction for detail modal:', selectedTx)}
+
                   {/* Card de Cabeçalho com Valor e Tipo */}
                   <div className="flex items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 shadow-inner">
                      <div className="flex items-center gap-4">
