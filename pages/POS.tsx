@@ -667,9 +667,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                            }`}
                      >
                         <div className="flex items-center gap-4 text-left">
-                           <div className="w-10 h-10 rounded-lg bg-dark-800 border border-white/5 overflow-hidden">
-                              <img src={product.imageUrl} className="w-full h-full object-cover opacity-60" />
-                           </div>
+                              <div className="w-10 h-10 rounded-lg bg-dark-800 border border-white/5 overflow-hidden flex items-center justify-center">
+                                {product.imageUrl ? (
+                                  <img src={product.imageUrl} className="w-full h-full object-cover opacity-60" />
+                                ) : (
+                                  <Cpu size={22} className="text-slate-700 opacity-60" />
+                                )}
+                              </div>
                            <div>
                               <p className={`text-sm font-bold ${selectedIndex === index ? 'text-accent' : 'text-slate-200'}`}>{product.name}</p>
                               <p className="text-[10px] text-slate-500 font-mono">{product.gtin}</p>
@@ -713,6 +717,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                   </div>
                </div>
 
+               {/* Cart Items List */}
                <div className="flex-1 glass-panel rounded-3xl overflow-hidden flex flex-col border-white/5 shadow-2xl">
                   <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                      {cart.length === 0 ? (
@@ -726,9 +731,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                         <div className="space-y-3">
                            {cart.map(item => (
                               <div key={item.product.id} className="flex items-center gap-6 bg-dark-900/40 p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all group animate-in slide-in-from-left-4 duration-300">
-                                 <div className="w-12 h-12 rounded-xl bg-dark-950 border border-white/5 overflow-hidden shrink-0">
-                                    <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
-                                 </div>
+                                  <div className="w-12 h-12 rounded-xl bg-dark-950 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
+                                    {item.product.imageUrl ? (
+                                       <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
+                                    ) : (
+                                       <Cpu size={28} className="text-slate-700 opacity-60" />
+                                    )}
+                                  </div>
                                  <div className="flex-1 min-w-0">
                                     <h4 className="text-sm font-bold text-slate-100 truncate uppercase tracking-tight">{item.product.name}</h4>
                                     <div className="flex items-center gap-3">
