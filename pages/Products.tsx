@@ -262,23 +262,26 @@ const Products: React.FC = () => {
       // Esperado: internalCode, gtin, name, costPrice, salePrice, stock, [supplier], [category]
       const rows = data.map((row: any, idx: number) => {
          const errors = [];
-         if (!row.internalCode) errors.push('Código interno obrigatório');
-         if (!row.gtin) errors.push('EAN obrigatório');
+         // Sempre tratar códigos como string
+         const internalCode = String(row.internalCode ?? '').trim();
+         const gtin = String(row.gtin ?? '').trim();
+         if (!internalCode) errors.push('Código interno obrigatório');
+         if (!gtin) errors.push('EAN obrigatório');
          if (!row.name) errors.push('Descrição obrigatória');
          if (!row.costPrice) errors.push('Preço de custo obrigatório');
          if (!row.salePrice) errors.push('Preço de venda obrigatório');
          if (!row.stock) errors.push('Quantidade obrigatória');
 
          // Verifica duplicidade no banco atual
-         const eanExists = products.some(p => p.gtin === row.gtin);
-         const codeExists = products.some(p => p.internalCode === row.internalCode);
+         const eanExists = products.some(p => p.gtin === gtin);
+         const codeExists = products.some(p => p.internalCode === internalCode);
          if (eanExists) errors.push('EAN já existe');
          if (codeExists) errors.push('Código interno já existe');
 
          return {
             id: `import-${idx}`,
-            internalCode: row.internalCode,
-            gtin: row.gtin,
+            internalCode,
+            gtin,
             name: row.name,
             costPrice: parseFloat(row.costPrice),
             salePrice: parseFloat(row.salePrice),
@@ -529,7 +532,15 @@ const Products: React.FC = () => {
                               >
                                  <td className="px-8 py-5 flex items-center gap-4">
                                     <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
-                                       <img src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                                       {product.imageUrl ? (
+                                          <img
+                                             src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`}
+                                             className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity"
+                                             alt={product.name}
+                                          />
+                                       ) : (
+                                          <Cpu  className="text-accent opacity-40" size={20} />
+                                       )}
                                     </div>
                                     <div>
                                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>

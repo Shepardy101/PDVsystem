@@ -84,18 +84,28 @@ const CashManagement: React.FC = () => {
    }, [fetchAndSetSessionTransactions]);
 
 
-   // Buscar histórico de caixas ao mudar para a aba de histórico
+   // Buscar histórico de caixas e nomes dos operadores ao mudar para a aba de histórico
    useEffect(() => {
       if (activeTab === 'history') {
          setCashHistoryLoading(true);
          setCashHistoryError('');
-         fetchCashHistory()
-            .then(sessions => setCashHistory(sessions))
-            .catch(() => setCashHistoryError('Erro ao buscar histórico de caixas'))
-            .finally(() => setCashHistoryLoading(false));
+         (async () => {
+            try {
+               const sessions = await fetchCashHistory();
+               // Buscar nomes dos operadores antes de setar o histórico
+               const ids = Array.from(new Set(sessions.map((h: any) => h.operator_id).filter(Boolean)));
+               const entries = await Promise.all(
+                  ids.map(async (id: string) => [id, await getOperatorNameById(id) || id])
+               );
+               setOperatorNames(Object.fromEntries(entries));
+               setCashHistory(sessions);
+            } catch {
+               setCashHistoryError('Erro ao buscar histórico de caixas');
+            } finally {
+               setCashHistoryLoading(false);
+            }
+         })();
       }
-
-
    }, [activeTab]);
 
 
@@ -240,18 +250,7 @@ const CashManagement: React.FC = () => {
 
    const [operatorNames, setOperatorNames] = useState<{ [id: string]: string }>({});
 
-   useEffect(() => {
-      async function fetchAllOperatorNames() {
-         if (cashHistory && cashHistory.length > 0) {
-            const ids = Array.from(new Set(cashHistory.map((h: any) => h.operator_id).filter(Boolean)));
-            const entries = await Promise.all(
-               ids.map(async (id: string) => [id, await getOperatorNameById(id) || id])
-            );
-            setOperatorNames(Object.fromEntries(entries));
-         }
-      }
-      fetchAllOperatorNames();
-   }, [cashHistory]);
+   // Removido: busca de nomes dos operadores após cashHistory, pois agora é feito junto com o fetch
 
    if (error) {
       return (
