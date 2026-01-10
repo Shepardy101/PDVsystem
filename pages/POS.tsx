@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useAutoFocus } from '../hooks/useAutoFocus';
 import { useAuth } from '../components/AuthContext';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -14,10 +15,10 @@ import OpeningModal from '../components/modals/OpeningModal';
 
 
 interface POSProps {
-  
+
    cashOpen: boolean;
    onOpenCash: (balance: number) => void;
-  
+
 }
 
 
@@ -63,7 +64,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    // Notification State
    const [notification, setNotification] = useState<{ show: boolean, msg: string, sub: string } | null>(null);
 
-   const inputRef = useRef<HTMLInputElement>(null);
+   const inputRef = useAutoFocus<HTMLInputElement>();
    const searchRef = useRef<HTMLDivElement>(null);
 
 
@@ -84,22 +85,24 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    }, [user]);
 
 
-// se cashSessionId for null, entao ao pressionar 'enter' ou 'space' abre o modal de abertura de caixa
-// se pressionar 'esc' com o modal de abertura de caixa aberto, ele será fechado
-useEffect(() => {
-   const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Enter' || e.key === ' ') && !cashSessionId && !isOpeningModalOpen && !isClosingModalOpen) {
-         e.preventDefault();
-         setIsOpeningModalOpen(true);
-      }
-      if (e.key === 'Escape' && isOpeningModalOpen) {
-         e.preventDefault();
-         setIsOpeningModalOpen(false);
-      }
-   };
-   window.addEventListener('keydown', handleKeyDown);
-   return () => window.removeEventListener('keydown', handleKeyDown);
-}, [cashSessionId, isOpeningModalOpen, isClosingModalOpen]);
+
+
+   // se cashSessionId for null, entao ao pressionar 'enter' ou 'space' abre o modal de abertura de caixa
+   // se pressionar 'esc' com o modal de abertura de caixa aberto, ele será fechado
+   useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+         if ((e.key === 'Enter' || e.key === ' ') && !cashSessionId && !isOpeningModalOpen && !isClosingModalOpen) {
+            e.preventDefault();
+            setIsOpeningModalOpen(true);
+         }
+         if (e.key === 'Escape' && isOpeningModalOpen) {
+            e.preventDefault();
+            setIsOpeningModalOpen(false);
+         }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [cashSessionId, isOpeningModalOpen, isClosingModalOpen]);
 
    // Função para limpar o carrinho e focar no input
    const handleClearCart = () => {
@@ -187,6 +190,8 @@ useEffect(() => {
          .finally(() => {
             setTimeout(() => {
                setIsLoadingSession(false);
+               //foca  o input
+               if (inputRef.current) inputRef.current.focus();
             }, 500); // Garante spinner mínimo
          });
    }, [cashOpen, operatorId]);
@@ -201,7 +206,7 @@ useEffect(() => {
       }
    }, [cashOpen, isClosingModalOpen]);
 
-   
+
 
 
    const triggerNotification = (msg: string, sub: string) => {
@@ -316,7 +321,7 @@ useEffect(() => {
             return;
          }
 
-      
+
          // Atalho para abrir modal de cliente
          if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
             console.log('[POS] Abrindo modal de cliente via tecla c');
@@ -563,7 +568,7 @@ useEffect(() => {
                               }
                            }}
                         />
-                       
+
                         <Button
                            onClick={async () => {
                               const value = parseFloat(initialBalance) || 0;
@@ -616,7 +621,7 @@ useEffect(() => {
    }
 
 
- 
+
 
    return (
       <div className="flex-1 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid p-6 gap-6 relative">
@@ -783,7 +788,7 @@ useEffect(() => {
                      </Button>
 
                      <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">
-                        Ctrl + D = Aplicar Desconto  
+                        Ctrl + D = Aplicar Desconto
                      </p>
                   </div>
                </div>
@@ -827,22 +832,22 @@ useEffect(() => {
 
          {/* RECEIPT MODAL */}
          <ReceiptModal
-                  isOpen={isReceiptModalOpen}
-                  lastSaleData={lastSaleData}
-                  onClose={() => {
-                     setIsReceiptModalOpen(false);
-                     setCart([]);
-                     setLastSaleData(null);
-                     setSearchTerm('');
-                     setManualDiscount(0);
-                     setTempDiscount('0');
-                     setSelectedClient(null);
-                     //focar input de busca após fechar o recibo
-                     setTimeout(() => {
-                        inputRef.current?.focus();
-                     }, 100);
-                  }}
-                  onPrint={handlePrint}
+            isOpen={isReceiptModalOpen}
+            lastSaleData={lastSaleData}
+            onClose={() => {
+               setIsReceiptModalOpen(false);
+               setCart([]);
+               setLastSaleData(null);
+               setSearchTerm('');
+               setManualDiscount(0);
+               setTempDiscount('0');
+               setSelectedClient(null);
+               //focar input de busca após fechar o recibo
+               setTimeout(() => {
+                  inputRef.current?.focus();
+               }, 100);
+            }}
+            onPrint={handlePrint}
          />
 
          {/* CLOSING MODAL */}
@@ -852,19 +857,19 @@ useEffect(() => {
             closeError={closeError}
             closeLoading={closeLoading}
             closeResult={closeResult}
-                  onClose={() => {
-                      setIsClosingModalOpen(false);
-                      setPhysicalCashInput('');
-                      setCloseError('');
-                      // Só setar cashSessionId como null se o modal está mostrando o resumo (closeResult existe)
-                      if (closeResult) {
-                         setCashSessionId(null);
-                         setCloseResult(null);
-                         setInitialBalance('');
-                      } else {
-                         setCloseResult(null);
-                      }
-                  }}
+            onClose={() => {
+               setIsClosingModalOpen(false);
+               setPhysicalCashInput('');
+               setCloseError('');
+               // Só setar cashSessionId como null se o modal está mostrando o resumo (closeResult existe)
+               if (closeResult) {
+                  setCashSessionId(null);
+                  setCloseResult(null);
+                  setInitialBalance('');
+               } else {
+                  setCloseResult(null);
+               }
+            }}
             onInputChange={setPhysicalCashInput}
             onConfirm={async () => {
                setCloseLoading(true);
@@ -889,7 +894,7 @@ useEffect(() => {
             }}
          />
 
-         
+
 
          {/* NOTIFICATION TOAST (SALE PROCESSED FEEDBACK) */}
          {notification && notification.show && (
