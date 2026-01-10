@@ -50,13 +50,12 @@ export function listProducts(limit = 50, offset = 0) {
 
 export function searchProducts(q: string) {
   if (!q) return { items: [] };
-  const isNumeric = /^\d+$/.test(q);
-  let items: Product[] = [];
-  if (isNumeric || q.length <= 6) {
-    items = db.prepare('SELECT * FROM products WHERE internal_code = ? OR ean = ?').all(q, q) as Product[];
-    if (items.length > 0) return { items };
-  }
-  items = db.prepare('SELECT * FROM products WHERE name LIKE ? ORDER BY name LIMIT 50').all(`%${q}%`) as Product[];
+  // Busca por nome, ean e internal_code ao mesmo tempo
+  const items = db.prepare(`
+    SELECT * FROM products
+    WHERE name LIKE ? OR ean = ? OR internal_code = ?
+    ORDER BY name LIMIT 50
+  `).all(`%${q}%`, q, q) as Product[];
   return { items };
 }
 
