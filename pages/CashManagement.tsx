@@ -8,7 +8,7 @@ import SangriaModal from '../components/modals/SangriaModal';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { getUserById, getOperatorNameById } from '../services/user';
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus, TrendingUp } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus, TrendingUp, ArrowUpDown, } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
 import { CashSession, SaleTransaction, MovementTransaction } from '../types';
@@ -886,12 +886,17 @@ const CashManagement: React.FC = () => {
                   {/* Card de Cabeçalho com Valor e Tipo */}
                   <div className="flex items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 shadow-inner">
                      <div className="flex items-center gap-4">
-                        <div className={`p-4 rounded-2xl bg-white/2 ${getStatusColor(selectedTx.type)}`}>
-                           {getStatusIcon(selectedTx.type)}
+                        <div className="p-4 rounded-2xl bg-white/2 text-accent border border-white/5 flex items-center gap-1">
+                           <ArrowUpDown size={16} />
+                           
                         </div>
                         <div>
                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Natureza</p>
-                           <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">{selectedTx.type}</h3>
+                              <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">
+                                {Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0
+                                  ? 'Venda'
+                                  : selectedTx.type}
+                              </h3>
                         </div>
                      </div>
                      <div className="text-right">
