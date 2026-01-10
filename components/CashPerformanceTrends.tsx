@@ -1,3 +1,4 @@
+import './CashPerformanceTrends.scrollbar.css';
 import React, { useEffect, useState } from 'react';
 import mockPerformanceData from './mockPerformanceData';
 
@@ -134,7 +135,7 @@ const CashPerformanceTrends: React.FC = () => {
     return { cash, card, pix };
   }, [filteredSales]);
 
-  // Dados para gráfico: agrupamento por período
+  // Dados para gráfico: agrupamento por período + normalização de altura
   const chartData = React.useMemo(() => {
     if (!filteredSales.length) return [];
     // Agrupa por data (dia, semana, mês)
@@ -158,7 +159,20 @@ const CashPerformanceTrends: React.FC = () => {
         map[key].items += sale.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
       }
     });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([label, v]) => ({ label, ...v }));
+    const arr = Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([label, v]) => ({ label, ...v }));
+    // Normalização
+    const maxItems = Math.max(...arr.map(d => d.items), 1);
+    const maxTotal = Math.max(...arr.map(d => d.total), 1);
+    // Barra de valor sempre maior que a de itens (ex: +30%)
+    return arr.map(d => {
+      const itemsHeight = Math.max(6, (d.items / maxItems) * 50); // altura máxima 50px
+      const totalHeight = Math.max(itemsHeight + 6, (d.total / maxTotal) * 65); // altura máxima 65px, sempre maior que itemsHeight
+      return {
+        ...d,
+        itemsHeight,
+        totalHeight,
+      };
+    });
   }, [filteredSales, periodType]);
 
   // Handlers
@@ -228,23 +242,38 @@ const CashPerformanceTrends: React.FC = () => {
       {/* Gráfico de barras */}
       <div className="flex-1 rounded-2xl bg-dark-900/40 border border-white/10 p-4 md:p-6 mb-2 flex flex-col justify-center">
         <h3 className="text-base md:text-lg font-bold text-accent mb-2 md:mb-4">Vendas por {getPeriodLabel(periodType)}</h3>
-        <div className="overflow-x-auto w-full">
-          <div className="flex items-end gap-2 min-h-[120px] md:min-h-[160px]">
+        <div
+          className="overflow-x-auto w-full custom-scrollbar"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          ref={el => {
+            if (el) {
+              el.scrollLeft = el.scrollWidth;
+              // Adiciona evento para rolar horizontalmente com a roda do mouse
+              el.onwheel = (e: WheelEvent) => {
+                if (e.deltaY !== 0) {
+                  el.scrollLeft += e.deltaY;
+                  e.preventDefault();
+                }
+              };
+            }
+          }}
+        >
+          <div className="flex items-end gap-2 min-h-[80px] md:min-h-[120px]">
             {chartData.length === 0 ? (
               <div className="text-slate-500 text-sm">Sem dados para o período selecionado.</div>
             ) : (
               chartData.map((d, idx) => (
                 <div key={d.label} className="flex flex-col items-center min-w-[40px] md:min-w-[60px]">
                   {/* Barras: Itens vendidos (cinza) e Total vendido (colorido) */}
-                  <div className="flex gap-0.5 items-end h-20 md:h-32">
+                  <div className="flex gap-0.5 items-end h-16 md:h-20">
                     <div
                       className="w-3 md:w-5 rounded-t-lg bg-slate-600/60"
-                      style={{ height: `${Math.max(6, d.items * 6)}px` }}
+                      style={{ height: `${d.itemsHeight}px` }}
                       title={`Itens vendidos: ${d.items}`}
                     />
                     <div
                       className="w-3 md:w-5 rounded-t-lg bg-accent"
-                      style={{ height: `${Math.max(6, d.total / 700)}px` }}
+                      style={{ height: `${d.totalHeight}px` }}
                       title={`Total vendido: ${formatBRL(d.total)}`}
                     />
                   </div>

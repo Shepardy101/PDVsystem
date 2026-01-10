@@ -1,0 +1,22 @@
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 #0f172a;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  background: #0f172a;
+  border-radius: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #38bdf8 40%, #0ea5e9 100%);
+  border-radius: 6px;
+  box-shadow: 0 0 6px #38bdf844;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #0ea5e9 60%, #38bdf8 100%);
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 6px;
+}
