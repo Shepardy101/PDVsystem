@@ -309,35 +309,34 @@ const CashPerformanceTrends: React.FC = () => {
       </div>
 
       {/* Cards compactos, semi-transparentes e resumo */}
-      <div className="flex flex-wrap gap-2 mb-3 md:mb-4 items-center">
-        <div className="flex-1 min-w-[70px] max-w-[110px] rounded-lg px-1.5 py-1.5 bg-emerald-400/10 border border-emerald-400/20 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-300 mb-0.5">Dinheiro</span>
-          <span className="text-xs font-mono font-bold text-emerald-100">{formatBRL(totals.cash)}</span>
+      <div className="flex flex-row flex-wrap gap-2 mb-3 md:mb-4 items-center justify-between w-full">
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[90px] max-w-[120px] bg-emerald-400/5 border border-emerald-400/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 90, maxWidth: 120}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-300 mb-0.5">Dinheiro</span>
+          <span className="text-base font-mono font-bold text-emerald-100">{formatBRL(totals.cash)}</span>
         </div>
-        <div className="flex-1 min-w-[70px] max-w-[110px] rounded-lg px-1.5 py-1.5 bg-blue-400/10 border border-blue-400/20 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-blue-300 mb-0.5">Cartão</span>
-          <span className="text-xs font-mono font-bold text-blue-100">{formatBRL(totals.card)}</span>
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[90px] max-w-[120px] bg-blue-400/5 border border-blue-400/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 90, maxWidth: 120}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-blue-300 mb-0.5">Cartão</span>
+          <span className="text-base font-mono font-bold text-blue-100">{formatBRL(totals.card)}</span>
         </div>
-        <div className="flex-1 min-w-[70px] max-w-[110px] rounded-lg px-1.5 py-1.5 bg-amber-400/10 border border-amber-400/20 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-amber-300 mb-0.5">Pix</span>
-          <span className="text-xs font-mono font-bold text-amber-100">{formatBRL(totals.pix)}</span>
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[90px] max-w-[120px] bg-amber-400/5 border border-amber-400/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 90, maxWidth: 120}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-amber-300 mb-0.5">Pix</span>
+          <span className="text-base font-mono font-bold text-amber-100">{formatBRL(totals.pix)}</span>
         </div>
-        {/* Resumo total e médias */}
-        <div className="flex-1 min-w-[120px] max-w-[180px] rounded-lg px-2 py-1.5 bg-dark-700/60 border border-white/10 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-accent mb-0.5">Total Vendido</span>
-          <span className="text-xs font-mono font-bold text-accent">{formatBRL(filteredSalesForCards.reduce((sum, s) => sum + (s.total || 0), 0))}</span>
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[110px] max-w-[150px] bg-dark-700/30 border border-white/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 110, maxWidth: 150}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-accent mb-0.5">Total Vendido</span>
+          <span className="text-base font-mono font-bold text-accent">{formatBRL(filteredSalesForCards.reduce((sum, s) => sum + (s.total || 0), 0))}</span>
         </div>
-        <div className="flex-1 min-w-[120px] max-w-[180px] rounded-lg px-2 py-1.5 bg-dark-700/60 border border-white/10 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">Itens Vendidos</span>
-          <span className="text-xs font-mono font-bold text-slate-100">{filteredSalesForCards.reduce((sum, s) => sum + (Array.isArray(s.items) ? s.items.reduce((a, i) => a + (i.quantity || 0), 0) : 0), 0)}</span>
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[110px] max-w-[150px] bg-dark-700/30 border border-white/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 110, maxWidth: 150}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">Itens Vendidos</span>
+          <span className="text-base font-mono font-bold text-slate-100">{filteredSalesForCards.reduce((sum, s) => sum + (Array.isArray(s.items) ? s.items.reduce((a, i) => a + (i.quantity || 0), 0) : 0), 0)}</span>
         </div>
-        <div className="flex-1 min-w-[120px] max-w-[180px] rounded-lg px-2 py-1.5 bg-dark-700/60 border border-white/10 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-sky-300 mb-0.5">Média Venda</span>
-          <span className="text-xs font-mono font-bold text-sky-100">{filteredSalesForCards.length > 0 ? formatBRL(filteredSalesForCards.reduce((sum, s) => sum + (s.total || 0), 0) / filteredSalesForCards.length) : 'R$ 0,00'}</span>
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[110px] max-w-[150px] bg-dark-700/30 border border-white/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 110, maxWidth: 150}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-sky-300 mb-0.5">Média Venda</span>
+          <span className="text-base font-mono font-bold text-sky-100">{filteredSalesForCards.length > 0 ? formatBRL(filteredSalesForCards.reduce((sum, s) => sum + (s.total || 0), 0) / filteredSalesForCards.length) : 'R$ 0,00'}</span>
         </div>
-        <div className="flex-1 min-w-[120px] max-w-[180px] rounded-lg px-2 py-1.5 bg-dark-700/60 border border-white/10 shadow-none flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
-          <span className="text-[8px] font-bold uppercase tracking-widest text-fuchsia-300 mb-0.5">Média Itens</span>
-          <span className="text-xs font-mono font-bold text-fuchsia-100">{filteredSalesForCards.length > 0 ? (filteredSalesForCards.reduce((sum, s) => sum + (Array.isArray(s.items) ? s.items.reduce((a, i) => a + (i.quantity || 0), 0) : 0), 0) / filteredSalesForCards.length).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '0'}</span>
+        <div className="flex flex-col items-center justify-between rounded-xl px-2 py-2 min-w-[110px] max-w-[150px] bg-dark-700/30 border border-white/10 backdrop-blur-xl" style={{flex: '1 1 0', minWidth: 110, maxWidth: 150}}>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-fuchsia-300 mb-0.5">Média Itens</span>
+          <span className="text-base font-mono font-bold text-fuchsia-100">{filteredSalesForCards.length > 0 ? (filteredSalesForCards.reduce((sum, s) => sum + (Array.isArray(s.items) ? s.items.reduce((a, i) => a + (i.quantity || 0), 0) : 0), 0) / filteredSalesForCards.length).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '0'}</span>
         </div>
       </div>
 
