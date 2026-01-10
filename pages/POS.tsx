@@ -405,7 +405,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             return res.json();
          })
          .then(data => {
-            // Mapeia produtos vindos da API para o formato esperado
+            // Mapeia produtos e serviços vindos da API para o formato esperado
             const items = (data.items || []).slice(0, 6).map((product: any) => ({
                id: product.id,
                name: product.name,
@@ -421,6 +421,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                status: product.status,
                imageUrl: product.imageUrl || '',
                autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+               type: product.type || 'product',
             }));
             setSearchResults(items);
             setSearchError(null);
@@ -436,6 +437,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       setCart(prev => {
          const existing = prev.find(item => item.product.id === product.id);
          const discount = product.autoDiscount || 0;
+         // Para serviços, sempre quantidade 1 e não controla estoque
+         if (product.type === 'service') {
+            if (existing) return prev;
+            return [...prev, { product, quantity: 1, appliedDiscount: discount }];
+         }
          if (existing) {
             return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
          }

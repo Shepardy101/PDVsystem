@@ -39,6 +39,9 @@ const Products: React.FC = () => {
       { open: false, type: 'info', title: '', message: '' }
    );
 
+   // Estado local para o tipo selecionado no modal
+   const [modalType, setModalType] = useState<'product' | 'service'>('product');
+
    // Função para exibir o popup
    function showPopup(type: 'success' | 'error' | 'info' | 'loading', title: string, message: string) {
       setPopup({ open: true, type, title, message });
@@ -146,34 +149,35 @@ const Products: React.FC = () => {
       e.preventDefault();
       const form = e.currentTarget;
       const formData = new FormData(form);
+      const type = formData.get('type') as string || 'product';
+      const isService = type === 'service';
       const payload: any = {
          name: formData.get('name'),
-         ean: formData.get('gtin'),
-         internalCode: formData.get('internalCode'),
-         unit: formData.get('unit') || 'unit',
+         ean: isService ? '' : formData.get('gtin'),
+         internalCode: isService ? '' : formData.get('internalCode'),
+         unit: formData.get('unit') || (isService ? 'serv' : 'unit'),
          status: autoActive ? 'active' : 'inactive',
          costPrice: Number(formData.get('costPrice')) || 0,
          salePrice: Number(formData.get('salePrice')) || 0,
-         stockOnHand: Number(formData.get('stockOnHand')) || 0,
+         stockOnHand: isService ? 0 : (Number(formData.get('stockOnHand')) || 0),
          minStock: Number(formData.get('minStock')) || 0,
          autoDiscountEnabled: formData.get('autoDiscountEnabled') === 'on' ? true : false,
          autoDiscountValue: Number(formData.get('autoDiscountValue')) || 0,
          imageUrl: formData.get('imageUrl') || '',
          categoryId: formData.get('categoryId') || null,
-         supplierId: formData.get('supplier') || null
+         supplierId: isService ? null : (formData.get('supplier') || null),
+         type,
       };
       try {
          let res;
          let product;
          if (selectedProduct) {
-            // Atualização (PUT)
             res = await fetch(`/api/products/${selectedProduct.id}`, {
                method: 'PUT',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(payload)
             });
          } else {
-            // Criação (POST)
             res = await fetch('/api/products', {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
@@ -185,7 +189,6 @@ const Products: React.FC = () => {
             throw new Error(errData?.error?.message || 'Erro ao salvar produto');
          }
          ({ product } = await res.json());
-         // Mapeia campos do backend para o formato do frontend
          const mappedProduct = {
             id: product.id,
             name: product.name,
@@ -201,9 +204,9 @@ const Products: React.FC = () => {
             status: product.status,
             imageUrl: product.imageUrl || '',
             autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+            type: product.type || 'product',
          };
          setProducts(prev => {
-            // Se for update, substitui, se for create, adiciona
             if (selectedProduct) {
                return prev.map(p => p.id === mappedProduct.id ? mappedProduct : p);
             } else {
@@ -212,9 +215,9 @@ const Products: React.FC = () => {
          });
          setIsCreateModalOpen(false);
          setSelectedProduct(null);
-         showPopup('success', selectedProduct ? 'Produto atualizado' : 'Produto criado', selectedProduct ? 'O produto foi atualizado com sucesso.' : 'O produto foi criado com sucesso.');
+         showPopup('success', selectedProduct ? 'Produto/Serviço atualizado' : 'Produto/Serviço criado', selectedProduct ? 'O item foi atualizado com sucesso.' : 'O item foi criado com sucesso.');
       } catch (err) {
-         showPopup('error', 'Erro ao salvar produto', 'Verifique os campos e tente novamente.');
+         showPopup('error', 'Erro ao salvar produto/serviço', 'Verifique os campos e tente novamente.');
       }
    }
 
@@ -334,8 +337,14 @@ const Products: React.FC = () => {
    };
 
    React.useEffect(() => {
-      // Reset autoActive when opening/closing modal
-      if (isCreateModalOpen && !selectedProduct) setAutoActive(true);
+      // Reset autoActive e tipo do modal ao abrir/fechar
+      if (isCreateModalOpen && !selectedProduct) {
+         setAutoActive(true);
+         setModalType('product');
+      }
+      if (selectedProduct) {
+         setModalType(selectedProduct.type || 'product');
+      }
       if (!isCreateModalOpen) setAutoActive(true);
    }, [isCreateModalOpen, selectedProduct]);
 
@@ -549,8 +558,8 @@ const Products: React.FC = () => {
                                  </td>
                                  <td className="px-8 py-5 font-mono text-sm font-bold text-accent">R$ {product.salePrice.toFixed(2)}</td>
                                  <td className="px-8 py-5 text-xs text-slate-300 font-bold">
-                                    <span className={product.stock < (product.minStock || 20) ? 'text-red-400' : 'text-slate-300'}>
-                                       {product.stock} {product.unit}
+                                    <span className={product.stock < (product.minStock || 20 ) && product.unit !== 'serv' ? 'text-red-400' : 'text-slate-300'}>
+                                       {product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}
                                     </span>
                                  </td>
                                  <td className="px-8 py-5 text-right flex gap-2 justify-end">
@@ -676,12 +685,25 @@ const Products: React.FC = () => {
                      <form id="product-form" onSubmit={handleProductSubmit}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="space-y-2 md:col-span-1">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text">Nomenclatura do Produto</label>
-                              <Input name="name" defaultValue={selectedProduct?.name} placeholder="Ex: Cerveja Black IPA 473ml" className="bg-dark-950/50 border-accent/20 focus:border-accent" required />
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
-                              <Input name="gtin" defaultValue={selectedProduct?.gtin} placeholder="789000000000" icon={<ShieldAlert size={14} className="text-accent/40" />} className="bg-dark-950/50" required />
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
-                              <Input name="internalCode" defaultValue={selectedProduct?.internalCode} placeholder="ABC-123" icon={<Hash size={14} className="text-accent/40" />} className="bg-dark-950/50" required />
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text">Nomenclatura do Produto/Serviço</label>
+                              <Input name="name" defaultValue={selectedProduct?.name} placeholder="Ex: Cerveja Black IPA 473ml ou Serviço de Entrega" className="bg-dark-950/50 border-accent/20 focus:border-accent" required />
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text mt-4">Tipo</label>
+                              <select
+                                 name="type"
+                                 value={modalType}
+                                 onChange={e => setModalType(e.target.value as 'product' | 'service')}
+                                 className="w-full bg-dark-950/50 border border-accent/20 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
+                              >
+                                 <option value="product">Produto</option>
+                                 <option value="service">Serviço</option>
+                              </select>
+                              {/* Campos específicos para produto */}
+                              {modalType === 'product' && <>
+                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
+                                 <Input name="gtin" defaultValue={selectedProduct?.gtin} placeholder="789000000000" icon={<ShieldAlert size={14} className="text-accent/40" />} className="bg-dark-950/50" required />
+                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
+                                 <Input name="internalCode" defaultValue={selectedProduct?.internalCode} placeholder="ABC-123" icon={<Hash size={14} className="text-accent/40" />} className="bg-dark-950/50" required />
+                              </>}
                            </div>
                            <div className="space-y-2 md:col-span-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text">Categoria</label>
@@ -689,44 +711,47 @@ const Products: React.FC = () => {
                                  <option value="">Selecione...</option>
                                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                               </select>
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Fornecedor</label>
-                              <select name="supplier" defaultValue={selectedProduct?.supplier || ''} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
-                                 <option value="">Selecione...</option>
-                                 {isSupplierLoading ? <option value="" disabled>Carregando...</option> : suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                              </select>
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Unidade</label>
-                              <select name="unit" defaultValue={selectedProduct?.unit || 'unit'} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
-                                 <option value="unit">UN</option>
-                                 <option value="kg">KG</option>
-                                 <option value="cx">CX</option>
-                              </select>
+                              {/* Campos específicos para produto */}
+                              {modalType === 'product' && <>
+                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Fornecedor</label>
+                                 <select name="supplier" defaultValue={selectedProduct?.supplier || ''} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
+                                    <option value="">Selecione...</option>
+                                    {isSupplierLoading ? <option value="" disabled>Carregando...</option> : suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                 </select>
+                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Unidade</label>
+                                 <select name="unit" defaultValue={selectedProduct?.unit || 'unit'} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
+                                    <option value="unit">UN</option>
+                                    <option value="kg">KG</option>
+                                    <option value="cx">CX</option>
+                                    <option value="serv">SERVIÇO</option>
+                                 </select>
+                              </>}
                            </div>
                         </div>
-
-                        {/* CAMPOS DE PREÇO, DESCONTO, ESTOQUE E MÍNIMO */}
+                        {/* Campos de preço e imagem aparecem para ambos, mas estoque, desconto e custo só para produto */}
                         <div className="p-6 bg-accent/5 rounded-2xl border border-accent/10 space-y-6 mt-6">
                            <div className="flex items-center gap-2 border-b border-accent/10 pb-3">
                               <DollarSign size={14} className="text-accent" />
                               <h4 className="text-[10px] font-bold uppercase tracking-widest text-accent assemble-text" style={{ animationDelay: '0.4s' }}>Algoritmo de Precificação</h4>
                            </div>
                            <div className="grid grid-cols-3 gap-4">
-                              <div className="space-y-1">
+                              {modalType === 'product' && <div className="space-y-1">
                                  <label className="text-[8px] font-bold text-slate-500 uppercase">Custo Médio</label>
                                  <Input name="costPrice" defaultValue={selectedProduct?.costPrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-white/5" step="0.01" min="0" />
-                              </div>
+                              </div>}
                               <div className="space-y-1">
                                  <label className="text-[8px] font-bold text-slate-500 uppercase">Venda Público</label>
                                  <Input name="salePrice" defaultValue={selectedProduct?.salePrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-accent/10" step="0.01" min="0" />
                               </div>
-                              <div className="space-y-1">
+                              {modalType === 'product' && <div className="space-y-1">
                                  <label className="text-[8px] font-bold text-slate-500 uppercase">Auto-Discount</label>
                                  <Input name="autoDiscountValue" defaultValue={selectedProduct?.autoDiscount} placeholder="0.00" type="number" className="bg-dark-950/80 border-emerald-500/10" step="0.01" min="0" />
                                  <input type="hidden" name="autoDiscountEnabled" value="on" />
-                              </div>
+                              </div>}
                            </div>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        {/* Estoque e mínimo só para produto */}
+                        {modalType === 'product' && <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                            <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.5s' }}>Inventário Atual</label>
                               <div className="flex items-center gap-4">
@@ -748,7 +773,11 @@ const Products: React.FC = () => {
                               <input type="checkbox" name="status" checked={autoActive} onChange={e => setAutoActive(e.target.checked)} style={{ display: 'none' }} readOnly />
                               <Switch enabled={autoActive} onChange={setAutoActive} />
                            </div>
-                        </div>
+                        </div>}
+
+                      
+
+                       
 
                         <div className="space-y-4 pb-4 mt-6">
                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>

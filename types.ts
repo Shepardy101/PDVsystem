@@ -38,24 +38,25 @@ export interface SystemUser {
   lastLogin: string;
 }
 
-export interface Client {
+export interface Product {
   id: string;
   name: string;
-  cpf: string;
-  address: string;
-  phone: string;
-  email?: string;
-  totalSpent: number;
+  ean: string;
+  internal_code: string;
+  unit: 'cx' | 'unit' | 'kg' | 'serv';
+  cost_price: number;
+  sale_price: number;
+  auto_discount_enabled: number;
+  auto_discount_value: number;
+  category_id?: string;
+  supplier_id?: string;
+  status: 'active' | 'inactive';
+  stock_on_hand: number;
+  created_at: number;
+  updated_at: number;
+  imageUrl: string;
+  type: 'product' | 'service';
 }
-
-export interface Supplier {
-  id: string;
-  name: string;
-  cnpj: string;
-  address: string;
-  phone: string;
-  email: string;
-  category: string;
 }
 
 export interface CartItem {

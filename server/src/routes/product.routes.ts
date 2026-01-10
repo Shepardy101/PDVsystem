@@ -114,7 +114,10 @@ productRouter.get('/search', (req, res) => {
 productRouter.post('/', (req, res) => {
   try {
     console.log('[POST /api/products] Recebido:', req.body);
-    const product = createProduct(req.body);
+      const product = createProduct({
+        ...req.body,
+        type: req.body.type || 'product',
+      });
     console.log('[POST /api/products] Produto criado com sucesso:', product);
     res.status(201).json({ product });
   } catch (err: any) {
@@ -134,7 +137,10 @@ productRouter.post('/', (req, res) => {
 productRouter.put('/:id', (req, res) => {
   const { id } = req.params;
   try {
-    const product = updateProduct(id, req.body);
+      const product = updateProduct(id, {
+        ...req.body,
+        type: req.body.type,
+      });
     res.json({ product });
   } catch (err: any) {
     if (err.code === 'NOT_FOUND') {

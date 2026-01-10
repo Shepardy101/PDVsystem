@@ -12,9 +12,12 @@ export function finalizeSale(saleData: any) {
       .run(saleId, now, operatorId, cashSessionId, subtotal, discountTotal, total, now, clientId || null);
     // 2. Grava itens
     for (const item of items) {
+      // Garante que o código interno e o EAN nunca sejam nulos ou vazios (especialmente para serviços)
+      const internalCode = item.productInternalCode && item.productInternalCode !== '' ? item.productInternalCode : '-';
+      const ean = item.productEan && item.productEan !== '' ? item.productEan : '-';
       db.prepare(`INSERT INTO sale_items (id, sale_id, product_id, product_name_snapshot, product_internal_code_snapshot, product_ean_snapshot, unit_snapshot, quantity, unit_price_at_sale, auto_discount_applied, manual_discount_applied, final_unit_price, line_total)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(uuidv4(), saleId, item.productId, item.productName, item.productInternalCode, item.productEan, item.unit, item.quantity, item.unitPrice, item.autoDiscountApplied, item.manualDiscountApplied, item.finalUnitPrice, item.lineTotal);
+        .run(uuidv4(), saleId, item.productId, item.productName, internalCode, ean, item.unit, item.quantity, item.unitPrice, item.autoDiscountApplied, item.manualDiscountApplied, item.finalUnitPrice, item.lineTotal);
       // 3. Atualiza estoque
       db.prepare('UPDATE products SET stock_on_hand = stock_on_hand - ? WHERE id = ?')
         .run(item.quantity, item.productId);
