@@ -1,21 +1,7 @@
 import CashPerformanceTrends from '../components/CashPerformanceTrends';
 import FuturisticSpinner from '../components/FuturisticSpinner';
 import CashSalesBreakdown from '../components/CashSalesBreakdown';
-// Função para buscar vendas e movimentações de caixa de uma sessão
-export async function fetchSessionTransactions(cashSessionId: string): Promise<{ sales: SaleTransaction[]; movements: MovementTransaction[] }> {
-   // Buscar vendas
-   const salesRes = await fetch(`/api/pos/sales?cashSessionId=${cashSessionId}`);
-   if (!salesRes.ok) throw new Error('Erro ao buscar vendas do caixa');
-   const salesData = await salesRes.json();
-   // Buscar movimentações
-   const movementsRes = await fetch(`/api/cash/movements?cashSessionId=${cashSessionId}`);
-   if (!movementsRes.ok) throw new Error('Erro ao buscar movimentações do caixa');
-   const movementsData = await movementsRes.json();
-   return {
-      sales: salesData.sales || [],
-      movements: movementsData.movements || []
-   };
-}
+import { fetchSessionTransactions } from '../utils/transactions';
 import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
 
@@ -250,6 +236,21 @@ const CashManagement: React.FC = () => {
       window.addEventListener('keydown', handleEsc);
       return () => window.removeEventListener('keydown', handleEsc);
    }, [isReceiptPreviewOpen]);
+
+   const [operatorNames, setOperatorNames] = useState<{ [id: string]: string }>({});
+
+   useEffect(() => {
+      async function fetchAllOperatorNames() {
+         if (cashHistory && cashHistory.length > 0) {
+            const ids = Array.from(new Set(cashHistory.map((h: any) => h.operator_id).filter(Boolean)));
+            const entries = await Promise.all(
+               ids.map(async (id: string) => [id, await getOperatorNameById(id) || id])
+            );
+            setOperatorNames(Object.fromEntries(entries));
+         }
+      }
+      fetchAllOperatorNames();
+   }, [cashHistory]);
 
    if (error) {
       return (
@@ -522,61 +523,62 @@ const CashManagement: React.FC = () => {
                  </div>
                ) : (
                   <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col min-h-0">
+                     {console.log('Histórico de caixas:', cashHistory)}
                      <div className="overflow-y-auto flex-1 custom-scrollbar">
                         <table className="w-full text-left border-collapse">
                            <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
                               <tr className="text-slate-600 text-[9px] uppercase font-bold tracking-[0.2em]">
-                                 <th className="px-6 py-4">ID</th>
                                  <th className="px-6 py-4">Operação</th>
                                  <th className="px-6 py-4">Operador</th>
-                                 <th className="px-6 py-4">Saldo Final</th>
+                                 <th className="px-6 py-4">Saldo Inicial</th>
+                                 <th className="px-6 py-4">Diferença</th>
+                                 <th className="px-6 py-4">Saldo Fechamento</th>
                                  <th className="px-6 py-4">Status</th>
                                  <th className="px-6 py-4 text-right">Ações</th>
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-white/5">
                              {cashHistoryError ? (
-                               <tr><td colSpan={6} className="text-center text-red-500 py-8">{cashHistoryError}</td></tr>
+                               <tr><td colSpan={7} className="text-center text-red-500 py-8">{cashHistoryError}</td></tr>
                              ) : (
-                               cashHistory.map((history: any) => {
-                                 return (
-                                   <tr
-                                     key={history.id}
-                                     className="group hover:bg-white/5 transition-all cursor-pointer"
-                                     onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
-                                   >
-                                     <td className="px-6 py-4">
-                                       <div className="flex items-center gap-3">
-                                         <div className="p-1.5 rounded bg-accent/10 border border-accent/20">
-                                            <Archive size={12} className="text-accent" />
-                                         </div>
-                                         <span className="text-[10px] font-mono font-bold text-slate-300">{String(history.id).split('-').pop()}</span>
-                                       </div>
-                                     </td>
-                                     <td className="px-6 py-4">
-                                       <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                                         {history.opened_at ? new Date(history.opened_at).toLocaleDateString() : '-'}
-                                       </div>
-                                     </td>
-                                     <td className="px-6 py-4">
-                                       <span className="text-[11px] font-medium text-slate-400">{history.operator_id || '-'}</span>
-                                     </td>
-                                     <td className="px-6 py-4">
-                                       <span className="text-[11px] font-mono font-bold text-slate-200">R$ {history.initial_balance ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
-                                     </td>
-                                     <td className="px-6 py-4">
-                                       {history.closed_at ? (
-                                          <Badge variant="success">Consolidado</Badge>
-                                       ) : (
-                                          <Badge variant="warning">Aberto</Badge>
-                                       )}
-                                     </td>
-                                     <td className="px-6 py-4 text-right">
-                                       <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); }}>Ver</Button>
-                                     </td>
-                                   </tr>
-                                 );
-                               })
+                                cashHistory.map((history: any) => (
+                                  <tr
+                                    key={history.id}
+                                    className="group hover:bg-white/5 transition-all cursor-pointer"
+                                    onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
+                                  >
+                                    <td className="px-6 py-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-1.5 rounded bg-accent/10 border border-accent/20">
+                                          <Archive size={12} className="text-accent" />
+                                        </div>
+                                        <span className="text-[10px] font-bold text-slate-300">{history.opened_at ? new Date(history.opened_at).toLocaleDateString() : '-'}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className="text-[11px] font-medium text-slate-400">{operatorNames[history.operator_id] || history.operator_id || '-'}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.initial_balance === 'number' ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.difference_at_close === 'number' ? (history.difference_at_close / 100).toFixed(2) : '0,00'}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.sales_total === 'number' ? (history.sales_total / 100).toFixed(2) : '0,00'}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      {history.closed_at ? (
+                                           <Badge variant="success">Consolidado</Badge>
+                                      ) : (
+                                           <Badge variant="warning">Aberto</Badge>
+                                      )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                      <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); }}>Ver</Button>
+                                    </td>
+                                  </tr>
+                                ))
                              )}
                            </tbody>
                         </table>
@@ -598,7 +600,7 @@ const CashManagement: React.FC = () => {
             isOpen={!!selectedHistory}
             onClose={() => setSelectedHistory(null)}
             title={`Relatório de Caixa: ${selectedHistory ? (selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleDateString() : '-') : ''}`}
-            size="3xl"
+            size="5xl"
          >
             {selectedHistory && (
                <div className="flex flex-col h-full space-y-2">
@@ -847,7 +849,7 @@ const CashManagement: React.FC = () => {
                         </div>
                      </div>
                   ) : historyModalTab === 'vendas' ? (
-                     <div className="flex-1 animate-in fade-in duration-300 min-h-0 flex flex-col">
+                     <div className="flex-1  animate-in fade-in duration-300 min-h-0 flex flex-col">
                         {/* Componente externo para detalhamento de vendas */}
                         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
                           <CashSalesBreakdown sales={sales} movements={movements} />

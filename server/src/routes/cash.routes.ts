@@ -1,11 +1,25 @@
-// Rota para retornar todas as sessões e movimentações do banco de dados
 
 import { Router, Request, Response } from 'express';
 import { addPagamentoMovement, openCashSession, getOpenCashSession, closeCashSession, addSuprimentoMovement, addSangriaMovement } from '../repositories/cash.repo.js';
 import { db } from '../db/database.js';
 
-
 export const cashRouter = Router();
+
+// Buscar movimentações de uma sessão específica
+cashRouter.get('/movements/:cashSessionId', (req: Request, res: Response) => {
+  try {
+    const { cashSessionId } = req.params;
+    if (!cashSessionId) return res.status(400).json({ error: 'cashSessionId é obrigatório.' });
+    const movements = require('../repositories/cash.repo.js').getCashMovementsBySession(cashSessionId);
+    res.json({ movements });
+  } catch (err) {
+    const error = err as Error;
+    res.status(400).json({ error: error.message || 'Erro ao buscar movimentações da sessão.' });
+  }
+});
+// Rota para retornar todas as sessões e movimentações do banco de dados
+
+
 
 cashRouter.get('/sessions-movements', async (req, res) => {
   try {

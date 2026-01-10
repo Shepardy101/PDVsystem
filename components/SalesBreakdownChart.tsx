@@ -162,7 +162,7 @@ const SalesBreakdownChart: React.FC<SalesBreakdownChartProps> = ({ totals, data,
   const barMinWidth = manyPoints ? 32 : 0;
 
   return (
-    <section className="w-full ">
+    <section className="w-full p-4 ">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="space-y-1">
