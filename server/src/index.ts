@@ -10,6 +10,7 @@ import { categoryRouter } from './routes/category.routes';
 import { userRouter } from './routes/user.routes';
 import { clientRouter } from './routes/user.routes';
 import supplierRouter from './routes/supplier.routes';
+import reportRouter from './routes/report.routes';
 
 const app = express();
 // Servir arquivos da pasta public/uploads
@@ -33,6 +34,7 @@ app.use('/api/suppliers', supplierRouter);
 app.use('/api/cash', cashRouter);
 app.use('/api/cash', cashHistoryRouter);
 app.use('/api/pos', posRouter);
+app.use('/api/report', reportRouter);
 
 // Static serving (prod)
 if (process.env.NODE_ENV === 'production') {
