@@ -316,204 +316,211 @@ const CashManagement: React.FC = () => {
          </div>
 
          {activeTab === 'current' ? (
-            <>
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0 mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                  <Card className="bg-dark-900/40 border-accent/20 shadow-accent-glow/10 p-4">
-                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Total de vendas</p>
-                     <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">
-                        R$ {
-                           (() => {
-                              if (!session || !Array.isArray(session.transactions)) return '0.00';
-                              // Filtra apenas vendas: objetos com campo 'status' e array 'items'
-                              const vendas = session.transactions.filter(
-                                 (tx): tx is SaleTransaction => 'status' in tx && Array.isArray((tx as SaleTransaction).items)
-                              );
-                              const totalVendas = vendas.reduce((acc, venda) => {
-                                 if (typeof venda.total === 'number') {
-                                    return acc + venda.total;
-                                 }
-                                 if (Array.isArray(venda.items)) {
-                                    return acc + venda.items.reduce((sum, item) => sum + (item.line_total || item.lineTotal || 0), 0);
-                                 }
-                                 return acc;
-                              }, 0);
-                              return (totalVendas / 100).toFixed(2);
-                           })()
-                        }
-                     </h3>
-                  </Card>
-                  <Card className="bg-dark-900/40 border-white/5 p-4">
-                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
-                     <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">
-                        + R$ {
-                           (() => {
-                              if (!session || !Array.isArray(session.transactions)) return '0.00';
-                              let totalSuprimentos = 0;
-                              session.transactions.forEach(tx => {
-                                 if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
-                                    totalSuprimentos += tx.amount;
-                                 }
-                              });
-                              return (totalSuprimentos / 100).toFixed(2);
-                           })()
-                        }
-                     </h3>
-                  </Card>
-                  <Card className="bg-dark-900/40 border-white/5 p-4">
-                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
-                     <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">
-                        - R$ {
-                           (() => {
-                              if (!session || !Array.isArray(session.transactions)) return '0.00';
-                              let totalDeducoes = 0;
-                              session.transactions.forEach(tx => {
-                                 if ((tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number') {
-                                    totalDeducoes += tx.amount;
-                                 }
-                              });
-                              return (totalDeducoes / 100).toFixed(2);
-                           })()
-                        }
-                     </h3>
-                  </Card>
-                  <Card className="bg-dark-900/40 border-white/5 p-4">
-                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
-                     <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
-                        R$ {
-                           (() => {
-                              if (!session || !Array.isArray(session.transactions)) return '0.00';
-                              // Saldo inicial do caixa
-                              let initialBalanceCents = session.initial_balance ?? 0;
-                              if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
-                                 initialBalanceCents = Math.round(initialBalanceCents * 100);
-                              }
-                              // Somar todas as vendas cujo método de pagamento seja 'cash'
-                              let totalVendasCash = 0;
-                              let totalSuprimentos = 0;
-                              let totalSangrias = 0;
-                              session.transactions.forEach(tx => {
-                                 if ('type' in tx && tx.type === 'suprimento' && 'amount' in tx && typeof tx.amount === 'number') {
-                                    totalSuprimentos += tx.amount;
-                                 }
-                                 if ('type' in tx && tx.type === 'sangria' && 'amount' in tx && typeof tx.amount === 'number') {
-                                    totalSangrias += tx.amount;
-                                 }
-                                 if ('payments' in tx && Array.isArray(tx.payments)) {
-                                    tx.payments.forEach(pay => {
-                                       if (pay.method === 'cash' && typeof pay.amount === 'number') {
-                                          totalVendasCash += pay.amount;
-                                       }
-                                    });
-                                 }
-                              });
-                              const lastro = initialBalanceCents + totalVendasCash + totalSuprimentos - totalSangrias;
-                              return (lastro / 100).toFixed(2);
-                           })()
-                        }
-                     </h3>
-                  </Card>
+            sessionLoading ? (
+               <div className="flex-1 flex items-center justify-center h-full">
+                  <FuturisticSpinner />
                </div>
-
-               <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden min-h-0 relative z-10">
-                  <div className="lg:col-span-8 flex flex-col overflow-hidden animate-in fade-in slide-in-from-left-4 duration-700">
-                     <div className="flex items-center justify-between mb-3 shrink-0 px-2">
-                        <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Fluxo Transacional</h2>
-                     </div>
-
-                     {/* Tabela de Movimentações */}
-                     <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-2xl backdrop-blur-md">
-                        <div className="overflow-y-auto flex-1 custom-scrollbar">
-                           <table className="w-full text-left border-collapse">
-                              <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
-                                 <tr className="text-slate-600 text-[9px] uppercase font-bold tracking-[0.2em]">
-                                    <th className="px-6 py-4">Movimento</th>
-                                    <th className="px-6 py-4">Evento</th>
-                                    <th className="px-6 py-4">Valor</th>
-                                    <th className="px-6 py-4 text-right">Hora</th>
-                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/5">
-                                 {console.log('Sessão atual:', session)}
-                                 {(session && Array.isArray(session.transactions))
-                                    ? session.transactions
-                                       .filter(tx => {
-                                          // Exibir apenas vendas, suprimentos, sangrias e pagamentos
-                                          if ('status' in tx && Array.isArray(tx.items)) return true; // SaleTransaction
-                                          if ('type' in tx && ['suprimento', 'sangria', 'pagamento'].includes(tx.type)) return true; // MovementTransaction
-                                          return false;
-                                       })
-                                       .map(tx => {
-                                          if ('status' in tx && Array.isArray(tx.items)) {
-                                             // SaleTransaction
-                                             const total = typeof tx.total === 'number' ? tx.total : tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0);
-                                             const description = `Venda #${tx.id}`;
-                                             return (
-                                                <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                                   <td className="px-6 py-4">
-                                                      <div className="flex items-center gap-3">
-                                                         <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor('sale')}`}>{getStatusIcon('sale')}</div>
-                                                         <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">sale</span>
-                                                      </div>
-                                                   </td>
-                                                   <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description.toString().slice(0, 15)}</td>
-                                                   <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                   <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                </tr>
-                                             );
-                                          } else if ('type' in tx) {
-                                             // MovementTransaction
-                                             const type = tx.type;
-                                             const total = typeof tx.amount === 'number' ? tx.amount : 0;
-                                             const description = tx.description;
-                                             return (
-                                                <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                                   <td className="px-6 py-4">
-                                                      <div className="flex items-center gap-3">
-                                                         <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
-                                                         <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
-                                                      </div>
-                                                   </td>
-                                                   <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
-                                                   <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                   <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                </tr>
-                                             );
+            ) : (
+               <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0 mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
+                     {/* ...cards... */}
+                     <Card className="bg-dark-900/40 border-accent/20 shadow-accent-glow/10 p-4">
+                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Total de vendas</p>
+                        <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">
+                           R$ {
+                              (() => {
+                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                 // Filtra apenas vendas: objetos com campo 'status' e array 'items'
+                                 const vendas = session.transactions.filter(
+                                    (tx): tx is SaleTransaction => 'status' in tx && Array.isArray((tx as SaleTransaction).items)
+                                 );
+                                 const totalVendas = vendas.reduce((acc, venda) => {
+                                    if (typeof venda.total === 'number') {
+                                       return acc + venda.total;
+                                    }
+                                    if (Array.isArray(venda.items)) {
+                                       return acc + venda.items.reduce((sum, item) => sum + (item.line_total || item.lineTotal || 0), 0);
+                                    }
+                                    return acc;
+                                 }, 0);
+                                 return (totalVendas / 100).toFixed(2);
+                              })()
+                           }
+                        </h3>
+                     </Card>
+                     <Card className="bg-dark-900/40 border-white/5 p-4">
+                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
+                        <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">
+                           + R$ {
+                              (() => {
+                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                 let totalSuprimentos = 0;
+                                 session.transactions.forEach(tx => {
+                                    if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
+                                       totalSuprimentos += tx.amount;
+                                    }
+                                 });
+                                 return (totalSuprimentos / 100).toFixed(2);
+                              })()
+                           }
+                        </h3>
+                     </Card>
+                     <Card className="bg-dark-900/40 border-white/5 p-4">
+                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
+                        <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">
+                           - R$ {
+                              (() => {
+                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                 let totalDeducoes = 0;
+                                 session.transactions.forEach(tx => {
+                                    if ((tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number') {
+                                       totalDeducoes += tx.amount;
+                                    }
+                                 });
+                                 return (totalDeducoes / 100).toFixed(2);
+                              })()
+                           }
+                        </h3>
+                     </Card>
+                     <Card className="bg-dark-900/40 border-white/5 p-4">
+                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
+                        <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
+                           R$ {
+                              (() => {
+                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                 // Saldo inicial do caixa
+                                 let initialBalanceCents = session.initial_balance ?? 0;
+                                 if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
+                                    initialBalanceCents = Math.round(initialBalanceCents * 100);
+                                 }
+                                 // Somar todas as vendas cujo método de pagamento seja 'cash'
+                                 let totalVendasCash = 0;
+                                 let totalSuprimentos = 0;
+                                 let totalSangrias = 0;
+                                 session.transactions.forEach(tx => {
+                                    if ('type' in tx && tx.type === 'suprimento' && 'amount' in tx && typeof tx.amount === 'number') {
+                                       totalSuprimentos += tx.amount;
+                                    }
+                                    if ('type' in tx && tx.type === 'sangria' && 'amount' in tx && typeof tx.amount === 'number') {
+                                       totalSangrias += tx.amount;
+                                    }
+                                    if ('payments' in tx && Array.isArray(tx.payments)) {
+                                       tx.payments.forEach(pay => {
+                                          if (pay.method === 'cash' && typeof pay.amount === 'number') {
+                                             totalVendasCash += pay.amount;
                                           }
-                                          return null;
-                                       })
-                                    : null}
-                              </tbody>
-                           </table>
+                                       });
+                                    }
+                                 });
+                                 const lastro = initialBalanceCents + totalVendasCash + totalSuprimentos - totalSangrias;
+                                 return (lastro / 100).toFixed(2);
+                              })()
+                           }
+                        </h3>
+                     </Card>
+                  </div>
+
+                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden min-h-0 relative z-10">
+                     <div className="lg:col-span-8 flex flex-col overflow-hidden animate-in fade-in slide-in-from-left-4 duration-700">
+                        <div className="flex items-center justify-between mb-3 shrink-0 px-2">
+                           <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Fluxo Transacional</h2>
+                        </div>
+
+                        {/* Tabela de Movimentações */}
+                        <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-2xl backdrop-blur-md">
+                           <div className="overflow-y-auto flex-1 custom-scrollbar">
+                              <table className="w-full text-left border-collapse">
+                                 <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
+                                    <tr className="text-slate-600 text-[9px] uppercase font-bold tracking-[0.2em]">
+                                       <th className="px-6 py-4">Movimento</th>
+                                       <th className="px-6 py-4">Evento</th>
+                                       <th className="px-6 py-4">Valor</th>
+                                       <th className="px-6 py-4 text-right">Hora</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-white/5">
+                                    {console.log('Sessão atual:', session)}
+                                    {(session && Array.isArray(session.transactions))
+                                       ? session.transactions
+                                          .filter(tx => {
+                                             // Exibir apenas vendas, suprimentos, sangrias e pagamentos
+                                             if ('status' in tx && Array.isArray(tx.items)) return true; // SaleTransaction
+                                             if ('type' in tx && ['suprimento', 'sangria', 'pagamento'].includes(tx.type)) return true; // MovementTransaction
+                                             return false;
+                                          })
+                                          .map(tx => {
+                                             if ('status' in tx && Array.isArray(tx.items)) {
+                                                // SaleTransaction
+                                                const total = typeof tx.total === 'number' ? tx.total : tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0);
+                                                const description = `Venda #${tx.id}`;
+                                                return (
+                                                   <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                      <td className="px-6 py-4">
+                                                         <div className="flex items-center gap-3">
+                                                            <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor('sale')}`}>{getStatusIcon('sale')}</div>
+                                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">sale</span>
+                                                         </div>
+                                                      </td>
+                                                      <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description.toString().slice(0, 15)}</td>
+                                                      <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                      <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                   </tr>
+                                                );
+                                             } else if ('type' in tx) {
+                                                // MovementTransaction
+                                                const type = tx.type;
+                                                const total = typeof tx.amount === 'number' ? tx.amount : 0;
+                                                const description = tx.description;
+                                                return (
+                                                   <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                      <td className="px-6 py-4">
+                                                         <div className="flex items-center gap-3">
+                                                            <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
+                                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
+                                                         </div>
+                                                      </td>
+                                                      <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                      <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                      <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                   </tr>
+                                                );
+                                             }
+                                             return null;
+                                          })
+                                       : null}
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                     {/* Painel de Comandos */}
+                     <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 animate-in fade-in slide-in-from-right-4 duration-700 overflow-y-auto lg:overflow-visible custom-scrollbar">
+                        <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 px-2 shrink-0">Comandos</h2>
+                        <div className="flex flex-col gap-3 shrink-0">
+                           <Button variant="secondary" onClick={() => setIsSuprimentoModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-blue-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowDownLeft className="text-blue-400 group-hover:-translate-y-1 transition-transform" size={18} />}>
+                              <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Suprimento</p></div>
+                           </Button>
+                           <Button variant="secondary" onClick={() => setIsSangriaModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-red-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowUpRight className="text-red-400 group-hover:translate-y-1 transition-transform" size={18} />}>
+                              <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Sangria</p></div>
+                           </Button>
+                           <Button variant="secondary" onClick={() => setIsPagamentoModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-amber-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<FileText className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />}>
+                              <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Pagamento</p></div>
+                           </Button>
+                        </div>
+                        <div className="mt-auto lg:mt-6 pt-4 border-t border-white/5 shrink-0">
+                           <div className="bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center shadow-inner">
+                              <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Abertura do Caixa</p>
+                              <h3 className="text-lg md:text-xl font-mono font-bold text-accent">
+                                 {session && session.opened_at
+                                    ? new Date(session.opened_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                                    : '--'}
+                              </h3>
+                           </div>
                         </div>
                      </div>
                   </div>
-                  {/* Painel de Comandos */}
-                  <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 animate-in fade-in slide-in-from-right-4 duration-700 overflow-y-auto lg:overflow-visible custom-scrollbar">
-                     <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 px-2 shrink-0">Comandos</h2>
-                     <div className="flex flex-col gap-3 shrink-0">
-                        <Button variant="secondary" onClick={() => setIsSuprimentoModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-blue-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowDownLeft className="text-blue-400 group-hover:-translate-y-1 transition-transform" size={18} />}>
-                           <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Suprimento</p></div>
-                        </Button>
-                        <Button variant="secondary" onClick={() => setIsSangriaModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-red-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowUpRight className="text-red-400 group-hover:translate-y-1 transition-transform" size={18} />}>
-                           <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Sangria</p></div>
-                        </Button>
-                        <Button variant="secondary" onClick={() => setIsPagamentoModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-amber-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<FileText className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />}>
-                           <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Pagamento</p></div>
-                        </Button>
-                     </div>
-                     <div className="mt-auto lg:mt-6 pt-4 border-t border-white/5 shrink-0">
-                        <div className="bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center shadow-inner">
-                           <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Abertura do Caixa</p>
-                           <h3 className="text-lg md:text-xl font-mono font-bold text-accent">
-                              {session && session.opened_at
-                                 ? new Date(session.opened_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                                 : '--'}
-                           </h3>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </>
+               </>
+            )
          ) : activeTab === 'history' ? (
             /* ABA DE HISTÓRICO */
             <div className="flex-1 flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-600">
