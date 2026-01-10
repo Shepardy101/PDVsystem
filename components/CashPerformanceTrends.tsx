@@ -64,6 +64,8 @@ const CashPerformanceTrends: React.FC = () => {
   const USE_MOCK = true;
 
   const [periodType, setPeriodType] = useState<PeriodType>('day');
+  // Estado para saber qual botão de dias está ativo
+  const [activeDays, setActiveDays] = useState<30 | 60 | 90 | null>(30);
   // Inicializa datas com base na primeira/última venda
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [data, setData] = useState<any>(null);
@@ -79,13 +81,14 @@ const CashPerformanceTrends: React.FC = () => {
       const sales = mockPerformanceData.sales;
       if (sales && sales.length > 0) {
         const sorted = [...sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-        const start = new Date(sorted[0].timestamp);
         const end = new Date(sorted[sorted.length - 1].timestamp);
-        end.setDate(end.getDate() + 1); // +1 dia apenas no carregamento inicial
+        const start = new Date(end);
+        start.setDate(end.getDate() - 29); // 30d padrão
         setDateRange({
           start: start.toISOString().slice(0, 10),
           end: end.toISOString().slice(0, 10),
         });
+        setActiveDays(30);
       }
     } else {
       setLoading(true);
@@ -100,13 +103,14 @@ const CashPerformanceTrends: React.FC = () => {
           const sales = apiData.sales;
           if (sales && sales.length > 0) {
             const sorted = [...sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-            const start = new Date(sorted[0].timestamp);
             const end = new Date(sorted[sorted.length - 1].timestamp);
-            end.setDate(end.getDate() + 1); // +1 dia apenas no carregamento inicial
+            const start = new Date(end);
+            start.setDate(end.getDate() - 29); // 30d padrão
             setDateRange({
               start: start.toISOString().slice(0, 10),
               end: end.toISOString().slice(0, 10),
             });
+            setActiveDays(30);
           }
         })
         .catch(e => setError(e.message))
@@ -161,7 +165,7 @@ const CashPerformanceTrends: React.FC = () => {
       if (periodType === 'day') return d.toISOString().slice(0, 10);
       if (periodType === 'week') {
         const year = d.getFullYear();
-        const week = Math.ceil((((d as any) - new Date(d.getFullYear(), 0, 1)) / 86400000 + new Date(d.getFullYear(), 0, 1).getDay() + 1) / 7);
+        const week = Math.ceil(((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 86400000 + new Date(d.getFullYear(), 0, 1).getDay() + 1) / 7);
         return `${year}-S${week}`;
       }
       // month
@@ -242,29 +246,34 @@ const CashPerformanceTrends: React.FC = () => {
           {/* Botões de período automático */}
           <div className="flex gap-1 mr-2">
             {[30, 60, 90].map(days => (
-              <button
-                key={days}
-                type="button"
-                className="px-2 py-1 rounded-md text-xs font-bold bg-dark-900/60 border border-accent/30 text-accent hover:bg-accent/20 transition-colors"
-                onClick={() => {
-                  // Usa a última data disponível nos dados como referência
-                  let endDateStr = dateRange.end;
-                  if (data && Array.isArray(data.sales) && data.sales.length > 0) {
-                    const sorted = [...data.sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                    endDateStr = new Date(sorted[sorted.length - 1].timestamp).toISOString().slice(0, 10);
-                  }
-                  const end = new Date(endDateStr);
-                  const start = new Date(end);
-                  start.setDate(end.getDate() - (days - 1));
-                  setDateRange({
-                    start: start.toISOString().slice(0, 10),
-                    end: end.toISOString().slice(0, 10),
-                  });
-                }}
-                title={`Últimos ${days} dias`}
-              >
-                {days}d
-              </button>
+                <button
+                  key={days}
+                  type="button"
+                  className={`px-2 py-1 rounded-md text-xs font-bold border border-accent/20 transition-colors ${
+                    activeDays === days
+                      ? 'bg-[#0d3136cc] text-white shadow-[0_0_4px_0_rgba(34,211,238,0.18)]'
+                      : 'text-accent hover:bg-accent/20'
+                  }`}
+                  onClick={() => {
+                    // Usa a última data disponível nos dados como referência
+                    let endDateStr = dateRange.end;
+                    if (data && Array.isArray(data.sales) && data.sales.length > 0) {
+                      const sorted = [...data.sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                      endDateStr = new Date(sorted[sorted.length - 1].timestamp).toISOString().slice(0, 10);
+                    }
+                    const end = new Date(endDateStr);
+                    const start = new Date(end);
+                    start.setDate(end.getDate() - (days - 1));
+                    setDateRange({
+                      start: start.toISOString().slice(0, 10),
+                      end: end.toISOString().slice(0, 10),
+                    });
+                    setActiveDays(days);
+                  }}
+                  title={`Últimos ${days} dias`}
+                >
+                  {days}d
+                </button>
             ))}
             {/* Botão ALL */}
             <button

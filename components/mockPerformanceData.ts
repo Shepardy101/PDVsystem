@@ -45,8 +45,8 @@ const mockPerformanceData = {
     },
   ],
   sales: [
-    // Vendas para todos os meses de 2026, 3 vendas por mês em dias diferentes
-    ...Array.from({ length: 12 }, (_, i) => [
+    // Vendas para todos os meses de 2026, 3 vendas por mês em dias diferentes (exceto dezembro, que terá vendas quase todos os dias)
+    ...Array.from({ length: 11 }, (_, i) => [
       {
         id: 200 + i * 3 + 1,
         timestamp: `2026-${String(i + 1).padStart(2, '0')}-05T09:15:00Z`,
@@ -69,6 +69,19 @@ const mockPerformanceData = {
         items: [ { id: 3, name: 'Água', line_total: 3000 + i * 150, quantity: 4 + (i % 4) } ]
       }
     ]).flat(),
+    // Vendas de dezembro de 2026: quase todos os dias, exceto alguns dias sem venda
+    ...Array.from({ length: 31 }, (_, d) => {
+      // Dias sem venda: 3, 10, 17, 24, 30
+      const noSaleDays = [3, 10, 17, 24, 30];
+      if (noSaleDays.includes(d + 1)) return null;
+      return {
+        id: 6000 + d,
+        timestamp: `2026-12-${String(d + 1).padStart(2, '0')}T10:00:00Z`,
+        total: 1000 + (d % 5) * 200,
+        payments: [ { method: ['cash', 'card', 'pix'][d % 3], amount: 1000 + (d % 5) * 200 } ],
+        items: [ { id: 1 + (d % 3), name: ['Cerveja', 'Refrigerante', 'Água'][d % 3], line_total: 1000 + (d % 5) * 200, quantity: 1 + (d % 4) } ]
+      };
+    }).filter(Boolean),
     // Vendas originais
     {
       id: 101,

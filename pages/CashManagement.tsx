@@ -26,6 +26,7 @@ async function fetchCashHistory() {
 const INITIAL_TX_CATEGORIES = ['Logística', 'Infraestrutura', 'Retirada Lucro', 'Despesas Gerais', 'Marketing', 'Manutenção'];
 
 const CashManagement: React.FC = () => {
+      const [historySearch, setHistorySearch] = useState<string>('');
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
    const [cashHistory, setCashHistory] = useState([]);
    const [cashHistoryLoading, setCashHistoryLoading] = useState(false);
@@ -521,7 +522,13 @@ const CashManagement: React.FC = () => {
                   <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Auditoria Retroativa</h2>
                   <div className="bg-dark-900/60 border border-white/5 rounded-xl px-4 py-1.5 flex items-center gap-3">
                      <Search size={14} className="text-slate-600" />
-                     <input placeholder="Busca rápida..." className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-slate-400 outline-none w-32 md:w-40" />
+                     <input
+                        placeholder="Busca rápida..."
+                        className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-slate-400 outline-none w-32 md:w-40"
+                        value={historySearch}
+                        onChange={e => setHistorySearch(e.target.value)}
+                        type="text"
+                     />
                   </div>
                </div>
                {cashHistoryLoading ? (
@@ -548,7 +555,26 @@ const CashManagement: React.FC = () => {
                              {cashHistoryError ? (
                                <tr><td colSpan={7} className="text-center text-red-500 py-8">{cashHistoryError}</td></tr>
                              ) : (
-                                cashHistory.map((history: any) => (
+                                                cashHistory
+                                                   .filter((history: any) => {
+                                                      if (!historySearch) return true;
+                                                      // Permitir busca por data no formato dd/mm/yyyy, dd-mm-yyyy ou yyyy-mm-dd
+                                                      const search = historySearch.trim().replace(/\//g, '-');
+                                                      const date = history.opened_at ? new Date(history.opened_at) : null;
+                                                      if (!date) return false;
+                                                      const day = String(date.getDate()).padStart(2, '0');
+                                                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                      const year = date.getFullYear();
+                                                      const dateStrings = [
+                                                         `${day}-${month}-${year}`,
+                                                         `${day}/${month}/${year}`,
+                                                         `${year}-${month}-${day}`,
+                                                         date.toLocaleDateString('pt-BR'),
+                                                         date.toLocaleDateString('en-CA'),
+                                                      ];
+                                                      return dateStrings.some(ds => ds.includes(search));
+                                                   })
+                                                   .map((history: any) => (
                                   <tr
                                     key={history.id}
                                     className="group hover:bg-white/5 transition-all cursor-pointer"
