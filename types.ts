@@ -8,7 +8,7 @@ export interface Product {
   name: string;
   gtin: string;
   internalCode: string;
-  unit: string;
+  unit: 'cx' | 'unit' | 'kg' | 'serv';
   costPrice: number;
   salePrice: number;
   stock: number;
@@ -27,6 +27,18 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  cpf: string;
+  address: string;
+  phone: string;
+  email: string;
+  created_at: number;
+  updated_at: number;
+  totalSpent: number;
 }
 
 export interface SystemUser {
@@ -54,10 +66,10 @@ export interface Product {
   stock_on_hand: number;
   created_at: number;
   updated_at: number;
-  imageUrl: string;
+  imageUrl?: string;
   type: 'product' | 'service';
 }
-}
+
 
 export interface CartItem {
   product: Product;
@@ -138,6 +150,9 @@ export interface CashSession {
   updated_at: number;
   transactions: (SaleTransaction | MovementTransaction)[];
 }
+
+
+
 
 // CashTransaction antigo removido, pois agora usamos SaleTransaction | MovementTransaction
 

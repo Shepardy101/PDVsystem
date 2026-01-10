@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Button, Badge, Modal, Input } from '../components/UI';
-import { Product, CartItem, Client, Category, Sale, Supplier, CashTransaction, CashSession } from '../types';
+import { Product, CartItem, Client } from '../types';
 import { listClients } from '../services/client';
 import PaymentModal from '../components/modals/PaymentModal';
 import ClientModal from '../components/modals/ClientModal';
@@ -135,11 +135,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          setClientResults([]);
          return;
       }
+
       listClients().then(data => {
          const items = (data.items || data || []).filter((c: Client) =>
             c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
             (c.cpf && c.cpf.includes(clientSearch))
          );
+         console.log('Client search results:', items);
          setClientResults(items);
       }).catch(() => setClientResults([]));
    }, [clientSearch, isClientModalOpen]);
@@ -235,7 +237,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
    // Função para finalizar venda real
-   const finalizeSale = useCallback(async (payments: { method: string, amount: number }[]) => {
+   const finalizeSale = useCallback(async (payments: { method: string, amount: number, metadata?: any }[]) => {
       if (!cashSessionId) {
          alert('Nenhuma sessão de caixa aberta. Abra o caixa para registrar vendas.');
          return;
