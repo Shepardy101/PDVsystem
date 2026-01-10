@@ -12,6 +12,7 @@ import DiscountModal from '../components/modals/DiscountModal';
 import ReceiptModal from '../components/modals/ReceiptModal';
 import ClosingModal from '../components/modals/ClosingModal';
 import OpeningModal from '../components/modals/OpeningModal';
+import SubtotalModal from '../components/modals/SubtotalModal';
 
 
 interface POSProps {
@@ -236,6 +237,17 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
 
+   // Estado para modal de ajuste de subtotal
+   const [isSubtotalModalOpen, setIsSubtotalModalOpen] = useState(false);
+   const [customSubtotal, setCustomSubtotal] = useState<number | null>(null);
+
+   // Subtotal real (ajustado ou calculado)
+   const effectiveSubtotal = customSubtotal !== null ? customSubtotal : subtotal;
+   // Total recalculado a partir do subtotal ajustado
+   const effectiveTotal = Math.max(0, effectiveSubtotal - autoDiscountsTotal - manualDiscount);
+
+
+
    // Função para finalizar venda real
    const finalizeSale = useCallback(async (payments: { method: string, amount: number, metadata?: any }[]) => {
       if (!cashSessionId) {
@@ -265,9 +277,9 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          cashSessionId,
          items,
          payments: paymentsPayload,
-         subtotal: Math.round(subtotal * 100),
+         subtotal: Math.round(effectiveSubtotal * 100),
          discountTotal: Math.round((autoDiscountsTotal + manualDiscount) * 100),
-         total: Math.round(total * 100),
+         total: Math.round(effectiveTotal * 100),
          clientId: selectedClient ? selectedClient.id : null
       };
       try {
@@ -292,7 +304,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       } catch (err) {
          alert('Erro ao registrar venda. Tente novamente.');
       }
-   }, [cart, subtotal, autoDiscountsTotal, manualDiscount, total, cashSessionId, operatorId, selectedClient]);
+   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient]);
 
    const applyManualDiscount = () => {
       setManualDiscount(parseFloat(tempDiscount) || 0);
@@ -315,6 +327,16 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                return;
             }
          }
+
+         // Abrir modal de ajuste de subtotal com Ctrl + S se houver venda no buffer
+         if (e.ctrlKey && e.key.toLowerCase() === 's') {
+            if (cart && cart.length > 0) {
+               e.preventDefault();
+               setIsSubtotalModalOpen(true);
+               return;
+            }
+         }
+
          // 🚨 CORREÇÃO PRINCIPAL:
          // Se o PaymentModal está aberto E está no multipagamento,
          // nada do pai pode capturar teclas.
@@ -322,7 +344,6 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             // Não deixa o POS capturar nada, inclusive atalhos de pagamento integral
             return;
          }
-
 
          // Atalho para abrir modal de cliente
          if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
@@ -386,7 +407,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       openPaymentModal,
       closePaymentModal,
       toggleMultiMode,
-      isClosingModalOpen
+      isClosingModalOpen,
+      cart.length
    ]);
 
 
@@ -690,132 +712,143 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             )}
          </div>
 
-         <div className="flex-1 grid grid-cols-12 gap-8 min-h-0 relative z-10">
+          <div className="flex-1 grid grid-cols-12 gap-8 min-h-0 relative z-10">
             {/* Cart Area */}
             <div className="col-span-12 xl:col-span-8 flex flex-col min-h-0">
                <div className="flex items-center justify-between mb-4 px-2">
-                  <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                     <ShoppingCart size={16} className="text-accent" /> Buffer de Venda
-                  </h2>
-                  <div className="flex items-center gap-3">
-                     <button
-                        onClick={() => setIsClosingModalOpen(true)}
-                        className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
-                     >
-                        Encerrar Turno
-                     </button>
+                 <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                   <ShoppingCart size={16} className="text-accent" /> Buffer de Venda
+                 </h2>
+                 <div className="flex items-center gap-3">
+                   <button
+                     onClick={() => setIsClosingModalOpen(true)}
+                     className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
+                   >
+                     Encerrar Turno
+                   </button>
 
-                     <div className="flex items-center gap-2">
-                        <Badge variant="info">{cart.length} Ativos</Badge>
-                        <button
-                           title="Limpar carrinho"
-                           onClick={handleClearCart}
-                           className="ml-1 p-1  rounded hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors text-slate-400 hover:text-red-400"
-                           style={{ display: cart.length > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                           <span className='mr-1'>Limpar</span> <Trash2 size={14} />
-                        </button>
-                     </div>
-                  </div>
+                   <div className="flex items-center gap-2">
+                     <Badge variant="info">{cart.length} Ativos</Badge>
+                     <button
+                        title="Limpar carrinho"
+                        onClick={handleClearCart}
+                        className="ml-1 p-1  rounded hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors text-slate-400 hover:text-red-400"
+                        style={{ display: cart.length > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
+                     >
+                        <span className='mr-1'>Limpar</span> <Trash2 size={14} />
+                     </button>
+                   </div>
+                 </div>
                </div>
 
                {/* Cart Items List */}
                <div className="flex-1 glass-panel rounded-3xl overflow-hidden flex flex-col border-white/5 shadow-2xl">
-                  <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                     {cart.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-20">
-                           <div className="p-12 border-2 border-dashed border-white/5 rounded-full mb-6">
-                              <ShoppingCart size={80} strokeWidth={1} />
-                           </div>
-                           <p className="text-xl font-bold tracking-widest uppercase">Sistema em Standby</p>
+                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                   {cart.length === 0 ? (
+                     <div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-20">
+                        <div className="p-12 border-2 border-dashed border-white/5 rounded-full mb-6">
+                          <ShoppingCart size={80} strokeWidth={1} />
                         </div>
-                     ) : (
-                        <div className="space-y-3">
-                           {cart.map(item => (
-                              <div key={item.product.id} className="flex items-center gap-6 bg-dark-900/40 p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all group animate-in slide-in-from-left-4 duration-300">
-                                  <div className="w-12 h-12 rounded-xl bg-dark-950 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
-                                    {item.product.imageUrl ? (
-                                       <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
-                                    ) : (
-                                       <Cpu size={28} className="text-slate-700 opacity-60" />
-                                    )}
-                                  </div>
-                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-bold text-slate-100 truncate uppercase tracking-tight">{item.product.name}</h4>
-                                    <div className="flex items-center gap-3">
-                                       <span className="text-[10px] font-mono text-accent">R$ {item.product.salePrice.toFixed(2)}</span>
-                                       {item.appliedDiscount > 0 && <Badge variant="success">-R$ {item.appliedDiscount.toFixed(2)}</Badge>}
-                                    </div>
-                                 </div>
-                                 <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10">
-                                    <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
-                                    <span className="w-8 text-center text-xs font-mono font-bold text-slate-200">{item.quantity}</span>
-                                    <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
-                                 </div>
-                                 <div className="w-24 text-right">
-                                    <p className="text-sm font-mono font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
-                                 </div>
-                                 <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Trash2 size={16} />
-                                 </button>
+                        <p className="text-xl font-bold tracking-widest uppercase">Sistema em Standby</p>
+                     </div>
+                   ) : (
+                     <div className="space-y-3">
+                        {cart.map(item => (
+                          <div key={item.product.id} className="flex items-center gap-6 bg-dark-900/40 p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all group animate-in slide-in-from-left-4 duration-300">
+                             <div className="w-12 h-12 rounded-xl bg-dark-950 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
+                              {item.product.imageUrl ? (
+                                 <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
+                              ) : (
+                                 <Cpu size={28} className="text-slate-700 opacity-60" />
+                              )}
+                             </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-bold text-slate-100 truncate uppercase tracking-tight">{item.product.name}</h4>
+                              <div className="flex items-center gap-3">
+                                 <span className="text-[10px] font-mono text-accent">R$ {item.product.salePrice.toFixed(2)}</span>
+                                 {item.appliedDiscount > 0 && <Badge variant="success">-R$ {item.appliedDiscount.toFixed(2)}</Badge>}
                               </div>
-                           ))}
-                        </div>
-                     )}
-                  </div>
+                            </div>
+                            <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10">
+                              <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
+                              <span className="w-8 text-center text-xs font-mono font-bold text-slate-200">{item.quantity}</span>
+                              <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
+                            </div>
+                            <div className="w-24 text-right">
+                              <p className="text-sm font-mono font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
+                            </div>
+                            <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                     </div>
+                   )}
+                 </div>
                </div>
             </div>
 
             {/* Totals Section */}
             <div className="col-span-12 xl:col-span-4 flex flex-col gap-6 h-full min-h-0">
                <div className="flex-1 glass-panel rounded-3xl p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-hidden">
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-600 mb-10">Consolidação Fiscal</h3>
+                 <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-600 mb-10">Consolidação Fiscal</h3>
 
-                  <div className="flex-1 space-y-6">
-                     <div className="flex justify-between items-center text-slate-500">
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Soma Bruta</span>
-                        <span className="font-mono text-sm tracking-tight">R$ {subtotal.toFixed(2)}</span>
+                 <div className="flex-1 space-y-6">
+                   <div className="flex justify-between items-center text-slate-500">
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Soma Bruta</span>
+                     <span className="font-mono text-sm tracking-tight">R$ {effectiveSubtotal.toFixed(2)}</span>
+                   </div>
+
+                   {autoDiscountsTotal + manualDiscount > 0 && (
+                     <div className="flex justify-between items-center text-emerald-500/60">
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Deduções Totais</span>
+                        <span className="font-mono text-sm tracking-tight">- R$ {(autoDiscountsTotal + manualDiscount).toFixed(2)}</span>
                      </div>
+                   )}
 
-                     {autoDiscountsTotal + manualDiscount > 0 && (
-                        <div className="flex justify-between items-center text-emerald-500/60">
-                           <span className="text-[10px] font-bold uppercase tracking-widest">Deduções Totais</span>
-                           <span className="font-mono text-sm tracking-tight">- R$ {(autoDiscountsTotal + manualDiscount).toFixed(2)}</span>
-                        </div>
-                     )}
-                  </div>
-
-                  <div className="pt-8 border-t border-white/5 space-y-8 shrink-0 relative z-10">
-                     <div className="flex justify-between items-end">
-                        <div>
-                           <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-600 mb-2">Montante Líquido</p>
-                           <h2 className="text-5xl font-mono font-bold text-accent ">R$ {total.toFixed(2)}</h2>
-                        </div>
-                        <div className="w-12 h-12 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-center animate-pulse">
-                           <ArrowRight className="text-accent" />
-                        </div>
+                   {/* Ajustes */}
+                   {customSubtotal !== null && Math.abs(customSubtotal - subtotal) > 0.009 && (
+                     <div className="flex justify-between items-center text-blue-400/80">
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Ajustes</span>
+                        <span className="font-mono text-sm tracking-tight">
+                          {customSubtotal - subtotal > 0 ? '+' : '-'}
+                          R$ {Math.abs(customSubtotal - subtotal).toFixed(2)}
+                        </span>
                      </div>
+                   )}
+                 </div>
 
-                     <Button
-                        className="w-full py-6 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow transition-all active:scale-95"
-                        disabled={cart.length === 0}
-                        onClick={() => setIsPaymentModalOpen(true)}
-                     >
-                        PROCESSAR [F10]
-                     </Button>
+                 <div className="pt-8 border-t border-white/5 space-y-8 shrink-0 relative z-10">
+                   <div className="flex justify-between items-end">
+                     <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-600 mb-2">Montante Líquido</p>
+                        <h2 className="text-5xl font-mono font-bold text-accent ">R$ {effectiveTotal.toFixed(2)}</h2>
+                     </div>
+                     <div className="w-12 h-12 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-center animate-pulse">
+                        <ArrowRight className="text-accent" />
+                     </div>
+                   </div>
 
-                     <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">
-                        Ctrl + D = Aplicar Desconto
-                     </p>
-                  </div>
+                   <Button
+                     className="w-full py-6 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow transition-all active:scale-95"
+                     disabled={cart.length === 0}
+                     onClick={() => setIsPaymentModalOpen(true)}
+                   >
+                     PROCESSAR [F10]
+                   </Button>
+
+                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">
+                     Ctrl + D = Aplicar Desconto
+                   </p>
+                 </div>
                </div>
             </div>
-         </div>
+          </div>
 
          {/* PAYMENT MODAL */}
          <PaymentModal
             isOpen={isPaymentModalOpen}
-            total={total}
+            total={effectiveTotal}
             multiMode={multiMode}
             setMultiMode={setMultiMode}
             onClose={() => setIsPaymentModalOpen(false)}
@@ -911,6 +944,16 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             }}
          />
 
+         {/* SUBTOTAL MODAL */}
+         <SubtotalModal
+            isOpen={isSubtotalModalOpen}
+            initialValue={customSubtotal !== null ? customSubtotal : subtotal}
+            onClose={() => setIsSubtotalModalOpen(false)}
+            onConfirm={newSubtotal => {
+               setCustomSubtotal(newSubtotal);
+               setIsSubtotalModalOpen(false);
+            }}
+         />
 
 
          {/* NOTIFICATION TOAST (SALE PROCESSED FEEDBACK) */}
