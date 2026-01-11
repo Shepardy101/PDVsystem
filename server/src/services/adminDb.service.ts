@@ -1,3 +1,18 @@
+// Reset database and create root user
+export async function resetDatabase(req: Request, res: Response) {
+	if (process.env.ENABLE_DB_ADMIN !== 'true') return res.status(404).send('Not found');
+	const ip = (req.ip || req.connection.remoteAddress) ?? '';
+	if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) return res.status(403).send('Forbidden');
+	if (!req.body || req.body.confirm !== 'RESET') return res.status(400).json({ error: 'Confirmação obrigatória' });
+	try {
+		await adminDbRepo.resetDatabase();
+		await adminDbRepo.createRootUser();
+		// TODO: logar auditoria
+		res.json({ ok: true, message: 'Banco resetado e usuário root criado.' });
+	} catch (e: any) {
+		res.status(500).json({ error: e.message });
+	}
+}
 import { Request, Response, NextFunction } from 'express';
 import * as adminDbRepo from '../repositories/adminDb.repo';
 

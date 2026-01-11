@@ -1,3 +1,21 @@
+// Limpa todas as tabelas e cria usuário root
+export async function resetDatabase() {
+	const tables = listTables().map(t => t.name).filter(t => t !== 'sqlite_sequence');
+	db.prepare('PRAGMA foreign_keys = OFF').run();
+	for (const table of tables) {
+		db.prepare(`DELETE FROM "${table}"`).run();
+		try { db.prepare(`DELETE FROM sqlite_sequence WHERE name=?`).run(table); } catch {}
+	}
+	db.prepare('PRAGMA foreign_keys = ON').run();
+}
+
+export async function createRootUser() {
+	// Ajuste conforme o schema real da tabela de usuários
+	const hasUserTable = listTables().some(t => t.name === 'users');
+	if (!hasUserTable) throw new Error('Tabela de usuários não encontrada');
+	const hash = 'root'; // Troque por hash seguro em produção
+	db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, 1)').run('root', hash);
+}
 import db from '../db/database';
 
 function validateTable(table: string) {

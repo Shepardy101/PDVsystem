@@ -27,4 +27,8 @@ router.delete('/rows', adminDbService.deleteRow);
 // Query builder
 router.post('/query', adminDbService.queryBuilder);
 
+
+// Reset DB and create root user
+router.post('/reset', adminDbService.resetDatabase);
+
 export default router;
