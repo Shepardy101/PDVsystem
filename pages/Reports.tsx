@@ -102,30 +102,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import ProductMixQuadrantsTab from '@/components/reports/ProductMixQuadrantsTab';
 import SoldProductsDetailedTable from '@/components/reports/SoldProductsDetailedTable';
 
-// Componente para exibir movimentações em JSON
-const MovementsJsonViewer: React.FC = () => {
-  const [movements, setMovements] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    fetch('/api/cash/sessions-movements')
-      .then(res => res.json())
-      .then(data => setMovements(data.movements || []))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <div className="text-xs text-slate-400">Carregando movimentações...</div>;
-  if (error) return <div className="text-xs text-red-400">Erro: {error}</div>;
-  return (
-    <div className="bg-dark-900/60 rounded-xl p-4 mb-8 overflow-x-auto border border-white/10">
-      <div className="text-xs text-slate-400 font-mono mb-2">Movimentações (JSON):</div>
-      <pre className="text-xs text-white whitespace-pre-wrap break-all max-h-96 overflow-y-auto">{JSON.stringify(movements, null, 2)}</pre>
-    </div>
-  );
-};
 
 
 
@@ -136,7 +113,7 @@ const Reports: React.FC = () => {
 
 
   // Estado para alternar entre os componentes
-  const [selectedViewer, setSelectedViewer] = useState<'movements' | 'sales' | 'products' | 'allProducts' | 'mixQuadrants' | 'soldProductsDetailed'>('movements');
+  const [selectedViewer, setSelectedViewer] = useState<'mixQuadrants' | 'soldProductsDetailed'>('mixQuadrants');
 
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
@@ -156,24 +133,19 @@ const Reports: React.FC = () => {
           <Button variant="secondary" onClick={() => setIsFilterOpen(true)} icon={<Filter size={18} />}>Configurar</Button>
           <Button className="shadow-accent-glow" icon={<Download size={18} />}>Exportar Snapshot</Button>
         </div>
+      </div>
+
+
+
+
+      {/* Botões para alternar entre Mix(Quadrantes) e Produtos Vendidos Detalhado */}
+      <div className="flex gap-3 mb-6">
         <Button variant={selectedViewer === 'mixQuadrants' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('mixQuadrants')}>Mix (Quadrantes)</Button>
         <Button variant={selectedViewer === 'soldProductsDetailed' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('soldProductsDetailed')}>Produtos Vendidos Detalhado</Button>
       </div>
 
-      {/* Botões para alternar entre os viewers */}
-      <div className="flex gap-3 mb-6">
-        <Button variant={selectedViewer === 'movements' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('movements')}>Movimentações</Button>
-        <Button variant={selectedViewer === 'sales' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('sales')}>Vendas</Button>
-        <Button variant={selectedViewer === 'products' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('products')}>Produtos Vendidos</Button>
-        <Button variant={selectedViewer === 'allProducts' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('allProducts')}>Todos Produtos</Button>
-      </div>
-
-      {/* Renderização condicional do viewer selecionado */}
+      {/* Renderização condicional do componente selecionado */}
       <div>
-        {selectedViewer === 'movements' && <MovementsJsonViewer />}
-        {selectedViewer === 'sales' && <SalesJsonViewer />}
-        {selectedViewer === 'products' && <ProductsSoldJsonViewer />}
-        {selectedViewer === 'allProducts' && <AllProductsJsonViewer />}
         {selectedViewer === 'mixQuadrants' && <ProductMixQuadrantsTab />}
         {selectedViewer === 'soldProductsDetailed' && <SoldProductsDetailedTable />}
       </div>
