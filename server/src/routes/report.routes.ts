@@ -19,7 +19,8 @@ reportRouter.get('/sold-products-detailed', (req, res) => {
     `).all();
     res.json({ products: rows });
   } catch (err) {
-    res.status(500).json({ error: 'Erro ao buscar produtos vendidos detalhados', details: err.message });
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: 'Erro ao buscar produtos vendidos detalhados', details: errorMessage });
   }
 });
 
@@ -55,7 +56,8 @@ reportRouter.get('/sold-products', (req, res) => {
     console.log(`[Sold Products] Filtro de data aplicado: start=${start}, end=${end}`);
     res.json({ products: rows });
   } catch (err) {
-    res.status(500).json({ error: 'Erro ao buscar produtos vendidos', details: err.message });
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: 'Erro ao buscar produtos vendidos', details: errorMessage });
   }
 });
 
