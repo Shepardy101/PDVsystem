@@ -10,7 +10,10 @@ interface SoldProduct {
 
 function formatDate(epoch: number) {
   const d = new Date(epoch);
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+  // Exibe data e hora sem segundos
+  const date = d.toLocaleDateString();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${date} ${time}`;
 }
 
 const SoldProductsDetailedTable: React.FC = () => {
@@ -38,10 +41,10 @@ const SoldProductsDetailedTable: React.FC = () => {
           <table className="min-w-[600px] w-full max-w-full text-xs text-left text-white border-separate border-spacing-0">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="py-1 px-2 sticky left-0 bg-dark-900/80 z-10">Produto</th>
+                <th className="py-1 px-2 sticky left-0 bg-dark-900/80 z-10">Data da Venda</th>
+                <th className="py-1 px-2">Produto</th>
                 <th className="py-1 px-2">Quantidade</th>
                 <th className="py-1 px-2">Valor Total</th>
-                <th className="py-1 px-2">Data da Venda</th>
               </tr>
             </thead>
             <tbody>
@@ -50,10 +53,10 @@ const SoldProductsDetailedTable: React.FC = () => {
               ) : (
                 products.map((p, i) => (
                   <tr key={p.product_id + '-' + i} className="border-b border-white/5">
+                    <td className="py-1 px-2 whitespace-nowrap">{formatDate(p.sale_date)}</td>
                     <td className="py-1 px-2 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">{p.product_name}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{p.total_quantity}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                    <td className="py-1 px-2 whitespace-nowrap">{formatDate(p.sale_date)}</td>
                   </tr>
                 ))
               )}
