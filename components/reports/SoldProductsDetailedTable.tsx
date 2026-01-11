@@ -31,32 +31,36 @@ const SoldProductsDetailedTable: React.FC = () => {
   if (error) return <div className="text-xs text-red-400">Erro: {error}</div>;
 
   return (
-    <div className="bg-dark-900/60 rounded-xl p-4 mb-8 overflow-x-auto border border-white/10">
+    <div className="bg-dark-900/60 rounded-xl p-4 mb-8 border border-white/10">
       <div className="text-xs text-slate-400 font-mono mb-2">Produtos Vendidos (detalhado):</div>
-      <table className="min-w-full text-xs text-left text-white">
-        <thead>
-          <tr className="border-b border-white/10">
-            <th className="py-1 px-2">Produto</th>
-            <th className="py-1 px-2">Quantidade</th>
-            <th className="py-1 px-2">Valor Total</th>
-            <th className="py-1 px-2">Data da Venda</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.length === 0 ? (
-            <tr><td colSpan={4} className="text-slate-400 py-2">Nenhum produto vendido.</td></tr>
-          ) : (
-            products.map((p, i) => (
-              <tr key={p.product_id + '-' + i} className="border-b border-white/5">
-                <td className="py-1 px-2">{p.product_name}</td>
-                <td className="py-1 px-2">{p.total_quantity}</td>
-                <td className="py-1 px-2">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                <td className="py-1 px-2">{formatDate(p.sale_date)}</td>
+      <div className="w-full overflow-x-auto" style={{ maxHeight: '60vh', minHeight: '120px' }}>
+        <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+          <table className="min-w-[600px] w-full max-w-full text-xs text-left text-white border-separate border-spacing-0">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="py-1 px-2 sticky left-0 bg-dark-900/80 z-10">Produto</th>
+                <th className="py-1 px-2">Quantidade</th>
+                <th className="py-1 px-2">Valor Total</th>
+                <th className="py-1 px-2">Data da Venda</th>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {products.length === 0 ? (
+                <tr><td colSpan={4} className="text-slate-400 py-2">Nenhum produto vendido.</td></tr>
+              ) : (
+                products.map((p, i) => (
+                  <tr key={p.product_id + '-' + i} className="border-b border-white/5">
+                    <td className="py-1 px-2 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">{p.product_name}</td>
+                    <td className="py-1 px-2 whitespace-nowrap">{p.total_quantity}</td>
+                    <td className="py-1 px-2 whitespace-nowrap">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    <td className="py-1 px-2 whitespace-nowrap">{formatDate(p.sale_date)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
