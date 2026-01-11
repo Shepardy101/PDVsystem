@@ -1,0 +1,1 @@
+// Tables sidebar component
