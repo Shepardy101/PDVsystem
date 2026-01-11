@@ -81,13 +81,37 @@ const ProductMixQuadrantsTables: React.FC<Props> = ({ points, midX, midY }) => {
               {productsByQuadrant[activeTab].length === 0 ? (
                 <tr><td colSpan={3} className="text-slate-400 py-2">Nenhum produto neste quadrante.</td></tr>
               ) : (
-                productsByQuadrant[activeTab].map((p, i) => (
-                  <tr key={p.label + i} className="border-b border-white/5">
-                    <td className="py-1 px-2">{p.label}</td>
-                    <td className="py-1 px-2">{p.x}</td>
-                    <td className="py-1 px-2">{p.y}</td>
-                  </tr>
-                ))
+                (() => {
+                  const maxFreq = Math.max(...productsByQuadrant[activeTab].map(p => p.x));
+                  const maxVol = Math.max(...productsByQuadrant[activeTab].map(p => p.y));
+                  return productsByQuadrant[activeTab].map((p, i) => (
+                    <tr key={p.label + i} className="border-b border-white/5">
+                      <td className="py-1 px-2">{p.label}</td>
+                      <td className="py-1 px-2 min-w-[90px]">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono w-8 text-right">{p.x}</span>
+                          <div className="flex-1 h-2 bg-white/10 rounded">
+                            <div
+                              className="h-2 rounded bg-cyan-400/70"
+                              style={{ width: `${maxFreq ? Math.round((p.x / maxFreq) * 100) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-1 px-2 min-w-[90px]">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono w-8 text-right">{p.y}</span>
+                          <div className="flex-1 h-2 bg-white/10 rounded">
+                            <div
+                              className="h-2 rounded bg-fuchsia-400/70"
+                              style={{ width: `${maxVol ? Math.round((p.y / maxVol) * 100) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ));
+                })()
               )}
             </tbody>
           </table>

@@ -268,7 +268,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                         <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
                             <tr>
                                 <th
-                                    className={`py-3 px-3 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'sale_date' ? 'text-cyan-300' : ''}`}
+                                    className={`py-3 px-3 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'sale_date' ? 'text-cyan-300' : ''}`}
                                     onClick={() => { if (sortKey === 'sale_date') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('sale_date'); }}
                                 >
                                     <span className="inline-flex items-center gap-1">
@@ -277,7 +277,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                     </span>
                                 </th>
                                 <th
-                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'product_name' ? 'text-cyan-300' : ''}`}
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'product_name' ? 'text-cyan-300' : ''}`}
                                     onClick={() => { if (sortKey === 'product_name') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('product_name'); }}
                                 >
                                     <span className="inline-flex items-center gap-1">
@@ -286,7 +286,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                     </span>
                                 </th>
                                 <th
-                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'cost_price' ? 'text-cyan-300' : ''}`}
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'cost_price' ? 'text-cyan-300' : ''}`}
                                     onClick={() => { if (sortKey === 'cost_price') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('cost_price'); }}
                                 >
                                     <span className="inline-flex items-center gap-1">
@@ -295,7 +295,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                     </span>
                                 </th>
                                 <th
-                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'total_quantity' ? 'text-cyan-300' : ''}`}
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'total_quantity' ? 'text-cyan-300' : ''}`}
                                     onClick={() => { if (sortKey === 'total_quantity') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_quantity'); }}
                                 >
                                     <span className="inline-flex items-center gap-1">
@@ -304,7 +304,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                     </span>
                                 </th>
                                 <th
-                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'total_value' ? 'text-cyan-300' : ''}`}
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'total_value' ? 'text-cyan-300' : ''}`}
                                     onClick={() => { if (sortKey === 'total_value') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_value'); }}
                                 >
                                     <span className="inline-flex items-center gap-1">
@@ -312,15 +312,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                         {sortKey === 'total_value' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
                                     </span>
                                 </th>
-                                <th
-                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'stock_on_hand' ? 'text-cyan-300' : ''}`}
-                                    onClick={() => { if (sortKey === 'stock_on_hand') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('stock_on_hand'); }}
-                                >
-                                    <span className="inline-flex items-center gap-1">
-                                        Estoque restante
-                                        {sortKey === 'stock_on_hand' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-                                    </span>
-                                </th>
+                               
                             </tr>
                         </thead>
 
@@ -357,7 +349,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                             {/* COL FIXA */}
                                             <td
                                                 className={[
-                                                    "py-2.5 px-3 whitespace-nowrap",
+                                                    "py-2.5 px-3 whitespace-nowrap text-center",
                                                     "sticky left-0 z-10",
                                                     "bg-inherit border-r border-white/5",
                                                     "font-mono text-[11px] text-slate-300",
@@ -367,19 +359,17 @@ const SoldProductsDetailedTable: React.FC = () => {
                                                 {formatDate(p.sale_date)}
                                             </td>
 
-                                            <td className="py-2.5 px-3 max-w-[340px]">
+                                            <td className="py-2.5 px-3 max-w-[340px] text-center">
                                                 <div className="flex items-center gap-2 min-w-0">
                                                     <span className="h-1.5 w-1.5 rounded-full bg-cyan-400/70 shadow-[0_0_12px_rgba(34,211,238,0.45)]" />
                                                     <span className="truncate text-slate-100">
                                                         {p.product_name}
                                                     </span>
                                                 </div>
-                                                <div className="mt-0.5 text-[10px] text-slate-500 font-mono">
-                                                    ID: <span className="text-slate-400">{p.product_id}</span>
-                                                </div>
+                                               
                                             </td>
 
-                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono">
+                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-center">
                                                 {cost > 0 ? (
                                                     <span className="text-slate-200">
                                                         {formatBRLFromCents(cost)}
@@ -389,36 +379,15 @@ const SoldProductsDetailedTable: React.FC = () => {
                                                 )}
                                             </td>
 
-                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">
+                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100 text-center ">
                                                 {p.total_quantity}
                                             </td>
 
-                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">
+                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100 text-center">
                                                 {formatBRLFromCents(p.total_value)}
                                             </td>
 
-                                            <td className="py-2.5 px-3 whitespace-nowrap font-mono">
-                                                {info ? (
-                                                    <span
-                                                        className={[
-                                                            "inline-flex items-center gap-2",
-                                                            isLowStock ? "text-rose-300" : "text-emerald-300",
-                                                        ].join(" ")}
-                                                    >
-                                                        <span
-                                                            className={[
-                                                                "h-1.5 w-1.5 rounded-full",
-                                                                isLowStock
-                                                                    ? "bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.55)]"
-                                                                    : "bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.45)]",
-                                                            ].join(" ")}
-                                                        />
-                                                        {info.stock_on_hand}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-slate-500">—</span>
-                                                )}
-                                            </td>
+                                            
                                         </tr>
                                     );
                                 })
