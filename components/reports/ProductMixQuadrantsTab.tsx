@@ -29,7 +29,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any[]>([]);
-  // Removido controle de tabs, exibe apenas gráfico e tabelas
+  const [showTable, setShowTable] = useState(false);
 
   const getRange = () => {
     if (PRESETS[preset].label !== 'Custom') return PRESETS[preset].getRange();
@@ -62,9 +62,9 @@ const ProductMixQuadrantsTab: React.FC = () => {
   }
 
   return (
-    <div className="glass-card p-4 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/80 animate-in fade-in slide-in-from-bottom-6">
-      {/* Intervalo de datas */}
-      <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6">
+    <div className="glass-card p-4 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/80 animate-in fade-in slide-in-from-bottom-6 w-full h-full">
+      {/* Intervalo de datas e botão tabela */}
+      <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6 w-full justify-between">
         <div className="flex gap-2 flex-wrap">
           {PRESETS.map((p, i) => (
             <button
@@ -76,44 +76,54 @@ const ProductMixQuadrantsTab: React.FC = () => {
             </button>
           ))}
         </div>
-        {PRESETS[preset].label === 'Custom' && (
-          <div className="flex gap-2 items-center">
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
-            <span className="text-cyan-400">até</span>
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
-          </div>
-        )}
-      </div>
-      <div className="flex flex-col md:flex-row md:items-start gap-6 mb-6">
-        <div className="flex-1 min-w-[320px]">
-          {loading && <div className="text-cyan-300 animate-pulse">Carregando gráfico...</div>}
-          {error && <div className="text-red-400">{error}</div>}
-          {!loading && !error && data.length === 0 && (
-            <div className="text-slate-400">Nenhum dado encontrado para o período selecionado.</div>
+        <div className="flex gap-2 items-center ml-auto">
+          {PRESETS[preset].label === 'Custom' && (
+            <>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
+              <span className="text-cyan-400">até</span>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
+            </>
           )}
-          {!loading && !error && data.length > 0 && (
-            <ProductMixQuadrantsChart points={data.map((p, i) => ({
-              x: p.frequency,
-              y: p.total_quantity,
-              label: p.product_name || p.name || '-',
-              color: p.color,
-            }))} />
-          )}
+          <button
+            className={`ml-4 px-4 py-2 rounded-lg font-bold text-xs border transition-all ${showTable ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-dark-950/60 text-cyan-300 border-cyan-900 hover:bg-cyan-900/20'}`}
+            onClick={() => setShowTable((v) => !v)}
+          >
+            {showTable ? 'Ocultar Tabela' : 'Exibir Tabela'}
+          </button>
         </div>
-        <div className="flex-1 min-w-[320px]">
-          {!loading && !error && data.length > 0 && (
-            <ProductMixQuadrantsTables
-              points={data.map((p, i) => ({
+      </div>
+      <div className="w-full h-full mb-6">
+        {!showTable ? (
+          <div className="w-full h-full">
+            {loading && <div className="text-cyan-300 animate-pulse">Carregando gráfico...</div>}
+            {error && <div className="text-red-400">{error}</div>}
+            {!loading && !error && data.length === 0 && (
+              <div className="text-slate-400">Nenhum dado encontrado para o período selecionado.</div>)}
+            {!loading && !error && data.length > 0 && (
+              <ProductMixQuadrantsChart points={data.map((p, i) => ({
                 x: p.frequency,
                 y: p.total_quantity,
                 label: p.product_name || p.name || '-',
                 color: p.color,
-              }))}
-              midX={midX}
-              midY={midY}
-            />
-          )}
-        </div>
+              }))} />
+            )}
+          </div>
+        ) : (
+          <div className="w-full h-full">
+            {!loading && !error && data.length > 0 && (
+              <ProductMixQuadrantsTables
+                points={data.map((p, i) => ({
+                  x: p.frequency,
+                  y: p.total_quantity,
+                  label: p.product_name || p.name || '-',
+                  color: p.color,
+                }))}
+                midX={midX}
+                midY={midY}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

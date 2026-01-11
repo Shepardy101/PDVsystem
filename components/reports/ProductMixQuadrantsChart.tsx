@@ -226,7 +226,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
 
   return (
     <div
-      className="w-full max-w-2xl mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-2 flex flex-col items-center overflow-x-auto"
+      className="w-full h-full mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-2 flex flex-col items-center overflow-x-auto max-h-[calc(75vh-220px)]"
       style={{ minHeight: 320 }}
     >
       <div

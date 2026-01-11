@@ -259,7 +259,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                 <div
                     className={[
                         "w-full overflow-x-auto overflow-y-auto",
-                        "max-h-[calc(80vh-220px)]", // 🔥 Ajuste central para evitar vazamento
+                        "max-h-[calc(80vh-220px)]", // Garante que a tabela nunca ultrapasse a tela
                         "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
                     ].join(" ")}
                 >

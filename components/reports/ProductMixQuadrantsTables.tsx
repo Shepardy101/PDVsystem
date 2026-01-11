@@ -14,7 +14,7 @@ interface Props {
 }
 
 const QUADRANTS = [
-  { key: "q1", label: "Reposição prior.", color: "#66f3ff" },
+  { key: "q1", label: "Reposição prioritária", color: "#66f3ff" },
   { key: "q2", label: "Venda pontual / oportunidade", color: "#b388ff" },
   { key: "q3", label: "Parados / abaixo da média", color: "#b388ff" },
   { key: "q4", label: "Fluxo recorrente", color: "#66f3ff" },
@@ -42,18 +42,31 @@ const ProductMixQuadrantsTables: React.FC<Props> = ({ points, midX, midY }) => {
 
   return (
     <div className="w-full  bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col">
-      <div className="flex gap-2 mb-4">
-        {QUADRANTS.map((q) => (
-          <button
-            key={q.key}
-            className={`px-3 py-1 rounded-t-lg font-bold text-xs transition-all border-b-2 ${activeTab === q.key ? "border-cyan-400 text-cyan-200" : "border-transparent text-slate-400"}`}
-            style={{ color: activeTab === q.key ? q.color : undefined }}
-            onClick={() => setActiveTab(q.key)}
-          >
-            {q.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex gap-0 mb-4 border-b border-white/10">
+      {QUADRANTS.map((q, idx) => (
+        <button
+        key={q.key}
+        className={`
+          px-4 py-2 font-bold text-xs transition-all
+          border-b-2
+          ${activeTab === q.key ? "border-cyan-400 text-cyan-200 bg-dark-800" : "border-transparent text-slate-400 bg-dark-900/60"}
+          ${idx !== 0 ? "border-l border-white/10" : ""}
+          hover:bg-cyan-900/30 hover:text-cyan-200 hover:scale-105
+          focus:outline-none
+          rounded-t-lg
+        `}
+        style={{
+          color: activeTab === q.key ? q.color : undefined,
+          zIndex: activeTab === q.key ? 1 : 0,
+          position: "relative",
+          transition: "background 0.2s, color 0.2s, transform 0.15s"
+        }}
+        onClick={() => setActiveTab(q.key)}
+        >
+        {q.label}
+        </button>
+      ))}
+    </div>
       <div className="overflow-x-auto" style={{ maxHeight: '50vh' }}>
         <div style={{ maxHeight: '31vh', overflowY: 'auto' }}>
           <table className="min-w-full text-xs text-left text-white">
