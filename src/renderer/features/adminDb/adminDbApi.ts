@@ -1,3 +1,12 @@
+export async function resetDatabase() {
+	const res = await fetch(BASE + '/reset', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ confirm: 'RESET' })
+	});
+	if (!res.ok) throw new Error('Erro ao resetar banco');
+	return res.json();
+}
 
 
 const BASE = '/api/admin-db';

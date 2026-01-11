@@ -2,8 +2,9 @@
 export async function findUserByEmail(email: string) {
   return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
 }
-import { db } from '../db/database';
+
 import { randomUUID } from 'crypto';
+import db from '../db/database';
 
 export async function listUsers() {
   const rows = db.prepare('SELECT id, name, email, role, status, lastLogin FROM users').all();

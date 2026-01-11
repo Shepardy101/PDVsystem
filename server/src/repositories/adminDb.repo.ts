@@ -1,3 +1,5 @@
+import db from '../db/database';
+
 // Limpa todas as tabelas e cria usuário root
 export async function resetDatabase() {
 	const tables = listTables().map(t => t.name).filter(t => t !== 'sqlite_sequence');
@@ -9,14 +11,23 @@ export async function resetDatabase() {
 	db.prepare('PRAGMA foreign_keys = ON').run();
 }
 
+
 export async function createRootUser() {
-	// Ajuste conforme o schema real da tabela de usuários
 	const hasUserTable = listTables().some(t => t.name === 'users');
 	if (!hasUserTable) throw new Error('Tabela de usuários não encontrada');
-	const hash = 'root'; // Troque por hash seguro em produção
-	db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, 1)').run('root', hash);
+	// Remove root antigo se existir
+	db.prepare('DELETE FROM users WHERE email = ?').run('root');
+	db.prepare(`INSERT INTO users (id, name, email, role, status, password, lastLogin) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+		.run(
+			'root',
+			'Root',
+			'root',
+			'admin',
+			'active',
+			'root', // Troque por hash seguro em produção
+			null
+		);
 }
-import db from '../db/database';
 
 function validateTable(table: string) {
 	const tables = listTables().map(t => t.name);
@@ -33,7 +44,7 @@ export function listTables() {
 	const rows = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`).all();
 	return rows.map((r: any) => ({
 		name: r.name,
-		rowCount: db.prepare(`SELECT COUNT(*) as cnt FROM "${r.name}"`).get().cnt,
+		rowCount: (db.prepare(`SELECT COUNT(*) as cnt FROM "${r.name}"`).get() as { cnt: number }).cnt,
 	}));
 }
 

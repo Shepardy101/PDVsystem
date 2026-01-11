@@ -1,3 +1,18 @@
+// Helpers para checagem de role de usuário
+export type UserRole = 'admin' | 'manager' | 'operator';
+export type UserStatus = 'active' | 'inactive' | 'blocked';
+
+export function isOperator(user: { role?: string } | null | undefined): boolean {
+  return !!user && user.role === 'operator';
+}
+
+export function isAdmin(user: { role?: string } | null | undefined): boolean {
+  return !!user && user.role === 'admin';
+}
+
+export function isManager(user: { role?: string } | null | undefined): boolean {
+  return !!user && user.role === 'manager';
+}
 export interface Category {
   id: string;
   name: string;
@@ -20,8 +35,6 @@ export interface Product {
   autoDiscount?: number; // Valor fixo de desconto automático
 }
 
-export type UserRole = 'admin' | 'operator' | 'manager';
-export type UserStatus = 'active' | 'inactive' | 'blocked';
 
 export interface AuthUser {
   id: string;
