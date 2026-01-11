@@ -75,6 +75,16 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const total = useMemo(() => Math.max(0, subtotal - autoDiscountsTotal - manualDiscount), [subtotal, autoDiscountsTotal, manualDiscount]);
 
 
+   // Estado para modal de ajuste de subtotal
+   const [isSubtotalModalOpen, setIsSubtotalModalOpen] = useState(false);
+   const [customSubtotal, setCustomSubtotal] = useState<number | null>(null);
+
+   // Subtotal real (ajustado ou calculado)
+   const effectiveSubtotal = customSubtotal !== null ? customSubtotal : subtotal;
+   // Total recalculado a partir do subtotal ajustado
+   const effectiveTotal = Math.max(0, effectiveSubtotal - autoDiscountsTotal - manualDiscount);
+
+ 
 
    // Fetch open cash session on mount or when cashOpen changes
    useEffect(() => {
@@ -222,7 +232,40 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
 
-
+   // Foca o input de busca ao pressionar barra de espaço (quando não estiver em modal)
+   useEffect(() => {
+      const handleSpaceFocus = (e: KeyboardEvent) => {
+         // Não foca se algum modal importante estiver aberto
+         if (
+            isPaymentModalOpen ||
+            isDiscountModalOpen ||
+            isClientModalOpen ||
+            isOpeningModalOpen ||
+            isClosingModalOpen ||
+            isSubtotalModalOpen
+         ) return;
+         // Só foca se não estiver em input/textarea já
+         const active = document.activeElement;
+         // SÓ TERÁ EFEITO SE O INPUT JÁ NAO ESTIVER FOCADO
+         if (
+            (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) &&
+            active === inputRef.current
+         ) return;
+         if (e.key === ' ') {
+            e.preventDefault();
+            inputRef.current?.focus();
+         }
+      };
+      window.addEventListener('keydown', handleSpaceFocus);
+      return () => window.removeEventListener('keydown', handleSpaceFocus);
+   }, [
+      isPaymentModalOpen,
+      isDiscountModalOpen,
+      isClientModalOpen,
+      isOpeningModalOpen,
+      isClosingModalOpen,
+      isSubtotalModalOpen
+   ]);
 
 
 
@@ -235,16 +278,6 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
 
-
-
-   // Estado para modal de ajuste de subtotal
-   const [isSubtotalModalOpen, setIsSubtotalModalOpen] = useState(false);
-   const [customSubtotal, setCustomSubtotal] = useState<number | null>(null);
-
-   // Subtotal real (ajustado ou calculado)
-   const effectiveSubtotal = customSubtotal !== null ? customSubtotal : subtotal;
-   // Total recalculado a partir do subtotal ajustado
-   const effectiveTotal = Math.max(0, effectiveSubtotal - autoDiscountsTotal - manualDiscount);
 
 
 
@@ -659,20 +692,20 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <div className="relative z-50 max-w-3xl mx-auto w-full" ref={searchRef}>
             <div className={`gradient-border-wrapper flex items-center gap-4 transition-all duration-300 rounded-2xl p-2 bg-dark-900/60 backdrop-blur-xl border border-white/10 ${isSearchFocused ? 'border-accent/50 shadow-accent-glow' : ''
                }`}>
-               <div className="pl-4 text-slate-500">
-                  <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
-               </div>
-               <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Pressione '/' para buscar produto ou GTIN..."
-                  className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  onKeyDown={handleSearchKeyDown}
-               />
+                  <div className="pl-4 text-slate-500">
+                    <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
+                  </div>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Pressione '[SPACE]' para buscar produto ou GTIN..."
+                    className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    onKeyDown={handleSearchKeyDown}
+                  />
                {searchTerm && (
                   <button onClick={() => { setSearchTerm(''); inputRef.current?.focus(); }} className="p-2 text-slate-500 hover:text-white">
                      <X size={18} />

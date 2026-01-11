@@ -2,6 +2,7 @@ import { fetchProductMix } from '@/services/reports';
 import React, { useState, useEffect } from 'react';
 import ProductMixQuadrantsChart from './ProductMixQuadrantsChart';
 import ProductMixQuadrantsTables from './ProductMixQuadrantsTables';
+import FuturisticSpinner from '../FuturisticSpinner';
 
 const PRESETS = [
   { label: 'Hoje', getRange: () => {
@@ -62,7 +63,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
   }
 
   return (
-    <div className="glass-card p-4 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/80 animate-in fade-in slide-in-from-bottom-6 w-full h-full">
+    <div className="glass-card p-4 rounded-2xl  border border-cyan-700/30 shadow-lg bg-dark-900/50 animate-in fade-in slide-in-from-bottom-6 ">
       {/* Intervalo de datas e botão tabela */}
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6 w-full justify-between">
         <div className="flex gap-2 flex-wrap">
@@ -92,10 +93,10 @@ const ProductMixQuadrantsTab: React.FC = () => {
           </button>
         </div>
       </div>
-      <div className="w-full h-full mb-6">
+      <div className="w-full h-full ">
         {!showTable ? (
-          <div className="w-full h-full">
-            {loading && <div className="text-cyan-300 animate-pulse">Carregando gráfico...</div>}
+          <div className="w-full h-full ">
+            {loading && <FuturisticSpinner />}
             {error && <div className="text-red-400">{error}</div>}
             {!loading && !error && data.length === 0 && (
               <div className="text-slate-400">Nenhum dado encontrado para o período selecionado.</div>)}
@@ -110,6 +111,8 @@ const ProductMixQuadrantsTab: React.FC = () => {
           </div>
         ) : (
           <div className="w-full h-full">
+            {loading && <FuturisticSpinner />}
+            {error && <div className="text-red-400">{error}</div>}
             {!loading && !error && data.length > 0 && (
               <ProductMixQuadrantsTables
                 points={data.map((p, i) => ({
@@ -122,6 +125,8 @@ const ProductMixQuadrantsTab: React.FC = () => {
                 midY={midY}
               />
             )}
+            {!loading && !error && data.length === 0 && (
+              <div className="text-slate-400">Nenhum dado encontrado para o período selecionado.</div>)}
           </div>
         )}
       </div>

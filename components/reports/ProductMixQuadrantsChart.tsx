@@ -53,7 +53,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
 
     fetchProductMix(now - THIRTY_DAYS, now)
       .then((data) => {
-        console.log("Dados recebidos para Product Mix:", data);
+        //console.log("Dados recebidos para Product Mix:", data);
         const pts: ProductPoint[] = data.map((p: any, i: number) => ({
           x: p.frequency,
           y: p.total_quantity,
@@ -226,12 +226,12 @@ const ProductMixQuadrantsTab: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-2 flex flex-col items-center overflow-x-auto max-h-[calc(75vh-220px)]"
+      className="w-full h-full mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-2 flex flex-col items-center overflow-x-auto  max-h-[calc(75vh-220px)]"
       style={{ minHeight: 320 }}
     >
       <div
-        className="w-full"
-        style={{ aspectRatio: "2/1", minHeight: 220, maxHeight: 340 }}
+        className="w-full h-full flex-1 flex items-center justify-center"
+        style={{ minHeight: 220, height: '100%' }}
       >
         <canvas
           ref={canvasRef}
@@ -240,6 +240,8 @@ const ProductMixQuadrantsTab: React.FC = () => {
             height: "100%",
             display: "block",
             maxWidth: "100%",
+            maxHeight: "100%",
+            objectFit: "contain",
           }}
         />
       </div>
