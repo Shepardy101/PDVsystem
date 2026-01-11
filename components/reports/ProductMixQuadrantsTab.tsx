@@ -1,6 +1,7 @@
 import { fetchProductMix } from '@/services/reports';
 import React, { useState, useEffect } from 'react';
 import ProductMixQuadrantsChart from './ProductMixQuadrantsChart';
+import ProductMixQuadrantsTables from './ProductMixQuadrantsTables';
 
 const PRESETS = [
   { label: 'Hoje', getRange: () => {
@@ -28,7 +29,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any[]>([]);
-  const [tab, setTab] = useState<'chart' | 'json'>('chart');
+  // Removido controle de tabs, exibe apenas gráfico e tabelas
 
   const getRange = () => {
     if (PRESETS[preset].label !== 'Custom') return PRESETS[preset].getRange();
@@ -47,8 +48,22 @@ const ProductMixQuadrantsTab: React.FC = () => {
       .finally(() => setLoading(false));
   }, [preset, customFrom, customTo]);
 
+  // Calcular limites e médios para passar para as tabelas
+  let midX = 0, midY = 0;
+  if (data.length > 0) {
+    const xs = data.map((p) => p.frequency);
+    const ys = data.map((p) => p.total_quantity);
+    const minX = Math.min(...xs) * 0.9;
+    const maxX = Math.max(...xs) * 1.1;
+    const minY = Math.min(...ys) * 0.9;
+    const maxY = Math.max(...ys) * 1.1;
+    midX = (minX + maxX) / 2;
+    midY = (minY + maxY) / 2;
+  }
+
   return (
-    <div className="glass-card p-6 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/80 animate-in fade-in slide-in-from-bottom-6">
+    <div className="glass-card p-4 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/80 animate-in fade-in slide-in-from-bottom-6">
+      {/* Intervalo de datas */}
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6">
         <div className="flex gap-2 flex-wrap">
           {PRESETS.map((p, i) => (
@@ -69,28 +84,37 @@ const ProductMixQuadrantsTab: React.FC = () => {
           </div>
         )}
       </div>
-      <div className="flex gap-2 mb-2">
-        <button
-          className={`px-3 py-1 rounded-t-lg font-bold text-xs transition-all border-b-2 ${tab === 'chart' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400'}`}
-          onClick={() => setTab('chart')}
-        >Gráfico</button>
-        <button
-          className={`px-3 py-1 rounded-t-lg font-bold text-xs transition-all border-b-2 ${tab === 'json' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400'}`}
-          onClick={() => setTab('json')}
-        >JSON</button>
+      <div className="flex flex-col md:flex-row md:items-start gap-6 mb-6">
+        <div className="flex-1 min-w-[320px]">
+          {loading && <div className="text-cyan-300 animate-pulse">Carregando gráfico...</div>}
+          {error && <div className="text-red-400">{error}</div>}
+          {!loading && !error && data.length === 0 && (
+            <div className="text-slate-400">Nenhum dado encontrado para o período selecionado.</div>
+          )}
+          {!loading && !error && data.length > 0 && (
+            <ProductMixQuadrantsChart points={data.map((p, i) => ({
+              x: p.frequency,
+              y: p.total_quantity,
+              label: p.product_name || p.name || '-',
+              color: p.color,
+            }))} />
+          )}
+        </div>
+        <div className="flex-1 min-w-[320px]">
+          {!loading && !error && data.length > 0 && (
+            <ProductMixQuadrantsTables
+              points={data.map((p, i) => ({
+                x: p.frequency,
+                y: p.total_quantity,
+                label: p.product_name || p.name || '-',
+                color: p.color,
+              }))}
+              midX={midX}
+              midY={midY}
+            />
+          )}
+        </div>
       </div>
-      {loading && <div className="text-cyan-300 animate-pulse">Carregando gráfico...</div>}
-      {error && <div className="text-red-400">{error}</div>}
-      {!loading && !error && data.length === 0 && (
-        <div className="text-slate-400">Nenhum dado encontrado para o período selecionado.</div>
-      )}
-      {!loading && !error && data.length > 0 && (
-        tab === 'chart' ? (
-          <ProductMixQuadrantsChart points={data} />
-        ) : (
-          <pre className="text-xs text-white bg-dark-900/80 rounded-lg p-4 max-h-[340px] overflow-y-auto">{JSON.stringify(data, null, 2)}</pre>
-        )
-      )}
     </div>
   );
 };
