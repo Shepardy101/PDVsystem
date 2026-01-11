@@ -1,3 +1,10 @@
+import { useAuth } from './components/AuthContext';
+
+// Hook para bloquear ações de operador no frontend
+export function useBlockOperator(): boolean {
+  const { user } = useAuth();
+  return !!user && user.role === 'operator';
+}
 // Helpers para checagem de role de usuário
 export type UserRole = 'admin' | 'manager' | 'operator';
 export type UserStatus = 'active' | 'inactive' | 'blocked';

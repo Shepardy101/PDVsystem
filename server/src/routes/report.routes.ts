@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { db } from '../db/database';
-
+import db from '../db/database.js';
 const reportRouter = Router();
 
 // GET /api/report/sold-products-detailed

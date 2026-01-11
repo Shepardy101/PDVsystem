@@ -1,7 +1,8 @@
 
 import { Router, Request, Response } from 'express';
 import { addPagamentoMovement, openCashSession, getOpenCashSession, closeCashSession, addSuprimentoMovement, addSangriaMovement } from '../repositories/cash.repo.js';
-import { db } from '../db/database.js';
+import db from '../db/database.js';
+
 
 export const cashRouter = Router();
 
@@ -30,7 +31,7 @@ cashRouter.get('/sessions-movements', async (req, res) => {
     const movements = db.prepare('SELECT * FROM cash_movements ORDER BY timestamp DESC').all();
 
     // Buscar todas as vendas (caso estejam em outra tabela, ex: sales)
-    let sales = [];
+    let sales: any[] = [];
     try {
       sales = db.prepare('SELECT * FROM sales ORDER BY timestamp DESC').all();
       // Buscar pagamentos e itens de cada venda, se existirem
@@ -45,7 +46,8 @@ cashRouter.get('/sessions-movements', async (req, res) => {
 
     res.json({ sessions, movements, sales });
   } catch (err) {
-    res.status(500).json({ error: 'Erro ao buscar dados do banco de dados', details: err.message });
+    const error = err as Error;
+    res.status(500).json({ error: 'Erro ao buscar dados do banco de dados', details: error.message });
   }
 });
 

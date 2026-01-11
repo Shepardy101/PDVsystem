@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../db/database';
+import db from '../db/database';
+
 
 export const cashHistoryRouter = Router();
 

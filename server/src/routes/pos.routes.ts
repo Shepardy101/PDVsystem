@@ -1,7 +1,7 @@
 
 import { Router } from 'express';
 import { finalizeSale } from '../repositories/pos.repo';
-import { db } from '../db/database';
+import db from '../db/database.js';
 
 export const posRouter = Router();
 
@@ -13,11 +13,13 @@ posRouter.get('/sales', (req, res) => {
     // Busca vendas do turno
     const sales = db.prepare('SELECT * FROM sales WHERE cash_session_id = ? ORDER BY timestamp DESC').all(cashSessionId);
     // Para cada venda, busca itens e pagamentos
-    const salesWithDetails = sales.map(sale => {
-      const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
-      const payments = db.prepare('SELECT * FROM payments WHERE sale_id = ?').all(sale.id);
+    const salesWithDetails = sales.map((sale: any) => {
+      // Ensure sale is an object
+      const saleObj = typeof sale === 'object' && sale !== null ? sale : {};
+      const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(saleObj.id);
+      const payments = db.prepare('SELECT * FROM payments WHERE sale_id = ?').all(saleObj.id);
       return {
-        ...sale,
+        ...saleObj,
         items,
         payments
       };

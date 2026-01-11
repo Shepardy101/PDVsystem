@@ -89,7 +89,7 @@ export function getRows({ table, limit = 50, offset = 0, orderBy, orderDir, sear
 	sql += ` LIMIT ? OFFSET ?`;
 	params.push(Number(limit), Number(offset));
 	const rows = db.prepare(sql).all(...params);
-	const total = db.prepare(`SELECT COUNT(*) as cnt FROM "${table}"`).get().cnt;
+	const total = (db.prepare(`SELECT COUNT(*) as cnt FROM "${table}"`).get() as { cnt: number }).cnt;
 	return { rows, total };
 }
 
@@ -138,7 +138,7 @@ export function queryBuilder({ table, select, where, orderBy, limit, offset }: a
 	const schema = getTableSchema(table);
 	const cols = select && select.length ? select : schema.columns.map((c: any) => c.name);
 	validateColumns(table, cols);
-	let sql = `SELECT ${cols.map(c => `"${c}"`).join(',')} FROM "${table}"`;
+	let sql = `SELECT ${cols.map((c: any) => `"${c}"`).join(',')} FROM "${table}"`;
 	const params: any[] = [];
 	if (where && Array.isArray(where) && where.length) {
 		sql += ' WHERE ' + where.map((w: any) => {
