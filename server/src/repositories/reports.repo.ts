@@ -1,4 +1,4 @@
-import { db } from '../db/database';
+import db from '../db/database';
 
 export function getProductMixQuadrants(from: number, to: number) {
   // Query: agrega por produto, calcula frequência (nº vendas distintas), quantidade e valor
