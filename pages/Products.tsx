@@ -68,6 +68,21 @@ const Products: React.FC = () => {
    }, [showCategoryList, showStockList]);
    const fileInputRef = useRef<HTMLInputElement>(null);
 
+
+   // Fecha modais com ESC
+   React.useEffect(() => {
+      function handleKeyDown(e: KeyboardEvent) {
+         if (e.key === 'Escape') {
+            setIsCreateModalOpen(false);
+            setIsImportModalOpen(false);
+            setIsPreviewModalOpen(false);
+         }
+      }
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+   }, []);
+
+
    // --- NOVO: Produtos da API ---
    const [products, setProducts] = useState<Product[]>([]);
    const [loading, setLoading] = useState(false);
@@ -368,26 +383,26 @@ const Products: React.FC = () => {
             {/* Botão temporário para deletar todos os produtos */}
             {!isOperatorUser && (
                <div className="mt-6 flex justify-end">
-                 <Button
-                   variant="danger"
-                   className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
-                   onClick={async () => {
-                     if (!window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) return;
-                     try {
-                        const res = await fetch('/api/products', { method: 'DELETE' });
-                        if (res.ok) {
-                          setProducts([]);
-                          showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
-                        } else {
-                          showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
+                  <Button
+                     variant="danger"
+                     className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
+                     onClick={async () => {
+                        if (!window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) return;
+                        try {
+                           const res = await fetch('/api/products', { method: 'DELETE' });
+                           if (res.ok) {
+                              setProducts([]);
+                              showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
+                           } else {
+                              showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
+                           }
+                        } catch {
+                           showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
                         }
-                     } catch {
-                        showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
-                     }
-                   }}
-                 >
-                   Excluir TODOS os produtos (TESTE)
-                 </Button>
+                     }}
+                  >
+                     Excluir TODOS os produtos (TESTE)
+                  </Button>
                </div>
             )}
 
@@ -412,8 +427,15 @@ const Products: React.FC = () => {
                   </button>
                </div>
                <Button variant="secondary" onClick={() => setShowFilters(!showFilters)} icon={<Filter size={18} />} className={showFilters ? 'border-accent text-accent' : ''}>Filtros</Button>
-               <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} icon={<UploadCloud size={18} />}>Importar</Button>
-               <Button onClick={() => setIsCreateModalOpen(true)} icon={<Plus size={18} />}>Novo Produto</Button>
+               {!isOperatorUser && (
+                  <>
+                     <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} icon={<UploadCloud size={18} />}>
+                        Importar
+                     </Button>
+                     <Button onClick={() => setIsCreateModalOpen(true)} icon={<Plus size={18} />}>Novo Produto</Button>
+
+                  </>
+               )}
             </div>
          </div>
 
@@ -422,70 +444,74 @@ const Products: React.FC = () => {
                <div className="md:col-span-4">
                   <Input label="Pesquisa Global" placeholder="Busca por nome ou GTIN..." icon={<Search size={18} />} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                </div>
-               <div className="md:col-span-3 space-y-2">
-                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Filtro por Categoria</label>
-                  <div className="relative" id="category-filter-menu">
-                     <button
+                  <div className="md:col-span-3 space-y-2">
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Filtro por Categoria</label>
+                    <div className="relative" id="category-filter-menu">
+                      <button
                         className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${selectedCategory === 'all' ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
                         onClick={() => setShowCategoryList(prev => !prev)}
                         style={{ minWidth: 180 }}
-                     >
+                      >
                         {selectedCategory === 'all' ? 'Todas Categorias' : (categories.find(c => c.id === selectedCategory)?.name || 'Categoria')}
                         <ChevronRight size={16} className={`ml-2 transition-transform ${showCategoryList ? 'rotate-90' : ''}`} />
-                     </button>
-                     {showCategoryList && (
+                      </button>
+                      {showCategoryList && (
                         <div className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50">
                            {categories.length === 0 && (
-                              <div className="px-4 py-2 text-slate-500 text-xs">Nenhuma categoria cadastrada</div>
+                             <div className="px-4 py-2 text-slate-500 text-xs">Nenhuma categoria cadastrada</div>
                            )}
                            <button
-                              className={`w-full text-left px-4 py-2 text-xs font-semibold ${selectedCategory === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                              onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); }}
+                             className={`w-full text-left px-4 py-2 text-xs font-semibold ${selectedCategory === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                             onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); }}
                            >
-                              Todas Categorias
+                             Todas Categorias
                            </button>
                            {categories.map(c => (
-                              <div key={c.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent/10">
-                                 <button
-                                    className={`truncate text-left flex-1 ${selectedCategory === c.id ? 'text-accent' : 'text-slate-300 hover:text-accent'}`}
-                                    onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); }}
-                                    title={c.name}
-                                 >
-                                    {c.name}
-                                 </button>
+                             <div key={c.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent/10">
+                               <button
+                                 className={`truncate text-left flex-1 ${selectedCategory === c.id ? 'text-accent' : 'text-slate-300 hover:text-accent'}`}
+                                 onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); }}
+                                 title={c.name}
+                               >
+                                 {c.name}
+                               </button>
+                               {!isOperatorUser && (
                                  <button
                                     className="ml-2 p-1 text-red-500 hover:bg-red-500/10 rounded"
                                     title="Excluir categoria"
                                     onClick={async (e) => {
-                                       e.stopPropagation();
-                                       if (!window.confirm(`Excluir categoria \"${c.name}\"?`)) return;
-                                       try {
-                                          const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
-                                          if (res.ok) {
-                                             setCategories(prev => prev.filter(cat => cat.id !== c.id));
-                                             if (selectedCategory === c.id) setSelectedCategory('all');
-                                          } else {
-                                             alert('Erro ao excluir categoria.');
-                                          }
-                                       } catch {
+                                      e.stopPropagation();
+                                      if (!window.confirm(`Excluir categoria \"${c.name}\"?`)) return;
+                                      try {
+                                        const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
+                                        if (res.ok) {
+                                          setCategories(prev => prev.filter(cat => cat.id !== c.id));
+                                          if (selectedCategory === c.id) setSelectedCategory('all');
+                                        } else {
                                           alert('Erro ao excluir categoria.');
-                                       }
+                                        }
+                                      } catch {
+                                        alert('Erro ao excluir categoria.');
+                                      }
                                     }}
                                  >
                                     <Trash2 size={14} />
                                  </button>
-                              </div>
+                               )}
+                             </div>
                            ))}
-                           <button
-                              onClick={() => { setIsCategoryModalOpen(true); setShowCategoryList(false); }}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-accent hover:bg-accent/10 text-xs font-semibold border-t border-white/10"
-                           >
-                              <FolderPlus size={16} /> Nova Categoria
-                           </button>
+                           {!isOperatorUser && (
+                             <button
+                               onClick={() => { setIsCategoryModalOpen(true); setShowCategoryList(false); }}
+                               className="w-full flex items-center gap-2 px-4 py-2 text-accent hover:bg-accent/10 text-xs font-semibold border-t border-white/10"
+                             >
+                               <FolderPlus size={16} /> Nova Categoria
+                             </button>
+                           )}
                         </div>
-                     )}
+                      )}
+                    </div>
                   </div>
-               </div>
                <div className="md:col-span-3">
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1 mb-2">Estado do Estoque</label>
                   <div className="relative" id="stock-filter-menu">
@@ -532,84 +558,84 @@ const Products: React.FC = () => {
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                {!showImages ? (
                   /* LIST VIEW */
-                           <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden animate-in fade-in duration-500 mb-8">
-                              <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
-                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
-                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.14),transparent_55%)]" />
-                                 <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
-                                 <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
-                              </div>
-                              <div className="relative rounded-2xl border border-white/10 bg-dark-900/30 overflow-hidden">
-                                 <div
-                                    className={[
-                                       "w-full overflow-x-auto overflow-y-auto",
-                                       "max-h-[calc(92vh-180px)] min-h-[420px]",
-                                       "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
-                                    ].join(" ")}
-                                 >
-                                    <table className="min-w-[900px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
-                                       <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
-                                          <tr>
-                                             <th className="py-4 px-5 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[320px] max-w-[420px]">Identificação</th>
-                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Custo</th>
-                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Venda</th>
-                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque</th>
+                  <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden animate-in fade-in duration-500 mb-8">
+                     <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.14),transparent_55%)]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
+                     </div>
+                     <div className="relative rounded-2xl border border-white/10 bg-dark-900/30 overflow-hidden">
+                        <div
+                           className={[
+                              "w-full overflow-x-auto overflow-y-auto",
+                              "max-h-[calc(92vh-180px)] min-h-[420px]",
+                              "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+                           ].join(" ")}
+                        >
+                           <table className="min-w-[900px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
+                              <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
+                                 <tr>
+                                    <th className="py-4 px-5 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[320px] max-w-[420px]">Identificação</th>
+                                    <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Custo</th>
+                                    <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Venda</th>
+                                    <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque</th>
+                                    {!isOperatorUser && (
+                                       <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                    )}
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 {filtered.length === 0 ? (
+                                    <tr>
+                                       <td colSpan={isOperatorUser ? 4 : 5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto encontrado.</td>
+                                    </tr>
+                                 ) : (
+                                    filtered.map((product, i) => {
+                                       const isOdd = i % 2 === 1;
+                                       const isLowStock = product.stock < (product.minStock || 20) && product.unit !== 'serv';
+                                       return (
+                                          <tr
+                                             key={product.id}
+                                             className={["group transition-colors", isOdd ? "bg-white/[0.02]" : "bg-transparent", "hover:bg-cyan-500/5", "border-b border-white/5"].join(" ")}
+                                             onClick={() => setSelectedProduct(product)}
+                                             style={{ cursor: 'pointer' }}
+                                          >
+                                             <td className={["py-4 px-5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 min-w-[320px] max-w-[420px] overflow-hidden text-ellipsis flex items-center gap-4"].join(" ")}>
+                                                <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
+                                                   {product.imageUrl ? (
+                                                      <img
+                                                         src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`}
+                                                         className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity"
+                                                         alt={product.name}
+                                                      />
+                                                   ) : (
+                                                      <Cpu className="text-accent opacity-40" size={20} />
+                                                   )}
+                                                </div>
+                                                <div>
+                                                   <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>
+                                                   <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{product.gtin}</div>
+                                                </div>
+                                             </td>
+                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
+                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
+                                             <td className={["py-4 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}</td>
                                              {!isOperatorUser && (
-                                                <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                                <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
+                                                   <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
+                                                   <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
+                                                </td>
                                              )}
                                           </tr>
-                                       </thead>
-                                       <tbody>
-                                          {filtered.length === 0 ? (
-                                             <tr>
-                                                <td colSpan={isOperatorUser ? 4 : 5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto encontrado.</td>
-                                             </tr>
-                                          ) : (
-                                             filtered.map((product, i) => {
-                                                const isOdd = i % 2 === 1;
-                                                const isLowStock = product.stock < (product.minStock || 20) && product.unit !== 'serv';
-                                                return (
-                                                   <tr
-                                                      key={product.id}
-                                                      className={["group transition-colors", isOdd ? "bg-white/[0.02]" : "bg-transparent", "hover:bg-cyan-500/5", "border-b border-white/5"].join(" ")}
-                                                      onClick={() => setSelectedProduct(product)}
-                                                      style={{ cursor: 'pointer' }}
-                                                   >
-                                                      <td className={["py-4 px-5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 min-w-[320px] max-w-[420px] overflow-hidden text-ellipsis flex items-center gap-4"].join(" ")}> 
-                                                         <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
-                                                            {product.imageUrl ? (
-                                                               <img
-                                                                  src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`}
-                                                                  className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity"
-                                                                  alt={product.name}
-                                                               />
-                                                            ) : (
-                                                               <Cpu  className="text-accent opacity-40" size={20} />
-                                                            )}
-                                                         </div>
-                                                         <div>
-                                                            <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>
-                                                            <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{product.gtin}</div>
-                                                         </div>
-                                                      </td>
-                                                      <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
-                                                      <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
-                                                      <td className={["py-4 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}</td>
-                                                      {!isOperatorUser && (
-                                                        <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
-                                                           <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
-                                                           <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
-                                                        </td>
-                                                      )}
-                                                   </tr>
-                                                );
-                                             })
-                                          )}
-                                       </tbody>
-                                    </table>
-                                 </div>
-                              </div>
-                           </section>
+                                       );
+                                    })
+                                 )}
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
+                  </section>
                ) : (
                   /* CARD GRID VIEW */
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -725,46 +751,112 @@ const Products: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="space-y-2 md:col-span-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text">Nomenclatura do Produto/Serviço</label>
-                              <Input name="name" defaultValue={selectedProduct?.name} placeholder="Ex: Cerveja Black IPA 473ml ou Serviço de Entrega" className="bg-dark-950/50 border-accent/20 focus:border-accent" required />
+                              <Input
+                                 name="name"
+                                 defaultValue={selectedProduct?.name}
+                                 placeholder="Ex: Cerveja Black IPA 473ml ou Serviço de Entrega"
+                                 className="bg-dark-950/50 border-accent/20 focus:border-accent"
+                                 required
+                                 readOnly={isOperatorUser}
+                                 disabled={isOperatorUser}
+                              />
                               <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text mt-4">Tipo</label>
-                              <select
-                                 name="type"
-                                 value={modalType}
-                                 onChange={e => setModalType(e.target.value as 'product' | 'service')}
-                                 className="w-full bg-dark-950/50 border border-accent/20 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
-                              >
-                                 <option value="product">Produto</option>
-                                 <option value="service">Serviço</option>
-                              </select>
+                              {isOperatorUser ? (
+                                 <div className="w-full bg-dark-950/50 border border-accent/20 rounded-xl p-3 text-sm text-slate-200 h-[46px] flex items-center">
+                                    {modalType === 'product' ? 'Produto' : 'Serviço'}
+                                 </div>
+                              ) : (
+                                 <select
+                                    name="type"
+                                    value={modalType}
+                                    onChange={e => setModalType(e.target.value as 'product' | 'service')}
+                                    className="w-full bg-dark-950/50 border border-accent/20 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
+                                 >
+                                    <option value="product">Produto</option>
+                                    <option value="service">Serviço</option>
+                                 </select>
+                              )}
                               {/* Campos específicos para produto */}
-                              {modalType === 'product' && <>
-                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
-                                 <Input name="gtin" defaultValue={selectedProduct?.gtin} placeholder="789000000000" icon={<ShieldAlert size={14} className="text-accent/40" />} className="bg-dark-950/50" required />
-                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
-                                 <Input name="internalCode" defaultValue={selectedProduct?.internalCode} placeholder="ABC-123" icon={<Hash size={14} className="text-accent/40" />} className="bg-dark-950/50" required />
-                              </>}
+                              {modalType === 'product' && (
+                                 <>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
+                                    <Input
+                                       name="gtin"
+                                       defaultValue={selectedProduct?.gtin}
+                                       placeholder="789000000000"
+                                       icon={<ShieldAlert size={14} className="text-accent/40" />}
+                                       className="bg-dark-950/50"
+                                       required
+                                       readOnly={isOperatorUser}
+                                       disabled={isOperatorUser}
+                                    />
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
+                                    <Input
+                                       name="internalCode"
+                                       defaultValue={selectedProduct?.internalCode}
+                                       placeholder="ABC-123"
+                                       icon={<Hash size={14} className="text-accent/40" />}
+                                       className="bg-dark-950/50"
+                                       required
+                                       readOnly={isOperatorUser}
+                                       disabled={isOperatorUser}
+                                    />
+                                 </>
+                              )}
                            </div>
                            <div className="space-y-2 md:col-span-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text">Categoria</label>
-                              <select name="categoryId" defaultValue={selectedProduct?.category} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
-                                 <option value="">Selecione...</option>
-                                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                              </select>
-                              {/* Campos específicos para produto */}
-                              {modalType === 'product' && <>
-                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Fornecedor</label>
-                                 <select name="supplier" defaultValue={selectedProduct?.supplier || ''} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
+                              {isOperatorUser ? (
+                                 <div className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 h-[46px] flex items-center">
+                                    {categories.find(c => c.id === selectedProduct?.category)?.name || 'Sem categoria'}
+                                 </div>
+                              ) : (
+                                 <select
+                                    name="categoryId"
+                                    defaultValue={selectedProduct?.category}
+                                    className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
+                                 >
                                     <option value="">Selecione...</option>
-                                    {isSupplierLoading ? <option value="" disabled>Carregando...</option> : suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                  </select>
-                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Unidade</label>
-                                 <select name="unit" defaultValue={selectedProduct?.unit || 'unit'} className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]">
-                                    <option value="unit">UN</option>
-                                    <option value="kg">KG</option>
-                                    <option value="cx">CX</option>
-                                    <option value="serv">SERVIÇO</option>
-                                 </select>
-                              </>}
+                              )}
+                              {/* Campos específicos para produto */}
+                              {modalType === 'product' && (
+                                 <>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Fornecedor</label>
+                                    {isOperatorUser ? (
+                                       <div className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 h-[46px] flex items-center">
+                                          {suppliers.find(s => s.id === selectedProduct?.supplier)?.name || 'Sem fornecedor'}
+                                       </div>
+                                    ) : (
+                                       <select
+                                          name="supplier"
+                                          defaultValue={selectedProduct?.supplier || ''}
+                                          className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
+                                       >
+                                          <option value="">Selecione...</option>
+                                          {isSupplierLoading ? <option value="" disabled>Carregando...</option> : suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                       </select>
+                                    )}
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Unidade</label>
+                                    {isOperatorUser ? (
+                                       <div className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 h-[46px] flex items-center">
+                                          {selectedProduct?.unit?.toUpperCase() || 'UN'}
+                                       </div>
+                                    ) : (
+                                       <select
+                                          name="unit"
+                                          defaultValue={selectedProduct?.unit || 'unit'}
+                                          className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
+                                       >
+                                          <option value="unit">UN</option>
+                                          <option value="kg">KG</option>
+                                          <option value="cx">CX</option>
+                                          <option value="serv">SERVIÇO</option>
+                                       </select>
+                                    )}
+                                 </>
+                              )}
                            </div>
                         </div>
                         {/* Campos de preço e imagem aparecem para ambos, mas estoque, desconto e custo só para produto */}
@@ -774,107 +866,196 @@ const Products: React.FC = () => {
                               <h4 className="text-[10px] font-bold uppercase tracking-widest text-accent assemble-text" style={{ animationDelay: '0.4s' }}>Algoritmo de Precificação</h4>
                            </div>
                            <div className="grid grid-cols-3 gap-4">
-                              {modalType === 'product' && <div className="space-y-1">
-                                 <label className="text-[8px] font-bold text-slate-500 uppercase">Custo Médio</label>
-                                 <Input name="costPrice" defaultValue={selectedProduct?.costPrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-white/5" step="0.01" min="0" />
-                              </div>}
+                              {modalType === 'product' && (
+                                 <div className="space-y-1">
+                                    <label className="text-[8px] font-bold text-slate-500 uppercase">Custo Médio</label>
+                                    <Input
+                                       name="costPrice"
+                                       defaultValue={selectedProduct?.costPrice}
+                                       placeholder="0.00"
+                                       type="number"
+                                       className="bg-dark-950/80 border-white/5"
+                                       step="0.01"
+                                       min="0"
+                                       readOnly={isOperatorUser}
+                                       disabled={isOperatorUser}
+                                    />
+                                 </div>
+                              )}
                               <div className="space-y-1">
                                  <label className="text-[8px] font-bold text-slate-500 uppercase">Venda Público</label>
-                                 <Input name="salePrice" defaultValue={selectedProduct?.salePrice} placeholder="0.00" type="number" className="bg-dark-950/80 border-accent/10" step="0.01" min="0" />
+                                 <Input
+                                    name="salePrice"
+                                    defaultValue={selectedProduct?.salePrice}
+                                    placeholder="0.00"
+                                    type="number"
+                                    className="bg-dark-950/80 border-accent/10"
+                                    step="0.01"
+                                    min="0"
+                                    readOnly={isOperatorUser}
+                                    disabled={isOperatorUser}
+                                 />
                               </div>
-                              {modalType === 'product' && <div className="space-y-1">
-                                 <label className="text-[8px] font-bold text-slate-500 uppercase">Auto-Discount</label>
-                                 <Input name="autoDiscountValue" defaultValue={selectedProduct?.autoDiscount} placeholder="0.00" type="number" className="bg-dark-950/80 border-emerald-500/10" step="0.01" min="0" />
-                                 <input type="hidden" name="autoDiscountEnabled" value="on" />
-                              </div>}
+                              {modalType === 'product' && (
+                                 <div className="space-y-1">
+                                    <label className="text-[8px] font-bold text-slate-500 uppercase">Auto-Discount</label>
+                                    <Input
+                                       name="autoDiscountValue"
+                                       defaultValue={selectedProduct?.autoDiscount}
+                                       placeholder="0.00"
+                                       type="number"
+                                       className="bg-dark-950/80 border-emerald-500/10"
+                                       step="0.01"
+                                       min="0"
+                                       readOnly={isOperatorUser}
+                                       disabled={isOperatorUser}
+                                    />
+                                    <input type="hidden" name="autoDiscountEnabled" value="on" />
+                                 </div>
+                              )}
                            </div>
                         </div>
                         {/* Estoque e mínimo só para produto */}
-                        {modalType === 'product' && <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                           <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.5s' }}>Inventário Atual</label>
-                              <div className="flex items-center gap-4">
-                                 <Input name="stockOnHand" defaultValue={selectedProduct?.stock} placeholder="0" type="number" className="flex-1" min="0" />
-                                 <Badge variant="info">{selectedProduct?.unit || 'UN'}</Badge>
+                        {modalType === 'product' && (
+                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                              <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
+                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.5s' }}>Inventário Atual</label>
+                                 <div className="flex items-center gap-4">
+                                    <Input
+                                       name="stockOnHand"
+                                       defaultValue={selectedProduct?.stock}
+                                       placeholder="0"
+                                       type="number"
+                                       className="flex-1"
+                                       min="0"
+                                       readOnly={isOperatorUser}
+                                       disabled={isOperatorUser}
+                                    />
+                                    <Badge variant="info">{selectedProduct?.unit || 'UN'}</Badge>
+                                 </div>
+                              </div>
+                              <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
+                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.55s' }}>Estoque Mínimo</label>
+                                 <div className="flex items-center gap-4">
+                                    <Input
+                                       name="minStock"
+                                       defaultValue={selectedProduct?.minStock || 20}
+                                       placeholder="20"
+                                       type="number"
+                                       icon={<Activity size={14} className="text-red-400/60" />}
+                                       className="flex-1"
+                                       min="0"
+                                       readOnly={isOperatorUser}
+                                       disabled={isOperatorUser}
+                                    />
+                                 </div>
+                              </div>
+                              <div className="p-4 bg-white/2 rounded-xl border border-white/5 flex items-center justify-between">
+                                 <div className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Auto-Ativação</label>
+                                    <p className="text-[8px] text-slate-600 uppercase">Status no PDV: {selectedProduct?.status || (autoActive ? 'active' : 'inactive')}</p>
+                                 </div>
+                                 {!isOperatorUser && (
+                                    <>
+                                       <input type="checkbox" name="status" checked={autoActive} onChange={e => setAutoActive(e.target.checked)} style={{ display: 'none' }} readOnly />
+                                       <Switch enabled={autoActive} onChange={setAutoActive} />
+                                    </>
+                                 )}
+                                 {isOperatorUser && (
+                                    <Switch enabled={autoActive} onChange={() => { }} disabled />
+                                 )}
                               </div>
                            </div>
-                           <div className="p-4 bg-white/2 rounded-xl border border-white/5 space-y-4">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.55s' }}>Estoque Mínimo</label>
-                              <div className="flex items-center gap-4">
-                                 <Input name="minStock" defaultValue={selectedProduct?.minStock || 20} placeholder="20" type="number" icon={<Activity size={14} className="text-red-400/60" />} className="flex-1" min="0" />
-                              </div>
-                           </div>
-                           <div className="p-4 bg-white/2 rounded-xl border border-white/5 flex items-center justify-between">
-                              <div className="space-y-1">
-                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Auto-Ativação</label>
-                                 <p className="text-[8px] text-slate-600 uppercase">Status no PDV: {selectedProduct?.status || (autoActive ? 'active' : 'inactive')}</p>
-                              </div>
-                              <input type="checkbox" name="status" checked={autoActive} onChange={e => setAutoActive(e.target.checked)} style={{ display: 'none' }} readOnly />
-                              <Switch enabled={autoActive} onChange={setAutoActive} />
-                           </div>
-                        </div>}
-
-                      
-
-                       
+                        )}
 
                         <div className="space-y-4 pb-4 mt-6">
                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>
                            <div className="flex gap-4 items-center">
                               <div className="flex-1">
-                                 <Input name="imageUrl" value={selectedProduct?.imageUrl || ''} onChange={e => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)} placeholder="Selecione ou faça upload..." icon={<ImageIcon size={14} />} readOnly />
-                                 <input type="file" accept="image/*" style={{ display: 'none' }} id="product-image-upload" onChange={async e => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    // Garante que EAN e nome estejam presentes, mesmo se for novo produto
-                                    // Busca o EAN do campo correto (gtin ou ean)
-                                    const ean = selectedProduct?.gtin || selectedProduct?.ean ||
-                                       (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
-                                       (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
-                                    const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
-                                    const formData = new FormData();
-                                    formData.append('image', file);
-                                    formData.append('ean', ean);
-                                    formData.append('description', name);
-                                    try {
-                                       const res = await fetch('/api/products/upload-image', {
-                                          method: 'POST',
-                                          body: formData
-                                       });
-                                       const data = await res.json();
-                                       if (data.imageUrl) {
-                                          setSelectedProduct(p => p ? { ...p, imageUrl: data.imageUrl } : null);
-                                          showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
-                                       } else {
-                                          showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
-                                       }
-                                    } catch {
-                                       showPopup('error', 'Erro', 'Erro ao enviar imagem.');
-                                    }
-                                 }} />
-                                 <Button type="button" variant="secondary" size="sm" style={{ marginTop: 8 }} onClick={() => document.getElementById('product-image-upload')?.click()} icon={<UploadCloud size={16} />}>Selecionar Foto</Button>
+                                 <Input
+                                    name="imageUrl"
+                                    value={selectedProduct?.imageUrl || ''}
+                                    onChange={e => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)}
+                                    placeholder="Selecione ou faça upload..."
+                                    icon={<ImageIcon size={14} />}
+                                    readOnly
+                                    disabled
+                                 />
+                                 {!isOperatorUser && (
+                                    <>
+                                       <input
+                                          type="file"
+                                          accept="image/*"
+                                          style={{ display: 'none' }}
+                                          id="product-image-upload"
+                                          onChange={async e => {
+                                             const file = e.target.files?.[0];
+                                             if (!file) return;
+                                             const ean = selectedProduct?.gtin || selectedProduct?.ean ||
+                                                (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
+                                                (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
+                                             const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
+                                             const formData = new FormData();
+                                             formData.append('image', file);
+                                             formData.append('ean', ean);
+                                             formData.append('description', name);
+                                             try {
+                                                const res = await fetch('/api/products/upload-image', {
+                                                   method: 'POST',
+                                                   body: formData
+                                                });
+                                                const data = await res.json();
+                                                if (data.imageUrl) {
+                                                   setSelectedProduct(p => p ? { ...p, imageUrl: data.imageUrl } : null);
+                                                   showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
+                                                } else {
+                                                   showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
+                                                }
+                                             } catch {
+                                                showPopup('error', 'Erro', 'Erro ao enviar imagem.');
+                                             }
+                                          }}
+                                       />
+                                       <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          style={{ marginTop: 8 }}
+                                          onClick={() => document.getElementById('product-image-upload')?.click()}
+                                          icon={<UploadCloud size={16} />}
+                                       >
+                                          Selecionar Foto
+                                       </Button>
+                                    </>
+                                 )}
                               </div>
                               <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden relative">
                                  {selectedProduct?.imageUrl ? (
                                     <>
                                        <img src={selectedProduct.imageUrl?.startsWith('/uploads/') ? selectedProduct.imageUrl : `/uploads/${selectedProduct.imageUrl}`} className="w-full h-full object-cover opacity-50" />
-                                       <button type="button" className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all" title="Remover imagem" onClick={async () => {
-                                          // Chama API para remover arquivo
-                                          const imagePath = selectedProduct.imageUrl;
-                                          try {
-                                             await fetch('/api/products/delete-image', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
-                                             });
-                                             setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
-                                             showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
-                                          } catch {
-                                             showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
-                                          }
-                                       }}>
-                                          <Trash2 size={12} />
-                                       </button>
+                                       {!isOperatorUser && (
+                                          <button
+                                             type="button"
+                                             className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all"
+                                             title="Remover imagem"
+                                             onClick={async () => {
+                                                const imagePath = selectedProduct.imageUrl;
+                                                try {
+                                                   await fetch('/api/products/delete-image', {
+                                                      method: 'POST',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
+                                                   });
+                                                   setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
+                                                   showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
+                                                } catch {
+                                                   showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
+                                                }
+                                             }}
+                                          >
+                                             <Trash2 size={12} />
+                                          </button>
+                                       )}
                                     </>
                                  ) : <ImageIcon size={20} className="opacity-40" />}
                               </div>
@@ -898,6 +1079,7 @@ const Products: React.FC = () => {
                         type="submit"
                         className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow"
                         icon={<Check size={18} />}
+                        disabled={isOperatorUser}
                      >
                         Confirmar {selectedProduct ? 'Atualização' : 'Injeção'}
                      </Button>

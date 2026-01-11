@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, Check, X, Filter } from 'lucide-react';
 import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_SUPPLIERS } from '../constants';
-import { SystemUser, Client, Supplier } from '../types';
+import { SystemUser, Client } from '../types';
 import { createUser, listUsers, updateUser, deleteUser } from '../services/user';
 import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../services/supplier';
 import { listCategories } from '../services/category';
@@ -156,178 +156,184 @@ const Entities: React.FC = () => {
       </div>
 
       {/* Main Table Content */}
-      <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+       <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="overflow-y-auto flex-1 custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
               <tr className="text-slate-600 text-[10px] uppercase font-bold tracking-[0.2em]">
-                {activeTab === 'users' && (
-                  <>
-                    <th className="px-8 py-5">Identidade</th>
-                    <th className="px-8 py-5">Acesso</th>
-                    <th className="px-8 py-5">Status</th>
-                    <th className="px-8 py-5">Último Login</th>
-                  </>
-                )}
-                {activeTab === 'clients' && (
-                  <>
-                    <th className="px-8 py-5">Cliente / CPF</th>
-                    <th className="px-8 py-5">Contato</th>
-                    <th className="px-8 py-5">Localização</th>
-                    <th className="px-8 py-5">Volume Gasto</th>
-                  </>
-                )}
-                {activeTab === 'suppliers' && (
-                  <>
-                    <th className="px-8 py-5">Razão / CNPJ</th>
-                    <th className="px-8 py-5">Categoria</th>
-                    <th className="px-8 py-5">Contato</th>
-                    <th className="px-8 py-5">Endereço</th>
-                  </>
-                )}
-                <th className="px-8 py-5 text-right">Ações</th>
+          {activeTab === 'users' && (
+            <>
+              <th className="px-8 py-5">Identidade</th>
+              <th className="px-8 py-5">Acesso</th>
+              <th className="px-8 py-5">Status</th>
+              <th className="px-8 py-5">Último Login</th>
+            </>
+          )}
+          {activeTab === 'clients' && (
+            <>
+              <th className="px-8 py-5">Cliente / CPF</th>
+              <th className="px-8 py-5">Contato</th>
+              <th className="px-8 py-5">Localização</th>
+              <th className="px-8 py-5">Volume Gasto</th>
+            </>
+          )}
+          {activeTab === 'suppliers' && (
+            <>
+              <th className="px-8 py-5">Razão / CNPJ</th>
+              <th className="px-8 py-5">Categoria</th>
+              <th className="px-8 py-5">Contato</th>
+              <th className="px-8 py-5">Endereço</th>
+            </>
+          )}
+          {/* Só mostra coluna de ações se usuário não for operador */}
+          {userForm.role !== 'operator' && (
+            <th className="px-8 py-5 text-right">Ações</th>
+          )}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredData.filter((item: any) => item.id != null).map((item: any, idx: number) => (
-                <tr key={item.id ?? `user-row-${idx}`} className="group hover:bg-white/5 transition-all cursor-default">
-                  {activeTab === 'users' && (
-                    <>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center font-bold text-accent shadow-accent-glow/20">
-                              {item.name.charAt(0)}
-                           </div>
-                           <div>
-                              <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
-                              <div className="text-[10px] text-slate-500 font-mono tracking-tight">{item.email}</div>
-                           </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5">
-                         <Badge variant={item.role === 'admin' ? 'info' : 'success'}>{item.role}</Badge>
-                      </td>
-                      <td className="px-8 py-5">
-                         <div className="flex items-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
-                            <span className="text-[10px] font-bold uppercase text-slate-400">{item.status}</span>
-                         </div>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] font-mono text-slate-600">
-                         {new Date(item.lastLogin).toLocaleString()}
-                      </td>
-                    </>
-                  )}
+          <tr key={item.id ?? `user-row-${idx}`} className="group hover:bg-white/5 transition-all cursor-default">
+            {activeTab === 'users' && (
+              <>
+                <td className="px-8 py-5">
+            <div className="flex items-center gap-4">
+               <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center font-bold text-accent shadow-accent-glow/20">
+                  {item.name.charAt(0)}
+               </div>
+               <div>
+                  <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
+                  <div className="text-[10px] text-slate-500 font-mono tracking-tight">{item.email}</div>
+               </div>
+            </div>
+                </td>
+                <td className="px-8 py-5">
+             <Badge variant={item.role === 'admin' ? 'info' : 'success'}>{item.role}</Badge>
+                </td>
+                <td className="px-8 py-5">
+             <div className="flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
+                <span className="text-[10px] font-bold uppercase text-slate-400">{item.status}</span>
+             </div>
+                </td>
+                <td className="px-8 py-5 text-[10px] font-mono text-slate-600">
+             {new Date(item.lastLogin).toLocaleString()}
+                </td>
+              </>
+            )}
 
-                  {activeTab === 'clients' && (
-                    <>
-                      <td className="px-8 py-5">
-                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
-                        <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cpf}</div>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
-                         <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email || 'N/A'}</div>
-                         <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] text-slate-500 truncate max-w-xs">
-                         <div className="flex items-center gap-2"><MapPin size={12} className="text-slate-600" /> {item.address}</div>
-                      </td>
-                      <td className="px-8 py-5 font-mono text-sm font-bold text-emerald-400">
-                         R$ {(item.totalSpent !== undefined && item.totalSpent !== null) ? (Number(item.totalSpent) / 100).toFixed(2) : '0.00'}
-                      </td>
-                    </>
-                  )}
+            {activeTab === 'clients' && (
+              <>
+                <td className="px-8 py-5">
+            <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
+            <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cpf}</div>
+                </td>
+                <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
+             <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email || 'N/A'}</div>
+             <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
+                </td>
+                <td className="px-8 py-5 text-[10px] text-slate-500 truncate max-w-xs">
+             <div className="flex items-center gap-2"><MapPin size={12} className="text-slate-600" /> {item.address}</div>
+                </td>
+                <td className="px-8 py-5 font-mono text-sm font-bold text-emerald-400">
+             R$ {(item.totalSpent !== undefined && item.totalSpent !== null) ? (Number(item.totalSpent) / 100).toFixed(2) : '0.00'}
+                </td>
+              </>
+            )}
 
-                  {activeTab === 'suppliers' && (
-                    <>
-                      <td className="px-8 py-5">
-                        <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
-                        <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cnpj}</div>
-                      </td>
-                      <td className="px-8 py-5">
-                         <Badge variant="info">{item.category}</Badge>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
-                         <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email}</div>
-                         <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
-                      </td>
-                      <td className="px-8 py-5 text-[10px] text-slate-500 max-w-xs truncate">
-                         {item.address}
-                      </td>
-                    </>
-                  )}
+            {activeTab === 'suppliers' && (
+              <>
+                <td className="px-8 py-5">
+            <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{item.name}</div>
+            <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{item.cnpj}</div>
+                </td>
+                <td className="px-8 py-5">
+             <Badge variant="info">{item.category}</Badge>
+                </td>
+                <td className="px-8 py-5 text-[10px] text-slate-400 space-y-1">
+             <div className="flex items-center gap-2"><Mail size={12} className="text-accent/60" /> {item.email}</div>
+             <div className="flex items-center gap-2"><Phone size={12} className="text-accent/60" /> {item.phone}</div>
+                </td>
+                <td className="px-8 py-5 text-[10px] text-slate-500 max-w-xs truncate">
+             {item.address}
+                </td>
+              </>
+            )}
 
-                  <td className="px-8 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button 
-                        onClick={() => {
-                          setEditingItem(item);
-                          if (activeTab === 'users') setIsUserModalOpen(true);
-                          if (activeTab === 'clients') setIsClientModalOpen(true);
-                          if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
-                        }}
-                        className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
-                       >
-                         <Edit2 size={14} />
-                       </button>
-                       <button
-                         className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90"
-                         onClick={async (e) => {
-                           e.stopPropagation();
-                           if (activeTab === 'users') {
-                             try {
-                               await deleteUser(item.id);
-                               setPopup({open: true, type: 'success', title: 'Usuário excluído', message: 'Usuário removido com sucesso!'});
-                               setLoadingUsers(true);
-                               const updated = await listUsers();
-                               setUsers(updated);
-                             } catch {
-                               setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
-                             }
-                           }
-                           if (activeTab === 'clients') {
-                             try {
-                               await deleteClient(item.id);
-                               setPopup({open: true, type: 'success', title: 'Cliente excluído', message: 'Cliente removido com sucesso!'});
-                               setLoadingClients(true);
-                               const updated = await listClients();
-                               setClients(updated);
-                             } catch {
-                               setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
-                             }
-                           }
-                           if (activeTab === 'suppliers') {
-                             try {
-                               console.log('[UI] Tentando excluir fornecedor id:', item.id);
-                               const result = await deleteSupplier(item.id);
-                               console.log('[UI] Resultado da exclusão:', result);
-                               if (result && result.changes > 0) {
-                                 setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
-                                 setLoadingSuppliers(true);
-                                 const updated = await listSuppliers();
-                                 console.log('[UI] Lista de fornecedores após exclusão:', updated);
-                                 setSuppliers(updated);
-                               } else {
-                                 console.error('[UI] Erro: Exclusão não retornou changes > 0', result);
-                                 setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
-                               }
-                             } catch (e) {
-                               console.error('[UI] Catch erro ao excluir fornecedor:', e);
-                               setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
-                             }
-                           }
-                         }}
-                       >
-                         <Trash2 size={14} />
-                       </button>
-                    </div>
-                  </td>
-                </tr>
+            {/* Só mostra ações se usuário não for operador */}
+            {userForm.role !== 'operator' && (
+              <td className="px-8 py-5 text-right">
+                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+             <button 
+              onClick={() => {
+                setEditingItem(item);
+                if (activeTab === 'users') setIsUserModalOpen(true);
+                if (activeTab === 'clients') setIsClientModalOpen(true);
+                if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
+              }}
+              className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
+             >
+               <Edit2 size={14} />
+             </button>
+             <button
+               className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90"
+               onClick={async (e) => {
+                 e.stopPropagation();
+                 if (activeTab === 'users') {
+                   try {
+               await deleteUser(item.id);
+               setPopup({open: true, type: 'success', title: 'Usuário excluído', message: 'Usuário removido com sucesso!'});
+               setLoadingUsers(true);
+               const updated = await listUsers();
+               setUsers(updated);
+                   } catch {
+               setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
+                   }
+                 }
+                 if (activeTab === 'clients') {
+                   try {
+               await deleteClient(item.id);
+               setPopup({open: true, type: 'success', title: 'Cliente excluído', message: 'Cliente removido com sucesso!'});
+               setLoadingClients(true);
+               const updated = await listClients();
+               setClients(updated);
+                   } catch {
+               setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
+                   }
+                 }
+                 if (activeTab === 'suppliers') {
+                   try {
+               console.log('[UI] Tentando excluir fornecedor id:', item.id);
+               const result = await deleteSupplier(item.id);
+               console.log('[UI] Resultado da exclusão:', result);
+               if (result && result.changes > 0) {
+                 setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
+                 setLoadingSuppliers(true);
+                 const updated = await listSuppliers();
+                 console.log('[UI] Lista de fornecedores após exclusão:', updated);
+                 setSuppliers(updated);
+               } else {
+                 console.error('[UI] Erro: Exclusão não retornou changes > 0', result);
+                 setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+               }
+                   } catch (e) {
+               console.error('[UI] Catch erro ao excluir fornecedor:', e);
+               setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                   }
+                 }
+               }}
+             >
+               <Trash2 size={14} />
+             </button>
+                </div>
+              </td>
+            )}
+          </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+            </div>
 
       {/* MODALS SECTION */}
 

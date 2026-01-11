@@ -1,5 +1,5 @@
-import { db } from '../db/database';
 import { randomUUID } from 'crypto';
+import db from '../db/database';
 
 export async function listSuppliers() {
   return db.prepare('SELECT * FROM suppliers').all();

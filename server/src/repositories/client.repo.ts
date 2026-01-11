@@ -1,5 +1,5 @@
-import { db } from '../db/database';
 import { randomUUID } from 'crypto';
+import db from '../db/database';
 
 // Retorna todos os clientes, incluindo o total gasto (soma das vendas)
 export async function listClientsWithTotalSpent() {
