@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 // Troque para true para usar mock, false para API real
-const USE_MOCK = true;
+const USE_MOCK = false;
 import { soldProductsMock } from "./SoldProductsDetailedTable.mock";
 
 interface SoldProduct {

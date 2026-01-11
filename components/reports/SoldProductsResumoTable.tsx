@@ -1,6 +1,6 @@
 
 // Troque para false para usar a API real
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 import React, { useEffect, useState, useMemo } from "react";
 import { soldProductsMock, SoldProductMock } from "./SoldProductsDetailedTable.mock";
