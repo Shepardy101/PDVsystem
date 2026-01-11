@@ -13,6 +13,8 @@ import ReceiptModal from '../components/modals/ReceiptModal';
 import ClosingModal from '../components/modals/ClosingModal';
 import OpeningModal from '../components/modals/OpeningModal';
 import SubtotalModal from '../components/modals/SubtotalModal';
+import AdminPasswordModal from '../components/AdminPasswordModal';
+import { isOperator } from '../types';
 
 
 interface POSProps {
@@ -64,6 +66,17 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    // Notification State
    const [notification, setNotification] = useState<{ show: boolean, msg: string, sub: string } | null>(null);
+
+   // Admin password modal state
+   const [showAdminPasswordModal, setShowAdminPasswordModal] = useState<string | false>("");
+   const handleAdminPasswordSuccess = useCallback(() => {
+      if (showAdminPasswordModal === 'discount') {
+         setIsDiscountModalOpen(true);
+      } else if (showAdminPasswordModal === 'subtotal') {
+         setIsSubtotalModalOpen(true);
+      }
+      setShowAdminPasswordModal(false);
+   }, [showAdminPasswordModal]);
 
    const inputRef = useAutoFocus<HTMLInputElement>();
    const searchRef = useRef<HTMLDivElement>(null);
@@ -352,11 +365,18 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          // Bloqueia todos os atalhos do POS enquanto o modal de fechamento de caixa está aberto
          if (isClosingModalOpen) return;
 
+         // Não executa atalhos se o modal de senha admin estiver aberto
+         if (showAdminPasswordModal) return;
+
          // Abrir modal de desconto com Ctrl + D se houver venda no buffer
          if (e.ctrlKey && e.key.toLowerCase() === 'd') {
             if (cart && cart.length > 0) {
                e.preventDefault();
-               setIsDiscountModalOpen(true);
+               if (isOperator(user)) {
+                  setShowAdminPasswordModal('discount');
+               } else {
+                  setIsDiscountModalOpen(true);
+               }
                return;
             }
          }
@@ -365,7 +385,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          if (e.ctrlKey && e.key.toLowerCase() === 's') {
             if (cart && cart.length > 0) {
                e.preventDefault();
-               setIsSubtotalModalOpen(true);
+               if (isOperator(user)) {
+                  setShowAdminPasswordModal('subtotal');
+               } else {
+                  setIsSubtotalModalOpen(true);
+               }
                return;
             }
          }
@@ -1004,6 +1028,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                <div className="absolute bottom-0 left-0 h-1 bg-accent/40 border-animation" />
             </div>
          )}
+
+         <AdminPasswordModal
+            isOpen={!!showAdminPasswordModal}
+            onClose={() => setShowAdminPasswordModal("")}
+            onSuccess={handleAdminPasswordSuccess}
+         />
       </div>
    );
 };
