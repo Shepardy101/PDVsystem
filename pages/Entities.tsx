@@ -121,20 +121,22 @@ const Entities: React.FC = () => {
           </h1>
           <p className="text-slate-500 text-sm font-medium">Controlador central de identidades e parceiros do ecossistema.</p>
         </div>
-        <div className="flex items-center gap-3">
-           <Button 
-            className="shadow-accent-glow"
-            onClick={() => {
-              if (activeTab === 'users') setIsUserModalOpen(true);
-              if (activeTab === 'clients') setIsClientModalOpen(true);
-              if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
-              setEditingItem(null);
-            }} 
-            icon={<Plus size={18} />}
-           >
-             Adicionar {activeTab === 'users' ? 'Usuário' : activeTab === 'clients' ? 'Cliente' : 'Fornecedor'}
-           </Button>
-        </div>
+        {userForm.role !== 'operator' && (
+          <div className="flex items-center gap-3">
+            <Button 
+              className="shadow-accent-glow"
+              onClick={() => {
+                if (activeTab === 'users') setIsUserModalOpen(true);
+                if (activeTab === 'clients') setIsClientModalOpen(true);
+                if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
+                setEditingItem(null);
+              }} 
+              icon={<Plus size={18} />}
+            >
+              Adicionar {activeTab === 'users' ? 'Usuário' : activeTab === 'clients' ? 'Cliente' : 'Fornecedor'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Tabs & Filters Bar */}
