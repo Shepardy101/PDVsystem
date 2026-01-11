@@ -125,14 +125,13 @@ const Reports: React.FC = () => {
          </h1>
          <p className="text-slate-500 text-sm font-medium uppercase tracking-widest text-[10px]">Núcleo de Processamento Estratégico // NovaBev Analytics</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-dark-900/50 border border-white/5 rounded-xl px-4 py-2 flex items-center gap-3 backdrop-blur-md">
-            <Calendar size={14} className="text-accent" />
-            <span className="text-[10px] font-bold text-slate-300 uppercase">{dateRange}</span>
-          </div>
-          <Button variant="secondary" onClick={() => setIsFilterOpen(true)} icon={<Filter size={18} />}>Configurar</Button>
-          <Button className="shadow-accent-glow" icon={<Download size={18} />}>Exportar Snapshot</Button>
+      <div>
+        {/* Indicador discreto de inteligência de dados */}
+        <div className="flex items-center gap-2 bg-transparent px-2 py-1">
+          <span className="w-2 h-2 rounded-full bg-cyan-400/70" />
+          <span className="text-[11px] text-cyan-300 font-mono tracking-tight opacity-70">Analytics ativo</span>
         </div>
+      </div>
       </div>
 
 

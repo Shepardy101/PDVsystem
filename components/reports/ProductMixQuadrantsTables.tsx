@@ -41,7 +41,7 @@ const ProductMixQuadrantsTables: React.FC<Props> = ({ points, midX, midY }) => {
   }, [points, midX, midY]);
 
   return (
-    <div className="w-full md:w-[420px] bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col">
+    <div className="w-full  bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col">
       <div className="flex gap-2 mb-4">
         {QUADRANTS.map((q) => (
           <button
@@ -54,29 +54,31 @@ const ProductMixQuadrantsTables: React.FC<Props> = ({ points, midX, midY }) => {
           </button>
         ))}
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-xs text-left text-white">
-          <thead>
-            <tr className="border-b border-white/10">
-              <th className="py-1 px-2">Produto</th>
-              <th className="py-1 px-2">Frequência</th>
-              <th className="py-1 px-2">Volume</th>
-            </tr>
-          </thead>
-          <tbody>
-            {productsByQuadrant[activeTab].length === 0 ? (
-              <tr><td colSpan={3} className="text-slate-400 py-2">Nenhum produto neste quadrante.</td></tr>
-            ) : (
-              productsByQuadrant[activeTab].map((p, i) => (
-                <tr key={p.label + i} className="border-b border-white/5">
-                  <td className="py-1 px-2">{p.label}</td>
-                  <td className="py-1 px-2">{p.x}</td>
-                  <td className="py-1 px-2">{p.y}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="overflow-x-auto" style={{ maxHeight: '50vh' }}>
+        <div style={{ maxHeight: '31vh', overflowY: 'auto' }}>
+          <table className="min-w-full text-xs text-left text-white">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="py-1 px-2">Produto</th>
+                <th className="py-1 px-2">Frequência</th>
+                <th className="py-1 px-2">Volume</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productsByQuadrant[activeTab].length === 0 ? (
+                <tr><td colSpan={3} className="text-slate-400 py-2">Nenhum produto neste quadrante.</td></tr>
+              ) : (
+                productsByQuadrant[activeTab].map((p, i) => (
+                  <tr key={p.label + i} className="border-b border-white/5">
+                    <td className="py-1 px-2">{p.label}</td>
+                    <td className="py-1 px-2">{p.x}</td>
+                    <td className="py-1 px-2">{p.y}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
