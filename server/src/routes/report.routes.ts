@@ -26,17 +26,33 @@ reportRouter.get('/sold-products-detailed', (req, res) => {
 // GET /api/report/sold-products
 reportRouter.get('/sold-products', (req, res) => {
   try {
-    // Busca todos os itens vendidos (agrupando por produto)
+    // Filtro por data (timestamp em ms)
+    const start = req.query.start ? Number(req.query.start) : null;
+    const end = req.query.end ? Number(req.query.end) : null;
+    let where = '';
+    const params: any[] = [];
+    if (start) {
+      where += ' AND s.timestamp >= ?';
+      params.push(start);
+    }
+    if (end) {
+      where += ' AND s.timestamp <= ?';
+      params.push(end);
+    }
     const rows = db.prepare(`
       SELECT 
-        product_id,
-        product_name_snapshot as product_name,
-        SUM(quantity) as total_quantity,
-        SUM(line_total) as total_value
-      FROM sale_items
-      GROUP BY product_id, product_name_snapshot
+        si.product_id,
+        si.product_name_snapshot as product_name,
+        SUM(si.quantity) as total_quantity,
+        SUM(si.line_total) as total_value
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      WHERE 1=1 ${where}
+      GROUP BY si.product_id, si.product_name_snapshot
       ORDER BY total_quantity DESC
-    `).all();
+    `).all(...params);
+    //console de intervalo de datas
+    console.log(`[Sold Products] Filtro de data aplicado: start=${start}, end=${end}`);
     res.json({ products: rows });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao buscar produtos vendidos', details: err.message });

@@ -140,10 +140,40 @@ const Reports: React.FC = () => {
 
 
       {/* Botões para alternar entre Mix(Quadrantes) e Produtos Vendidos Detalhado */}
-      <div className="flex gap-3 mb-6">
-        <Button variant={selectedViewer === 'mixQuadrants' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('mixQuadrants')}>Mix (Quadrantes)</Button>
-        <Button variant={selectedViewer === 'soldProductsDetailed' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('soldProductsDetailed')}>Produtos Vendidos Detalhado</Button>
-        <Button variant={selectedViewer === 'soldProductsResumo' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('soldProductsResumo')}>Resumo Produtos Vendidos</Button>
+      <div className="flex items-center gap-2 mb-6 relative z-10 animate-in fade-in slide-in-from-top-2 duration-400 shrink-0">
+        <button
+          onClick={() => setSelectedViewer('mixQuadrants')}
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+         selectedViewer === 'mixQuadrants'
+           ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+           : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <Layers size={14} />
+          <span className="text-[9px] font-bold uppercase tracking-widest">Mix (Quadrantes)</span>
+        </button>
+        <button
+          onClick={() => setSelectedViewer('soldProductsDetailed')}
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+         selectedViewer === 'soldProductsDetailed'
+           ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+           : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <Download size={14} />
+          <span className="text-[9px] font-bold uppercase tracking-widest">Produtos Vendidos Detalhado</span>
+        </button>
+        <button
+          onClick={() => setSelectedViewer('soldProductsResumo')}
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+         selectedViewer === 'soldProductsResumo'
+           ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+           : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <Filter size={14} />
+          <span className="text-[9px] font-bold uppercase tracking-widest">Resumo Produtos Vendidos</span>
+        </button>
       </div>
 
       {/* Renderização condicional do componente selecionado */}

@@ -53,6 +53,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
 
     fetchProductMix(now - THIRTY_DAYS, now)
       .then((data) => {
+        console.log("Dados recebidos para Product Mix:", data);
         const pts: ProductPoint[] = data.map((p: any, i: number) => ({
           x: p.frequency,
           y: p.total_quantity,
@@ -122,29 +123,29 @@ const ProductMixQuadrantsTab: React.FC = () => {
         ctx.stroke();
 
         // Rótulos dos quadrantes
-        ctx.font = "14px sans-serif";
+        ctx.font = "11px 'Inter', 'Roboto', 'Arial', sans-serif";
         ctx.fillStyle = "#b388ff";
         ctx.fillText(
           "Venda pontual / oportunidade",
           chartArea.left + 10,
-          chartArea.top + 20
+          chartArea.top + 16
         );
         ctx.fillText(
           "Parados / abaixo da média",
           chartArea.left + 10,
-          chartArea.bottom - 10
+          chartArea.bottom - 8
         );
 
         ctx.fillStyle = "#66f3ff";
         ctx.fillText(
           "Reposição prior.",
-          chartArea.right - 150,
-          chartArea.top + 20
+          chartArea.right - 120,
+          chartArea.top + 16
         );
         ctx.fillText(
           "Fluxo recorrente",
-          chartArea.right - 150,
-          chartArea.bottom - 10
+          chartArea.right - 120,
+          chartArea.bottom - 8
         );
 
         ctx.restore();
@@ -160,9 +161,9 @@ const ProductMixQuadrantsTab: React.FC = () => {
           data: [{ x: p.x, y: p.y }],
           backgroundColor: p.color,
           borderColor: "#ffffff33",
-          borderWidth: 2,
-          radius: 7,
-          hoverRadius: 10,
+          borderWidth: 1.5,
+          radius: 4,
+          hoverRadius: 6,
         })),
       },
       options: {
@@ -171,6 +172,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
         plugins: {
           legend: { display: false },
           tooltip: {
+            bodyFont: { family: "Inter, Roboto, Arial, sans-serif", size: 11 },
             callbacks: {
               label: (ctx) =>
                 `${points[ctx.datasetIndex].label} — Freq: ${ctx.parsed.x}, Vol: ${ctx.parsed.y}`,
@@ -182,24 +184,30 @@ const ProductMixQuadrantsTab: React.FC = () => {
             min: minX,
             max: maxX,
             grid: { color: "#ffffff15" },
-            ticks: { color: "#66f3ff" },
+            ticks: {
+              color: "#66f3ff",
+              font: { family: "Inter, Roboto, Arial, sans-serif", size: 11 },
+            },
             title: {
               display: true,
               text: "Frequência (nº vendas)",
               color: "#66f3ff",
-              font: { weight: "bold" },
+              font: { weight: "bold", family: "Inter, Roboto, Arial, sans-serif", size: 12 },
             },
           },
           y: {
             min: minY,
             max: maxY,
             grid: { color: "#ffffff15" },
-            ticks: { color: "#b388ff" },
+            ticks: {
+              color: "#b388ff",
+              font: { family: "Inter, Roboto, Arial, sans-serif", size: 11 },
+            },
             title: {
               display: true,
               text: "Volume (unidades)",
               color: "#b388ff",
-              font: { weight: "bold" },
+              font: { weight: "bold", family: "Inter, Roboto, Arial, sans-serif", size: 12 },
             },
           },
         },
@@ -218,7 +226,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
 
   return (
     <div
-      className="w-full max-w-2xl mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center overflow-x-auto"
+      className="w-full max-w-2xl mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-2 flex flex-col items-center overflow-x-auto"
       style={{ minHeight: 320 }}
     >
       <div

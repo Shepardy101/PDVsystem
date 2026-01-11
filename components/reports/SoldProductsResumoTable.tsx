@@ -1,4 +1,9 @@
+
+// Troque para false para usar a API real
+const USE_MOCK = true;
+
 import React, { useEffect, useState, useMemo } from "react";
+import { soldProductsMock, SoldProductMock } from "./SoldProductsDetailedTable.mock";
 
 interface ProductResumo {
   product_id: string;
@@ -9,15 +14,72 @@ interface ProductResumo {
   stock_on_hand: number;
 }
 
+
 const SoldProductsResumoTable: React.FC = () => {
   const [products, setProducts] = useState<ProductResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Filtros de data
+  const [dateFilter, setDateFilter] = useState<'30' | '60' | '90' | 'all' | 'custom'>('30');
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
+  // Estados temporários para edição do filtro personalizado
+  const [pendingCustomStart, setPendingCustomStart] = useState<string>('');
+  const [pendingCustomEnd, setPendingCustomEnd] = useState<string>('');
+
   useEffect(() => {
     setLoading(true);
+    let startDate: number | null = null;
+    let endDate: number | null = null;
+    const now = Date.now();
+    if (dateFilter === '30') startDate = now - 1000 * 60 * 60 * 24 * 30;
+    else if (dateFilter === '60') startDate = now - 1000 * 60 * 60 * 24 * 60;
+    else if (dateFilter === '90') startDate = now - 1000 * 60 * 60 * 24 * 90;
+    else if (dateFilter === 'custom' && customStart && customEnd) {
+      startDate = new Date(customStart).getTime();
+      endDate = new Date(customEnd).getTime() + 1000 * 60 * 60 * 24 - 1;
+    }
+
+    if (USE_MOCK) {
+      // Filtra e consolida os dados do mock
+      let filtered: SoldProductMock[] = soldProductsMock;
+      if (startDate && endDate) {
+        filtered = soldProductsMock.filter(p => p.sale_date >= startDate! && p.sale_date <= endDate!);
+      } else if (startDate) {
+        filtered = soldProductsMock.filter(p => p.sale_date >= startDate!);
+      } else if (endDate) {
+        filtered = soldProductsMock.filter(p => p.sale_date <= endDate!);
+      }
+      // Consolida por produto
+      const resumoMap: Record<string, ProductResumo> = {};
+      filtered.forEach((p) => {
+        if (!resumoMap[p.product_id]) {
+          resumoMap[p.product_id] = {
+            product_id: p.product_id,
+            product_name: p.product_name,
+            cost_price: p.cost_price,
+            total_quantity: 0,
+            total_value: 0,
+            stock_on_hand: p.stock_on_hand,
+          };
+        }
+        resumoMap[p.product_id].total_quantity += p.total_quantity;
+        resumoMap[p.product_id].total_value += p.total_value;
+      });
+      setProducts(Object.values(resumoMap));
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // --- API REAL ---
+    const params = [];
+    if (startDate) params.push(`start=${startDate}`);
+    if (endDate) params.push(`end=${endDate}`);
+    const soldUrl = '/api/report/sold-products' + (params.length ? `?${params.join('&')}` : '');
     Promise.all([
-      fetch('/api/report/sold-products').then(res => res.json()),
+      fetch(soldUrl).then(res => res.json()),
       fetch('/api/products?limit=1000').then(res => res.json())
     ])
       .then(([soldData, productsData]) => {
@@ -28,19 +90,28 @@ const SoldProductsResumoTable: React.FC = () => {
             stock_on_hand: prod.stock_on_hand ?? prod.stock ?? prod.estoque ?? 0,
           };
         });
-        const resumo: ProductResumo[] = (soldData.products || []).map((p: any) => ({
-          product_id: p.product_id,
-          product_name: p.product_name,
-          cost_price: productsMap[p.product_id]?.cost_price ?? 0,
-          total_quantity: p.total_quantity,
-          total_value: p.total_value,
-          stock_on_hand: productsMap[p.product_id]?.stock_on_hand ?? 0,
-        }));
-        setProducts(resumo);
+        // Consolidação dos produtos vendidos no período selecionado
+        const resumoMap: Record<string, ProductResumo> = {};
+        (soldData.products || []).forEach((p: any) => {
+          if (!resumoMap[p.product_id]) {
+            resumoMap[p.product_id] = {
+              product_id: p.product_id,
+              product_name: p.product_name,
+              cost_price: productsMap[p.product_id]?.cost_price ?? 0,
+              total_quantity: 0,
+              total_value: 0,
+              stock_on_hand: productsMap[p.product_id]?.stock_on_hand ?? 0,
+            };
+          }
+          resumoMap[p.product_id].total_quantity += p.total_quantity;
+          resumoMap[p.product_id].total_value += p.total_value;
+        });
+        setProducts(Object.values(resumoMap));
+        setError(null);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [dateFilter, customStart, customEnd]);
 
   // Ordenação dos cabeçalhos
     const [sort, setSort] = useState<{ key: keyof ProductResumo, direction: 'asc' | 'desc' }>({ key: 'total_value', direction: 'desc' });
@@ -76,7 +147,54 @@ const SoldProductsResumoTable: React.FC = () => {
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
       </div>
-      <div className="text-xs text-slate-400 font-mono mb-2">Resumo de Produtos Vendidos</div>
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="text-xs text-slate-400 font-mono">Resumo de Produtos Vendidos</div>
+        <div className="flex gap-1 flex-wrap">
+          {['30', '60', '90', 'all', 'custom'].map((key) => (
+            <button
+              key={key}
+              className={[
+                'px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all',
+                dateFilter === key ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent',
+              ].join(' ')}
+              onClick={() => setDateFilter(key as any)}
+            >
+              {key === '30' && '30d'}
+              {key === '60' && '60d'}
+              {key === '90' && '90d'}
+              {key === 'all' && 'All'}
+              {key === 'custom' && 'Personalizado'}
+            </button>
+          ))}
+        </div>
+      </div>
+      {dateFilter === 'custom' && (
+        <div className="flex gap-2 items-center mb-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <input
+            type="date"
+            value={pendingCustomStart}
+            onChange={e => setPendingCustomStart(e.target.value)}
+            className="px-2 py-1 rounded border border-accent/30 bg-dark-950/60 text-xs text-slate-200"
+          />
+          <span className="text-xs text-slate-400">até</span>
+          <input
+            type="date"
+            value={pendingCustomEnd}
+            onChange={e => setPendingCustomEnd(e.target.value)}
+            className="px-2 py-1 rounded border border-accent/30 bg-dark-950/60 text-xs text-slate-200"
+          />
+          <button
+            className="ml-2 px-3 py-1 rounded-lg bg-accent text-white text-xs font-bold shadow hover:bg-accent/80 transition-all"
+            onClick={() => {
+              setCustomStart(pendingCustomStart);
+              setCustomEnd(pendingCustomEnd);
+            }}
+            disabled={!pendingCustomStart || !pendingCustomEnd}
+          >
+            OK
+          </button>
+        </div>
+      )}
       <div className="relative rounded-2xl border border-white/10 bg-dark-900/30 overflow-hidden">
     
         <div
