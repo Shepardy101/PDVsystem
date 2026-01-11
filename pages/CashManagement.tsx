@@ -4,6 +4,7 @@ import CashSalesBreakdown from '../components/CashSalesBreakdown';
 import { fetchSessionTransactions } from '../utils/transactions';
 import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
+import AdminPasswordModal from '../components/AdminPasswordModal';
 
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -61,6 +62,8 @@ const CashManagement: React.FC = () => {
    const [cashSessionDetailsId, setCashSessionDetailsId] = useState<string | null>(null);
 
    const [error, setError] = useState<string>('');
+
+   const [showAdminPasswordModal, setShowAdminPasswordModal] = useState<'' | 'suprimento' | 'sangria' | 'pagamento'>("");
 
    // Buscar vendas e movimentações da sessão de caixa aberta
    const fetchAndSetSessionTransactions = useCallback(async () => {
@@ -262,6 +265,16 @@ const CashManagement: React.FC = () => {
             </div>
          </div>
       );
+   }
+
+   function handleOpenProtectedModal(type: 'suprimento' | 'sangria' | 'pagamento') {
+      setShowAdminPasswordModal(type);
+   }
+   function handleAdminPasswordSuccess() {
+      if (showAdminPasswordModal === 'suprimento') setIsSuprimentoModalOpen(true);
+      if (showAdminPasswordModal === 'sangria') setIsSangriaModalOpen(true);
+      if (showAdminPasswordModal === 'pagamento') setIsPagamentoModalOpen(true);
+      setShowAdminPasswordModal("");
    }
 
    return (
@@ -497,13 +510,13 @@ const CashManagement: React.FC = () => {
                      <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 animate-in fade-in slide-in-from-right-4 duration-700 overflow-y-auto lg:overflow-visible custom-scrollbar">
                         <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 px-2 shrink-0">Comandos</h2>
                         <div className="flex flex-col gap-3 shrink-0">
-                           <Button variant="secondary" onClick={() => setIsSuprimentoModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-blue-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowDownLeft className="text-blue-400 group-hover:-translate-y-1 transition-transform" size={18} />}>
+                           <Button variant="secondary" onClick={() => handleOpenProtectedModal('suprimento')} className="justify-start py-4 px-5 border-white/5 hover:border-blue-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowDownLeft className="text-blue-400 group-hover:-translate-y-1 transition-transform" size={18} />}>
                               <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Suprimento</p></div>
                            </Button>
-                           <Button variant="secondary" onClick={() => setIsSangriaModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-red-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowUpRight className="text-red-400 group-hover:translate-y-1 transition-transform" size={18} />}>
+                           <Button variant="secondary" onClick={() => handleOpenProtectedModal('sangria')} className="justify-start py-4 px-5 border-white/5 hover:border-red-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowUpRight className="text-red-400 group-hover:translate-y-1 transition-transform" size={18} />}>
                               <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Sangria</p></div>
                            </Button>
-                           <Button variant="secondary" onClick={() => setIsPagamentoModalOpen(true)} className="justify-start py-4 px-5 border-white/5 hover:border-amber-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<FileText className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />}>
+                           <Button variant="secondary" onClick={() => handleOpenProtectedModal('pagamento')} className="justify-start py-4 px-5 border-white/5 hover:border-amber-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<FileText className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />}>
                               <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Pagamento</p></div>
                            </Button>
                         </div>
@@ -1025,7 +1038,134 @@ const CashManagement: React.FC = () => {
                   {/* Rodapé do Modal */}
                   <div className="flex gap-4 pt-4 border-t border-white/5">
                      <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => setSelectedTx(null)}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => setIsReceiptPreviewOpen(true)}>Visualizar Recibo</Button>
+                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={handlePrint}>Gerar PDF Consolidado</Button>
+                  </div>
+               </div>
+            )}
+         </Modal>
+
+         {/* TRANSACTION DETAIL MODAL */}
+         <Modal
+            isOpen={!!selectedTx && !isReceiptPreviewOpen}
+            onClose={() => setSelectedTx(null)}
+            title="Auditoria de Movimentação Transacional"
+            size="lg"
+         >
+            {selectedTx && (
+               <div className="space-y-8 animate-in zoom-in-95 duration-200">
+                                {console.log('Selected transaction for detail modal:', selectedTx)}
+
+                  {/* Card de Cabeçalho com Valor e Tipo */}
+                  <div className="flex items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 shadow-inner">
+                     <div className="flex items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-white/2 text-accent border border-white/5 flex items-center gap-1">
+                           <ArrowUpDown size={16} />
+                           
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Natureza</p>
+                              <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">
+                                {Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0
+                                  ? 'Venda'
+                                  : selectedTx.type}
+                              </h3>
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vlr Líquido</p>
+                        <h3 className={`text-3xl font-mono font-bold ${selectedTx.type === 'sangria' || selectedTx.type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>
+                           {(() => {
+                              if (selectedTx.type === 'sale' || (selectedTx.items && Array.isArray(selectedTx.items) && selectedTx.items.length > 0)) {
+                                 // Para vendas, mostrar total - desconto
+                                 const total = typeof selectedTx.total === 'number' ? selectedTx.total : 0;
+                                 return `+ R$ ${((total) / 100).toFixed(2)}`;
+                              }
+                              else if (selectedTx.type === 'suprimento') {
+                                 return `+ R$ ${typeof selectedTx.amount === 'number' ? (selectedTx.amount / 100).toFixed(2) : '0.00'}`;
+                              }
+                              else if (selectedTx.type === 'sangria' || selectedTx.type === 'pagamento') {
+                                 return `- R$ ${typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}`;
+                              }
+                              return `+ R$ ${typeof selectedTx.amount === 'number' ? selectedTx.amount.toFixed(2) : '0.00'}`;
+                           })()}
+                        </h3>
+                     </div>
+                  </div>
+
+                  {/* Seção completa de venda */}
+                  {selectedTx.items && selectedTx.items.length > 0 && selectedTx.payments.length > 0 ? (
+                     <div className="space-y-6">
+                        <div className="p-6 bg-dark-950/80 rounded-2xl border-2 border-dashed border-white/5 space-y-4">
+                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 border-b border-white/5 pb-2">Produtos Vendidos</h4>
+                           {selectedTx.items && Array.isArray(selectedTx.items) && selectedTx.items.length > 0 ? (
+                              <div className="space-y-1">
+                                 {selectedTx.items.map((item: any, idx: number) => (
+                                    <div key={idx} className="flex justify-between items-center text-sm font-mono">
+                                       <span className="text-slate-400"><span className="text-accent">{item.quantity}x</span> {item.product_name_snapshot}</span>
+                                       <span className="text-slate-200">R$ {typeof item.line_total === 'number' ? (item.line_total / 100).toFixed(2) : '0.00'}</span>
+                                    </div>
+                                 ))}
+                              </div>
+                           ) : (
+                              <p className="text-[10px] text-slate-600 uppercase italic">Nenhum produto vinculado a esta venda.</p>
+                           )}
+                           <div className="pt-4 border-t border-white/5 flex flex-col gap-2 font-bold">
+
+                              <div className="flex justify-between text-xs">
+                                 <span>Descontos Aplicados:</span>
+                                 <span className="text-red-400">- R$ {typeof selectedTx.discount_total === 'number' ? (selectedTx.discount_total / 100).toFixed(2) : '0.00'}</span>
+                              </div>
+                              <div className="flex flex-col gap-1 mt-2">
+                                 <span className="text-xs font-bold text-slate-400">Método de Pagamento:</span>
+                                 {selectedTx.payments && Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0 ? (
+                                    selectedTx.payments.map((pay: any, idx: number) => (
+                                       <span key={idx} className="text-xs text-slate-300">{pay.method}: R$ {typeof pay.amount === 'number' ? (pay.amount / 100).toFixed(2) : '0.00'}</span>
+                                    ))
+                                 ) : (
+                                    <span className="text-xs text-slate-300">Não informado</span>
+                                 )}
+                              </div>
+                              <div className="flex flex-col gap-1 mt-2">
+                                 <span className="text-xs font-bold text-slate-400">Operador Responsável:</span>
+                                 <span className="text-xs text-slate-300">
+                                    {selectedTx.metadata?.operator
+                                       || operatorName
+                                       || session?.operator
+                                       || 'Não informado'}
+                                 </span>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  ) : (
+                     /* Seção para Outras Movimentações (Sangria, Suprimento, Pagamento) */
+                     <div className="space-y-6">
+                        <div className="p-6 bg-dark-950/50 rounded-2xl border border-white/5 space-y-3">
+                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Justificativa Operacional</p>
+                           <p className="text-xs text-slate-300 leading-relaxed italic">"{selectedTx.description}"</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="p-4 bg-white/2 rounded-xl border border-white/5">
+                              <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Autorizado por</p>
+                              <p className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                 <Shield size={12} className="text-accent" /> {selectedTx.metadata?.operator || 'Admin'}
+                              </p>
+                           </div>
+                           <div className="p-4 bg-white/2 rounded-xl border border-white/5">
+                              <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Alocação / Categoria</p>
+                              <p className="text-xs font-bold text-slate-300 flex items-center gap-2 uppercase tracking-tighter">
+                                 <Tag size={12} className="text-accent" /> {selectedTx.category || 'Operacional'}
+                              </p>
+                           </div>
+                        </div>
+                     </div>
+                  )}
+
+                  {/* Rodapé do Modal */}
+                  <div className="flex gap-4 pt-4 border-t border-white/5">
+                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => setSelectedTx(null)}>Fechar Auditoria</Button>
+                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={handlePrint}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
@@ -1160,6 +1300,12 @@ const CashManagement: React.FC = () => {
                </div>
             </div>
          </Modal>
+
+         <AdminPasswordModal
+            isOpen={!!showAdminPasswordModal}
+            onClose={() => setShowAdminPasswordModal("")}
+            onSuccess={handleAdminPasswordSuccess}
+         />
       </div>
    );
 };

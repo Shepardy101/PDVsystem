@@ -1,1 +1,1 @@
-ALTER TABLE users ADD COLUMN password TEXT;
+-- REMOVIDO: Coluna password já existe na tabela users.

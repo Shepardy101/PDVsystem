@@ -10,9 +10,11 @@ import { cashHistoryRouter } from './routes/cash.history.routes';
 import { categoryRouter } from './routes/category.routes';
 import { userRouter } from './routes/user.routes';
 import { clientRouter } from './routes/user.routes';
+
 import supplierRouter from './routes/supplier.routes';
 import reportRouter from './routes/report.routes';
 import reportsRouter from './routes/reports.routes';
+import settingsRouter from './routes/settings.routes';
 
 const app = express();
 // Servir arquivos da pasta public/uploads
@@ -38,6 +40,7 @@ app.use('/api/suppliers', supplierRouter);
 
 
 app.use('/api/cash', cashRouter);
+app.use('/api/settings', settingsRouter);
 app.use('/api/cash', cashHistoryRouter);
 app.use('/api/pos', posRouter);
 app.use('/api/report', reportRouter);

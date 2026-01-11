@@ -41,7 +41,7 @@ function validateColumns(table: string, columns: string[]) {
 }
 
 export function listTables() {
-	const rows = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`).all();
+	const rows = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND (name NOT LIKE 'sqlite_%' OR name = 'settings')`).all();
 	return rows.map((r: any) => ({
 		name: r.name,
 		rowCount: (db.prepare(`SELECT COUNT(*) as cnt FROM "${r.name}"`).get() as { cnt: number }).cnt,
