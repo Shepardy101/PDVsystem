@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useRef, useState } from "react";
 import { fetchProductMix } from "../../services/reports";
 import {
@@ -225,26 +223,18 @@ const ProductMixQuadrantsTab: React.FC = () => {
   if (error) return <div className="text-xs text-red-400">Erro: {error}</div>;
 
   return (
-    <div
-      className="w-full h-full mx-auto bg-dark-900/40 border border-white/10 rounded-xl p-2 flex flex-col items-center overflow-x-auto  max-h-[calc(75vh-220px)]"
-      style={{ minHeight: 320 }}
-    >
-      <div
-        className="w-full h-full flex-1 flex items-center justify-center"
-        style={{ minHeight: 220, height: '100%' }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "block",
-            maxWidth: "100%",
-            maxHeight: "100%",
-            objectFit: "contain",
-          }}
-        />
-      </div>
+    <div className="w-full flex-1 h-full min-h-0 flex flex-col items-center justify-center bg-dark-900/40 border border-white/10 rounded-xl p-2">
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          minHeight: 0,
+          minWidth: 0,
+          display: 'block',
+          objectFit: 'contain',
+        }}
+      />
     </div>
   );
 };

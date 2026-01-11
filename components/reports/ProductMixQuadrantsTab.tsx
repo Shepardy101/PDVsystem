@@ -63,7 +63,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
   }
 
   return (
-    <div className="glass-card p-4 rounded-2xl  border border-cyan-700/30 shadow-lg bg-dark-900/50 animate-in fade-in slide-in-from-bottom-6 ">
+    <div className="glass-card p-4 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/50 animate-in fade-in slide-in-from-bottom-6 flex flex-col flex-1 h-full min-h-0">
       {/* Intervalo de datas e botão tabela */}
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6 w-full justify-between">
         <div className="flex gap-2 flex-wrap">
@@ -93,9 +93,9 @@ const ProductMixQuadrantsTab: React.FC = () => {
           </button>
         </div>
       </div>
-      <div className="w-full h-full ">
+      <div className="w-full flex-1 h-full min-h-0">
         {!showTable ? (
-          <div className="w-full h-full ">
+          <div className="w-full flex-1 h-full min-h-0">
             {loading && <FuturisticSpinner />}
             {error && <div className="text-red-400">{error}</div>}
             {!loading && !error && data.length === 0 && (
@@ -110,7 +110,7 @@ const ProductMixQuadrantsTab: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="w-full h-full">
+          <div className="w-full flex-1 h-full min-h-0">
             {loading && <FuturisticSpinner />}
             {error && <div className="text-red-400">{error}</div>}
             {!loading && !error && data.length > 0 && (

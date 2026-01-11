@@ -1,4 +1,3 @@
-
 // @ts-ignore
 import React, { useState, useMemo, useRef } from 'react';
 import Papa from 'papaparse';
@@ -7,8 +6,13 @@ import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
 import { Product, Category } from '../types';
 import { FeedbackPopup } from '@/components/FeedbackPopup';
+import { useAuth } from '../components/AuthContext';
+import { isOperator } from '../types';
 
 const Products: React.FC = () => {
+   const { user } = useAuth();
+   const isOperatorUser = isOperator(user);
+
    const [searchTerm, setSearchTerm] = useState('');
    const [showImages, setShowImages] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
@@ -544,7 +548,9 @@ const Products: React.FC = () => {
                                              <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Custo</th>
                                              <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Venda</th>
                                              <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque</th>
-                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                                                   {!isOperatorUser && (
+                                                                      <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                                                   )}
                                           </tr>
                                        </thead>
                                        <tbody>
@@ -583,10 +589,12 @@ const Products: React.FC = () => {
                                                       <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
                                                       <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
                                                       <td className={["py-4 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}</td>
-                                                      <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
-                                                         <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
-                                                         <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
-                                                      </td>
+                                                      {!isOperatorUser && (
+                                                        <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
+                                                           <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
+                                                           <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
+                                                        </td>
+                                                      )}
                                                    </tr>
                                                 );
                                              })

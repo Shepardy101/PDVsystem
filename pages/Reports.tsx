@@ -177,7 +177,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Renderização condicional do componente selecionado */}
-      <div className=" flex-1 overflow-hidden">
+      <div className=" flex-1 overflow-hidden ">
         {selectedViewer === 'mixQuadrants' && <ProductMixQuadrantsTab />}
         {selectedViewer === 'soldProductsDetailed' && <SoldProductsDetailedTable />}
         {selectedViewer === 'soldProductsResumo' && <SoldProductsResumoTable />}
