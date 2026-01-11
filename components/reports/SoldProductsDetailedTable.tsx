@@ -8,6 +8,11 @@ interface SoldProduct {
   sale_date: number;
 }
 
+interface ProductStock {
+  product_id: string;
+  stock: number;
+}
+
 function formatDate(epoch: number) {
   const d = new Date(epoch);
   // Exibe data e hora sem segundos
@@ -18,14 +23,25 @@ function formatDate(epoch: number) {
 
 const SoldProductsDetailedTable: React.FC = () => {
   const [products, setProducts] = useState<SoldProduct[]>([]);
+  const [stocks, setStocks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/report/sold-products-detailed')
-      .then(res => res.json())
-      .then(data => setProducts(data.products || []))
+    Promise.all([
+      fetch('/api/report/sold-products-detailed').then(res => res.json()),
+      fetch('/api/products?limit=1000').then(res => res.json())
+    ])
+      .then(([soldData, productsData]) => {
+        setProducts(soldData.products || []);
+        // Monta um mapa de estoque por product_id
+        const stockMap: Record<string, number> = {};
+        (productsData.items || []).forEach((prod: any) => {
+          stockMap[prod.id] = prod.stock_on_hand ?? prod.stock ?? prod.estoque ?? 0;
+        });
+        setStocks(stockMap);
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -38,24 +54,26 @@ const SoldProductsDetailedTable: React.FC = () => {
       <div className="text-xs text-slate-400 font-mono mb-2">Produtos Vendidos (detalhado):</div>
       <div className="w-full overflow-x-auto" style={{ maxHeight: '60vh', minHeight: '120px' }}>
         <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-          <table className="min-w-[600px] w-full max-w-full text-xs text-left text-white border-separate border-spacing-0">
+          <table className="min-w-[700px] w-full max-w-full text-xs text-left text-white border-separate border-spacing-0">
             <thead>
               <tr className="border-b border-white/10">
                 <th className="py-1 px-2 sticky left-0 bg-dark-900/80 z-10">Data da Venda</th>
                 <th className="py-1 px-2">Produto</th>
                 <th className="py-1 px-2">Quantidade</th>
+                <th className="py-1 px-2">Estoque Restante</th>
                 <th className="py-1 px-2">Valor Total</th>
               </tr>
             </thead>
             <tbody>
               {products.length === 0 ? (
-                <tr><td colSpan={4} className="text-slate-400 py-2">Nenhum produto vendido.</td></tr>
+                <tr><td colSpan={5} className="text-slate-400 py-2">Nenhum produto vendido.</td></tr>
               ) : (
                 products.map((p, i) => (
                   <tr key={p.product_id + '-' + i} className="border-b border-white/5">
                     <td className="py-1 px-2 whitespace-nowrap">{formatDate(p.sale_date)}</td>
                     <td className="py-1 px-2 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">{p.product_name}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{p.total_quantity}</td>
+                    <td className="py-1 px-2 whitespace-nowrap">{stocks[p.product_id] ?? '-'}</td>
                     <td className="py-1 px-2 whitespace-nowrap">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                   </tr>
                 ))
