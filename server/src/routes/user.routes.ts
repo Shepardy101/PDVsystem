@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { createUser, listUsers, updateUser, deleteUser, findUserByEmail } from '../repositories/user.repo';
-import { db } from '../db/database';
+
 
 import { createClient, listClients, updateClient, deleteClient } from '../repositories/client.repo';
 import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../repositories/supplier.repo';
+import db from '../db/database';
 
 export const userRouter = Router();
 export const clientRouter = Router();
@@ -31,9 +32,7 @@ userRouter.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email e senha obrigatórios' });
     }
-    const user = await findUserByEmail(email) as { id: string, name: string, email: string, password: string } | undefined;
-    console.log('[LOGIN] Email recebido:', email);
-    console.log('[LOGIN] Senha recebida:', password);
+    const user = await findUserByEmail(email) as { id: string, name: string, email: string, password: string, role?: string, status?: string } | undefined;
     if (user) {
       console.log('[LOGIN] Senha salva no banco:', user.password);
     } else {
@@ -45,7 +44,7 @@ userRouter.post('/login', async (req, res) => {
     }
     // Retorna dados básicos do usuário
     console.log('[LOGIN] Autenticação bem-sucedida para:', email);
-    res.json({ id: user.id, name: user.name, email: user.email });
+    res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
   } catch (e: any) {
     res.status(500).json({ error: 'Erro ao autenticar', details: e?.message || String(e) });
   }

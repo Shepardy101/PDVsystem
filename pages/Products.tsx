@@ -12,7 +12,7 @@ import { isOperator } from '../types';
 const Products: React.FC = () => {
    const { user } = useAuth();
    const isOperatorUser = isOperator(user);
-
+   console.log('isOperatorUser:', isOperatorUser);
    const [searchTerm, setSearchTerm] = useState('');
    const [showImages, setShowImages] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
@@ -366,28 +366,34 @@ const Products: React.FC = () => {
             </div>
 
             {/* Botão temporário para deletar todos os produtos */}
-            <div className="mt-6 flex justify-end">
-               <Button
-                  variant="danger"
-                  className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
-                  onClick={async () => {
+            {!isOperatorUser && (
+               <div className="mt-6 flex justify-end">
+                 <Button
+                   variant="danger"
+                   className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
+                   onClick={async () => {
                      if (!window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) return;
                      try {
                         const res = await fetch('/api/products', { method: 'DELETE' });
                         if (res.ok) {
-                           setProducts([]);
-                           showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
+                          setProducts([]);
+                          showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
                         } else {
-                           showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
+                          showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
                         }
                      } catch {
                         showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
                      }
-                  }}
-               >
-                  Excluir TODOS os produtos (TESTE)
-               </Button>
-            </div>
+                   }}
+                 >
+                   Excluir TODOS os produtos (TESTE)
+                 </Button>
+               </div>
+            )}
+
+
+
+
             <div className="flex items-center gap-3">
                <div className="flex items-center bg-dark-900/50 p-1 rounded-xl border border-white/5 mr-2">
                   <button
@@ -548,15 +554,15 @@ const Products: React.FC = () => {
                                              <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Custo</th>
                                              <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Venda</th>
                                              <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque</th>
-                                                                   {!isOperatorUser && (
-                                                                      <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
-                                                                   )}
+                                             {!isOperatorUser && (
+                                                <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                             )}
                                           </tr>
                                        </thead>
                                        <tbody>
                                           {filtered.length === 0 ? (
                                              <tr>
-                                                <td colSpan={5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto encontrado.</td>
+                                                <td colSpan={isOperatorUser ? 4 : 5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto encontrado.</td>
                                              </tr>
                                           ) : (
                                              filtered.map((product, i) => {
