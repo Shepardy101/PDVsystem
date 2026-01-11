@@ -98,6 +98,7 @@ const SalesJsonViewer: React.FC = () => {
 import { Button } from '@/components/UI';
 import { Calendar, Download, Filter, Layers } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
+import ProductMixQuadrantsTab from '@/components/reports/ProductMixQuadrantsTab';
 
 // Componente para exibir movimentações em JSON
 const MovementsJsonViewer: React.FC = () => {
@@ -133,7 +134,7 @@ const Reports: React.FC = () => {
 
 
   // Estado para alternar entre os componentes
-  const [selectedViewer, setSelectedViewer] = useState<'movements' | 'sales' | 'products' | 'allProducts'>('movements');
+  const [selectedViewer, setSelectedViewer] = useState<'movements' | 'sales' | 'products' | 'allProducts' | 'mixQuadrants'>('movements');
 
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
@@ -153,6 +154,7 @@ const Reports: React.FC = () => {
           <Button variant="secondary" onClick={() => setIsFilterOpen(true)} icon={<Filter size={18} />}>Configurar</Button>
           <Button className="shadow-accent-glow" icon={<Download size={18} />}>Exportar Snapshot</Button>
         </div>
+        <Button variant={selectedViewer === 'mixQuadrants' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('mixQuadrants')}>Mix (Quadrantes)</Button>
       </div>
 
       {/* Botões para alternar entre os viewers */}
@@ -169,6 +171,7 @@ const Reports: React.FC = () => {
         {selectedViewer === 'sales' && <SalesJsonViewer />}
         {selectedViewer === 'products' && <ProductsSoldJsonViewer />}
         {selectedViewer === 'allProducts' && <AllProductsJsonViewer />}
+        {selectedViewer === 'mixQuadrants' && <ProductMixQuadrantsTab />}
       </div>
 
 
