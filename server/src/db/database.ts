@@ -11,7 +11,8 @@ console.log('[DB] Usando banco de dados em:', dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
-export const db = new Database(dbPath);
+const db = new Database(dbPath);
+export default db;
 
 // PRAGMA configs
 export function setupPragmas() {

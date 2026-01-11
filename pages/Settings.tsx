@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import DbManager from '../src/renderer/components/adminDb/DbManager';
 import { 
   Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe, 
   Lock, RefreshCcw, Bell, HardDrive, Wifi, Terminal, Zap, 
@@ -9,7 +10,8 @@ import {
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
 
 const Settings: React.FC = () => {
-  const [logs, setLogs] = useState<{time: string, event: string, level: 'info' | 'warn' | 'error'}[]>([]);
+   const [logs, setLogs] = useState<{time: string, event: string, level: 'info' | 'warn' | 'error'}[]>([]);
+   const [showDbManager, setShowDbManager] = useState(false);
   
   // Simular feed de logs técnicos
   useEffect(() => {
@@ -52,8 +54,25 @@ const Settings: React.FC = () => {
     </div>
   );
 
-  return (
-    <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+   return (
+      <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+         {/* Modal DB Manager */}
+         {showDbManager && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center animate-in fade-in">
+               <div className="relative w-full h-full max-w-7xl max-h-[98vh] bg-dark-950 rounded-3xl shadow-2xl border border-accent/30 overflow-hidden flex flex-col">
+                  <div className="flex items-center justify-between p-4 border-b border-white/10 bg-dark-950/80">
+                     <h2 className="text-lg font-bold text-accent flex items-center gap-2">
+                        <span className="bg-accent/10 rounded-lg p-1"><Database size={18} /></span>
+                        Gerenciador de Banco de Dados
+                     </h2>
+                     <button onClick={() => setShowDbManager(false)} className="text-slate-400 hover:text-accent transition-colors text-xs font-bold px-3 py-1 rounded-lg border border-white/10">Fechar</button>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                     <DbManager />
+                  </div>
+               </div>
+            </div>
+         )}
       {/* Header Estilo Mission Control */}
       <div className="flex items-center justify-between shrink-0 mb-8 relative z-10">
         <div>
@@ -64,7 +83,10 @@ const Settings: React.FC = () => {
              Configurações de Baixo Nível e Auditoria do Kernel v3.1
           </p>
         </div>
-        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
+               <Button variant="secondary" icon={<Database size={18} />} onClick={() => setShowDbManager(true)}>
+                  DB Manager
+               </Button>
            <div className="flex items-center gap-2 px-4 py-2 bg-dark-900/60 border border-white/5 rounded-full backdrop-blur-md">
               <Server size={14} className="text-accent" />
               <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Instance: US-EAST-01</span>

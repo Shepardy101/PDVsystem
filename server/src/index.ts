@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { healthRouter } from './routes/health.routes';
+import adminDbRouter from './routes/adminDb.routes';
 import { productRouter } from './routes/product.routes';
 import { posRouter } from './routes/pos.routes';
 import { cashRouter } from './routes/cash.routes';
@@ -21,8 +22,12 @@ const PORT = Number(process.env.PORT) || 8787;
 app.use(cors());
 app.use(express.json());
 
+
 // Health check
 app.use('/api/health', healthRouter);
+
+// DB Manager admin
+app.use('/api/admin-db', adminDbRouter);
 
 
 app.use('/api/categories', categoryRouter);
