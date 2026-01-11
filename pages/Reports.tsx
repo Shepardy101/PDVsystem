@@ -99,8 +99,10 @@ import { Button } from '@/components/UI';
 import { Calendar, Download, Filter, Layers } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
 
+
 import ProductMixQuadrantsTab from '@/components/reports/ProductMixQuadrantsTab';
 import SoldProductsDetailedTable from '@/components/reports/SoldProductsDetailedTable';
+import SoldProductsResumoTable from '@/components/reports/SoldProductsResumoTable';
 
 
 
@@ -113,7 +115,7 @@ const Reports: React.FC = () => {
 
 
   // Estado para alternar entre os componentes
-  const [selectedViewer, setSelectedViewer] = useState<'mixQuadrants' | 'soldProductsDetailed'>('mixQuadrants');
+  const [selectedViewer, setSelectedViewer] = useState<'mixQuadrants' | 'soldProductsDetailed' | 'soldProductsResumo'>('mixQuadrants');
 
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
@@ -141,12 +143,14 @@ const Reports: React.FC = () => {
       <div className="flex gap-3 mb-6">
         <Button variant={selectedViewer === 'mixQuadrants' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('mixQuadrants')}>Mix (Quadrantes)</Button>
         <Button variant={selectedViewer === 'soldProductsDetailed' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('soldProductsDetailed')}>Produtos Vendidos Detalhado</Button>
+        <Button variant={selectedViewer === 'soldProductsResumo' ? 'primary' : 'secondary'} onClick={() => setSelectedViewer('soldProductsResumo')}>Resumo Produtos Vendidos</Button>
       </div>
 
       {/* Renderização condicional do componente selecionado */}
       <div>
         {selectedViewer === 'mixQuadrants' && <ProductMixQuadrantsTab />}
         {selectedViewer === 'soldProductsDetailed' && <SoldProductsDetailedTable />}
+        {selectedViewer === 'soldProductsResumo' && <SoldProductsResumoTable />}
       </div>
 
 
