@@ -16,7 +16,15 @@ const TablesSidebar: React.FC<Props> = ({ selected, onSelect, onQuery }) => {
 
 	useEffect(() => {
 		setLoading(true);
-		listTables().then(setTables).finally(() => setLoading(false));
+		listTables()
+			.then(tabs => {
+				console.log('[DBManager] TablesSidebar recebeu:', tabs);
+				setTables(tabs);
+			})
+			.catch(err => {
+				console.error('[DBManager] Erro ao carregar tabelas no TablesSidebar:', err);
+			})
+			.finally(() => setLoading(false));
 	}, []);
 
 	return (

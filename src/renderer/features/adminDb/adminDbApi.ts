@@ -20,9 +20,20 @@ function buildQuery(params: Record<string, any>) {
 }
 
 export async function listTables() {
-	const res = await fetch(BASE + '/tables');
-	if (!res.ok) throw new Error('Erro ao listar tabelas');
-	return res.json();
+	try {
+		console.log('[DBManager] Buscando tabelas em', BASE + '/tables');
+		const res = await fetch(BASE + '/tables');
+		if (!res.ok) {
+			console.error('[DBManager] Erro HTTP ao listar tabelas:', res.status, res.statusText);
+			throw new Error('Erro ao listar tabelas');
+		}
+		const data = await res.json();
+		console.log('[DBManager] Tabelas recebidas:', data);
+		return data;
+	} catch (err) {
+		console.error('[DBManager] Falha ao buscar tabelas:', err);
+		throw err;
+	}
 }
 
 export async function getSchema(table: string) {
