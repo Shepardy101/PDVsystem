@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
+import SystemMonitorCards from '../components/SystemMonitorCards';
 
 const Settings: React.FC = () => {
    const { user } = useAuth();
@@ -65,6 +66,10 @@ const Settings: React.FC = () => {
 
    return (
       <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+         {/* Cards de Monitoramento do Sistema */}
+         <div className="mb-8">
+           <SystemMonitorCards />
+         </div>
          {/* Modal DB Manager */}
          {showDbManager && (
             <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center animate-in fade-in">

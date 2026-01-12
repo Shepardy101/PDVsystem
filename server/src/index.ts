@@ -15,6 +15,7 @@ import supplierRouter from './routes/supplier.routes';
 import reportRouter from './routes/report.routes';
 import reportsRouter from './routes/reports.routes';
 import settingsRouter from './routes/settings.routes';
+import sysRouter from './routes/sys';
 
 const app = express();
 // Servir arquivos da pasta public/uploads
@@ -45,6 +46,7 @@ app.use('/api/cash', cashHistoryRouter);
 app.use('/api/pos', posRouter);
 app.use('/api/report', reportRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/sys', sysRouter);
 
 // Static serving (prod)
 if (process.env.NODE_ENV === 'production') {
