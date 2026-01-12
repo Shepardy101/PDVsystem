@@ -173,8 +173,9 @@ cashRouter.post('/close', (req, res) => {
 cashRouter.post('/open', (req, res) => {
   try {
     console.log('[CASH] POST /api/cash/open body:', req.body);
-    const { operatorId, initialBalance } = req.body;
-    const session = openCashSession(operatorId, initialBalance);
+    const { operatorId, initialBalance, userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId obrigatório para abrir caixa.' });
+    const session = openCashSession(operatorId, initialBalance, userId);
     console.log('[CASH] Sessão criada:', session);
     res.status(201).json({ session });
   } catch (err: any) {
@@ -186,7 +187,9 @@ cashRouter.post('/open', (req, res) => {
 // Consultar sessão de caixa aberta
 cashRouter.get('/open', (req, res) => {
   try {
-    const session = getOpenCashSession();
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId obrigatório para consultar caixa.' });
+    const session = getOpenCashSession(userId as string);
     if (!session) return res.status(404).json({ error: { code: 'NO_SESSION', message: 'Nenhuma sessão aberta.' } });
     res.json({ session });
   } catch (err: any) {

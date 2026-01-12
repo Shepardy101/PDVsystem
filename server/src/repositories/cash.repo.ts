@@ -144,11 +144,12 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
 }
 
 
-export function openCashSession(operatorId: string, initialBalance: number) {
+export function openCashSession(operatorId: string, initialBalance: number, userId: string) {
   const now = Date.now();
   const session = {
     id: uuidv4(),
     operator_id: operatorId,
+    user_id: userId,
     opened_at: now,
     closed_at: null,
     initial_balance: Math.round(initialBalance * 100),
@@ -159,8 +160,8 @@ export function openCashSession(operatorId: string, initialBalance: number) {
     updated_at: now
   };
   try {
-    const result = db.prepare(`INSERT INTO cash_sessions (id, operator_id, opened_at, closed_at, initial_balance, is_open, physical_count_at_close, difference_at_close, created_at, updated_at)
-      VALUES (@id, @operator_id, @opened_at, @closed_at, @initial_balance, @is_open, @physical_count_at_close, @difference_at_close, @created_at, @updated_at)`).run(session);
+    const result = db.prepare(`INSERT INTO cash_sessions (id, operator_id, user_id, opened_at, closed_at, initial_balance, is_open, physical_count_at_close, difference_at_close, created_at, updated_at)
+      VALUES (@id, @operator_id, @user_id, @opened_at, @closed_at, @initial_balance, @is_open, @physical_count_at_close, @difference_at_close, @created_at, @updated_at)`).run(session);
     console.log('[CASH] INSERT cash_sessions result:', result);
   } catch (err) {
     console.error('[CASH] Falha ao inserir cash_sessions:', err);
@@ -182,8 +183,8 @@ export interface CashSession {
   updated_at: number;
 }
 
-export function getOpenCashSession(): CashSession | undefined {
-  const session = db.prepare('SELECT * FROM cash_sessions WHERE is_open = 1 ORDER BY opened_at DESC LIMIT 1').get();
+export function getOpenCashSession(userId: string): CashSession | undefined {
+  const session = db.prepare('SELECT * FROM cash_sessions WHERE is_open = 1 AND user_id = ? ORDER BY opened_at DESC LIMIT 1').get(userId);
   if (!session) return undefined;
   return session as CashSession;
 }

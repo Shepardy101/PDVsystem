@@ -206,8 +206,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          return;
       }
       setIsLoadingSession(true);
-      console.log('[PDV] Verificando se existe caixa aberto para operador:', operatorId);
-      fetch(`/api/cash/open?operatorId=${operatorId}`)
+      console.log('[PDV] Verificando se existe caixa aberto para usuário:', operatorId);
+      fetch(`/api/cash/open?userId=${operatorId}`)
          .then(async res => {
             if (res.ok) {
                const data = await res.json();
@@ -687,27 +687,27 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                            className="text-center text-3xl font-pdv text-accent bg-dark-950/50"
                            onKeyDown={async (e) => {
                               if (e.key === 'Enter') {
-                                 const value = parseFloat(initialBalance.replace(',', '.')) || 0;
-                                 try {
-                                    const res = await fetch('/api/cash/open', {
-                                       method: 'POST',
-                                       headers: { 'Content-Type': 'application/json' },
-                                       body: JSON.stringify({ operatorId: operatorId || 'operador-1', initialBalance: value })
-                                    });
-                                    if (!res.ok) throw new Error('Erro ao abrir caixa');
-                                    // Confirma se a sessão foi realmente aberta
-                                    const check = await fetch('/api/cash/open');
-                                    const data = await check.json();
-                                    if (data && data.session && data.session.id) {
-                                       onOpenCash(value); // Só libera o PDV se o backend confirmou
-                                       setIsOpeningModalOpen(false);
-                                       setCashSessionId(data.session.id); // Atualiza o estado para mostrar o terminal imediatamente
-                                    } else {
-                                       throw new Error('Sessão de caixa não foi aberta.');
+                                    const value = parseFloat(initialBalance.replace(',', '.')) || 0;
+                                    try {
+                                       const res = await fetch('/api/cash/open', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ operatorId: operatorId || 'operador-1', userId: operatorId || 'operador-1', initialBalance: value })
+                                       });
+                                       if (!res.ok) throw new Error('Erro ao abrir caixa');
+                                       // Confirma se a sessão foi realmente aberta
+                                       const check = await fetch(`/api/cash/open?userId=${operatorId || 'operador-1'}`);
+                                       const data = await check.json();
+                                       if (data && data.session && data.session.id) {
+                                          onOpenCash(value); // Só libera o PDV se o backend confirmou
+                                          setIsOpeningModalOpen(false);
+                                          setCashSessionId(data.session.id); // Atualiza o estado para mostrar o terminal imediatamente
+                                       } else {
+                                          throw new Error('Sessão de caixa não foi aberta.');
+                                       }
+                                    } catch (err) {
+                                       alert('Erro ao abrir caixa. Tente novamente.');
                                     }
-                                 } catch (err) {
-                                    alert('Erro ao abrir caixa. Tente novamente.');
-                                 }
                               }
                            }}
                         />
@@ -719,11 +719,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                  const res = await fetch('/api/cash/open', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ operatorId: operatorId || 'operador-1', initialBalance: value })
+                                    body: JSON.stringify({ operatorId: operatorId || 'operador-1', userId: operatorId || 'operador-1', initialBalance: value })
                                  });
                                  if (!res.ok) throw new Error('Erro ao abrir caixa');
                                  // Confirma se a sessão foi realmente aberta
-                                 const check = await fetch('/api/cash/open');
+                                 const check = await fetch(`/api/cash/open?userId=${operatorId || 'operador-1'}`);
                                  const data = await check.json();
                                  if (data && data.session && data.session.id) {
                                     onOpenCash(value); // Só libera o PDV se o backend confirmou
