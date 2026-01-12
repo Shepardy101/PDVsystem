@@ -628,7 +628,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                            value={initialBalance}
                            onChange={(e) => setInitialBalance(e.target.value)}
                            placeholder="0.00"
-                           className="text-center text-3xl font-mono text-accent bg-dark-950/50"
+                           className="text-center text-3xl font-pdv text-accent bg-dark-950/50"
                            onKeyDown={async (e) => {
                               if (e.key === 'Enter') {
                                  const value = parseFloat(initialBalance.replace(',', '.')) || 0;
@@ -757,11 +757,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                               </div>
                            <div>
                               <p className={`text-sm font-bold ${selectedIndex === index ? 'text-accent' : 'text-slate-200'}`}>{product.name}</p>
-                              <p className="text-[10px] text-slate-500 font-mono">{product.gtin}</p>
+                              <p className="text-[10px] text-slate-500 font-pdv">{product.gtin}</p>
                            </div>
                         </div>
                         <div className="text-right">
-                           <p className="text-sm font-mono font-bold text-accent">R$ {product.salePrice.toFixed(2)}</p>
+                           <p className="text-sm font-pdv font-bold text-accent">R$ {product.salePrice.toFixed(2)}</p>
                         </div>
                      </button>
                   ))}
@@ -822,17 +822,17 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-bold text-slate-100 truncate uppercase tracking-tight">{item.product.name}</h4>
                               <div className="flex items-center gap-3">
-                                 <span className="text-[10px] font-mono text-accent">R$ {item.product.salePrice.toFixed(2)}</span>
+                                 <span className="text-[10px] font-pdv text-accent">R$ {item.product.salePrice.toFixed(2)}</span>
                                  {item.appliedDiscount > 0 && <Badge variant="success">-R$ {item.appliedDiscount.toFixed(2)}</Badge>}
                               </div>
                             </div>
                             <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10">
                               <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
-                              <span className="w-8 text-center text-xs font-mono font-bold text-slate-200">{item.quantity}</span>
+                              <span className="w-8 text-center text-xs font-pdv font-bold text-slate-200">{item.quantity}</span>
                               <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
                             </div>
                             <div className="w-24 text-right">
-                              <p className="text-sm font-mono font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
+                              <p className="text-sm font-pdv font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
                             </div>
                             <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Trash2 size={16} />
@@ -853,13 +853,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                  <div className="flex-1 space-y-6">
                    <div className="flex justify-between items-center text-slate-500">
                      <span className="text-[10px] font-bold uppercase tracking-widest">Soma Bruta</span>
-                     <span className="font-mono text-sm tracking-tight">R$ {effectiveSubtotal.toFixed(2)}</span>
+                     <span className="font-pdv text-sm tracking-tight">R$ {effectiveSubtotal.toFixed(2)}</span>
                    </div>
 
                    {autoDiscountsTotal + manualDiscount > 0 && (
                      <div className="flex justify-between items-center text-emerald-500/60">
                         <span className="text-[10px] font-bold uppercase tracking-widest">Deduções Totais</span>
-                        <span className="font-mono text-sm tracking-tight">- R$ {(autoDiscountsTotal + manualDiscount).toFixed(2)}</span>
+                        <span className="font-pdv text-sm tracking-tight">- R$ {(autoDiscountsTotal + manualDiscount).toFixed(2)}</span>
                      </div>
                    )}
 
@@ -867,7 +867,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                    {customSubtotal !== null && Math.abs(customSubtotal - subtotal) > 0.009 && (
                      <div className="flex justify-between items-center text-blue-400/80">
                         <span className="text-[10px] font-bold uppercase tracking-widest">Ajustes</span>
-                        <span className="font-mono text-sm tracking-tight">
+                        <span className="font-pdv text-sm tracking-tight">
                           {customSubtotal - subtotal > 0 ? '+' : '-'}
                           R$ {Math.abs(customSubtotal - subtotal).toFixed(2)}
                         </span>
@@ -879,7 +879,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                    <div className="flex justify-between items-end">
                      <div>
                         <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-600 mb-2">Montante Líquido</p>
-                        <h2 className="text-5xl font-mono font-bold text-accent ">R$ {effectiveTotal.toFixed(2)}</h2>
+                        <h2 className="text-5xl font-pdv font-bold text-accent ">R$ {effectiveTotal.toFixed(2)}</h2>
                      </div>
                      <div className="w-12 h-12 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-center animate-pulse">
                         <ArrowRight className="text-accent" />
@@ -894,9 +894,15 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                      PROCESSAR [F10]
                    </Button>
 
-                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">
+
+                     <>
+                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.4em]">
                      Ctrl + D = Aplicar Desconto
                    </p>
+                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.4em]">
+                     Ctrl + S = Ajustar Subtotal
+                   </p>
+                     </>
                  </div>
                </div>
             </div>

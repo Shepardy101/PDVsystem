@@ -41,7 +41,10 @@ const App: React.FC = () => {
 
 
   const handleLogout = () => {
+    //limpar chave auth_user
+    localStorage.removeItem('auth_user');
     setView('login');
+    
     setCashOpen(false);
   };
 
@@ -103,7 +106,14 @@ const App: React.FC = () => {
 
         <div className="p-6 border-t border-white/5 space-y-3 bg-white/2">
           <button 
-            onClick={() => setView('settings')}
+            onClick={() => {
+              if (user.role === 'operador') {
+                // Aqui você deve abrir o modal de solicitação de senha admin
+                // Exemplo: setShowAdminPasswordModal(true)
+              } else {
+                setView('settings');
+              }
+            }}
             className={`w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 ${
               view === 'settings' 
                 ? 'bg-accent/10 text-accent border border-accent/20' 
@@ -111,7 +121,7 @@ const App: React.FC = () => {
             }`}
           >
             <SettingsIcon size={18} />
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Painel Controle</span>
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Painel de Controle</span>
           </button>
           <button 
             onClick={handleLogout}

@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../components/AuthContext';
+import { isAdmin } from '../types';
 import DbManager from '../src/renderer/components/adminDb/DbManager';
 import { 
   Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe, 
@@ -8,8 +10,15 @@ import {
   CreditCard, Clock
 } from 'lucide-react';
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
+import AccessDenied from '@/components/AccessDenied';
 
 const Settings: React.FC = () => {
+   const { user } = useAuth();
+   if (!user || !isAdmin(user)) {
+      return (
+         <AccessDenied />
+      );
+   }
    const [logs, setLogs] = useState<{time: string, event: string, level: 'info' | 'warn' | 'error'}[]>([]);
    const [showDbManager, setShowDbManager] = useState(false);
   
