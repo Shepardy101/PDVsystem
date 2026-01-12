@@ -46,39 +46,67 @@ const SoldProductsResumoTable: React.FC = () => {
   if (error) return <div className="text-xs text-red-400">Erro: {error}</div>;
 
   return (
-    <div className="bg-dark-900/60 rounded-xl p-4 mb-8 border border-white/10">
+    <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl p-5 shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden mb-8">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.14),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
+      </div>
       <div className="text-xs text-slate-400 font-mono mb-2">Resumo de Produtos Vendidos</div>
-      <div className="w-full overflow-x-auto" style={{ maxHeight: '60vh', minHeight: '120px' }}>
-        <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-          <table className="min-w-[800px] w-full max-w-full text-xs text-left text-white border-separate border-spacing-0">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="py-1 px-2">Produto</th>
-                <th className="py-1 px-2">Preço de Custo</th>
-                <th className="py-1 px-2">Total Unidades Vendidas</th>
-                <th className="py-1 px-2">Valor Total Vendido</th>
-                <th className="py-1 px-2">Estoque Restante</th>
+      <div className="relative rounded-2xl border border-white/10 bg-dark-900/30 overflow-hidden">
+        <div
+          className={[
+            "w-full overflow-x-auto overflow-y-auto",
+            "max-h-[calc(80vh-220px)]",
+            "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+          ].join(" ")}
+        >
+          <table className="min-w-[800px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
+            <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
+              <tr>
+                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl">Produto</th>
+                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço de Custo</th>
+                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Total Unidades Vendidas</th>
+                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Valor Total Vendido</th>
+                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque Restante</th>
               </tr>
             </thead>
             <tbody>
               {products.length === 0 ? (
-                <tr><td colSpan={5} className="text-slate-400 py-2">Nenhum produto vendido.</td></tr>
+                <tr>
+                  <td colSpan={5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto vendido.</td>
+                </tr>
               ) : (
-                products.map((p, i) => (
-                  <tr key={p.product_id + '-' + i} className="border-b border-white/5">
-                    <td className="py-1 px-2 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">{p.product_name}</td>
-                    <td className="py-1 px-2 whitespace-nowrap">{p.cost_price ? (p.cost_price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
-                    <td className="py-1 px-2 whitespace-nowrap">{p.total_quantity}</td>
-                    <td className="py-1 px-2 whitespace-nowrap">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                    <td className="py-1 px-2 whitespace-nowrap">{p.stock_on_hand}</td>
-                  </tr>
-                ))
+                products.map((p, i) => {
+                  const isOdd = i % 2 === 1;
+                  const isLowStock = p.stock_on_hand <= 0;
+                  return (
+                    <tr
+                      key={p.product_id + '-' + i}
+                      className={[
+                        "group transition-colors",
+                        isOdd ? "bg-white/[0.02]" : "bg-transparent",
+                        "hover:bg-cyan-500/5",
+                        "border-b border-white/5",
+                      ].join(" ")}
+                    >
+                      <td className={["py-2.5 px-3 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 max-w-[200px] overflow-hidden text-ellipsis"].join(" ")}>{p.product_name}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">
+                        {p.cost_price ? (p.cost_price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">{p.total_quantity}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                      <td className={["py-2.5 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{p.stock_on_hand}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
