@@ -61,7 +61,7 @@ cashRouter.post('/pagamento', (req: Request, res: Response) => {
     let sessionId = cashSessionId;
     let opId = operatorId;
     if (!sessionId) {
-      const session = getOpenCashSession();
+      const session = getOpenCashSession(opId);
       if (!session) return res.status(400).json({ error: 'Nenhuma sessão de caixa aberta' });
       sessionId = session.id;
       if (!opId) opId = session.operator_id;
@@ -84,7 +84,7 @@ cashRouter.post('/sangria', async (req: Request, res: Response) => {
     let sessionId = cashSessionId;
     let opId = operatorId;
     if (!sessionId) {
-      const session = getOpenCashSession();
+      const session = getOpenCashSession(opId);
       if (!session) return res.status(400).json({ error: 'Nenhuma sessão de caixa aberta' });
       sessionId = session.id;
       if (!opId) opId = session.operator_id;
@@ -110,7 +110,8 @@ cashRouter.post('/sangria', async (req: Request, res: Response) => {
 // Buscar todas as movimentações do caixa atual
 cashRouter.get('/movements', (req: Request, res: Response) => {
   try {
-    const session = getOpenCashSession();
+    const { operatorId } = req.query;
+    const session = getOpenCashSession(operatorId as string);
     if (!session) return res.status(404).json({ error: 'Nenhuma sessão aberta.' });
     const movements = require('../repositories/cash.repo.js').getCashMovementsBySession((session as { id: string }).id);
     res.json({ movements });
@@ -131,7 +132,7 @@ cashRouter.post('/suprimento', async (req, res) => {
     let sessionId = cashSessionId;
     let opId = operatorId;
     if (!sessionId) {
-      const session = getOpenCashSession();
+      const session = getOpenCashSession(opId);
       if (!session) return res.status(400).json({ error: 'Nenhuma sessão de caixa aberta' });
       sessionId = session.id;
       if (!opId) opId = session.operator_id;
