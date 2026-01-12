@@ -13,7 +13,8 @@ import Settings from './pages/Settings';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('login');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Responsivo: sidebar aberta em desktop, fechada em mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const [cashOpen, setCashOpen] = useState(false);
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,13 @@ const App: React.FC = () => {
   // Restaurar sessão do usuário e caixa aberto ao recarregar
   useEffect(() => {
     setLoading(true);
-    // Simula delay para UX melhor (pode ser removido ou ajustado)
+    // Responsivo: fecha sidebar em mobile ao redimensionar
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setIsSidebarOpen(false);
+      else setIsSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
     setTimeout(() => {
       if (user && user.id) {
         setView('pos');
@@ -32,6 +39,7 @@ const App: React.FC = () => {
       }
       setLoading(false);
     }, 600);
+    return () => window.removeEventListener('resize', handleResize);
   }, [user]);
 
   const handleOpenCash = (balance: number) => {
@@ -85,9 +93,21 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen bg-dark-950 text-slate-100 overflow-hidden font-sans selection:bg-accent/30">
+      {/* Overlay para mobile */}
+      {/* Overlay para mobile */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} lg:hidden`}
+        onClick={() => setIsSidebarOpen(false)}
+        aria-hidden="true"
+      />
       {/* Floating Glass Sidebar */}
-      <aside 
-        className={`${isSidebarOpen ? 'w-64' : 'w-24'} bg-dark-900/40 backdrop-blur-xl border-r border-white/5 flex flex-col transition-all duration-500 ease-in-out z-30`}
+      <aside
+        className={`fixed z-50 top-0 left-0 h-full flex flex-col bg-dark-900/40 backdrop-blur-xl border-r border-white/5 transition-transform duration-500 ease-in-out
+          ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full'}
+          lg:static lg:w-64 lg:translate-x-0
+        `}
+        style={{ minWidth: 0 }}
+        aria-label="Navegação lateral"
       >
         <div className="p-8 flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow">
@@ -105,7 +125,7 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-6 border-t border-white/5 space-y-3 bg-white/2">
-          <button 
+          <button
             onClick={() => {
               if (user.role === 'operador') {
                 // Aqui você deve abrir o modal de solicitação de senha admin
@@ -115,15 +135,15 @@ const App: React.FC = () => {
               }
             }}
             className={`w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 ${
-              view === 'settings' 
-                ? 'bg-accent/10 text-accent border border-accent/20' 
+              view === 'settings'
+                ? 'bg-accent/10 text-accent border border-accent/20'
                 : 'text-slate-500 hover:text-slate-200'
             }`}
           >
             <SettingsIcon size={18} />
             <span className={`text-[10px] font-bold uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Painel de Controle</span>
           </button>
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-4 px-5 py-3 text-red-400/60 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all"
           >
@@ -136,13 +156,14 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative overflow-hidden h-full">
         {/* Minimalist Top Nav */}
-        <header className="h-20 bg-dark-950/20 backdrop-blur-md border-b border-white/5 px-10 flex items-center justify-between shrink-0 z-20">
+        <header className="h-20 bg-dark-950/20 backdrop-blur-md border-b border-white/5 px-4 sm:px-10 flex items-center justify-between shrink-0 z-20">
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2.5 bg-white/2 border border-white/5 hover:border-accent/40 rounded-lg text-slate-500 hover:text-accent transition-all"
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2.5 bg-white/2 border border-white/5 hover:border-accent/40 rounded-lg text-slate-500 hover:text-accent transition-all lg:hidden"
+              aria-label="Abrir menu"
             >
-              {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
+              <Menu size={18} />
             </button>
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
                <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_#00e0ff]" />

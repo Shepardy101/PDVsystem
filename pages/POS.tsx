@@ -26,6 +26,8 @@ interface POSProps {
 
 
 const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
+   // Estado para bloqueio de IP
+   const [ipBlocked, setIpBlocked] = useState<{ip?: string, hostname?: string}|null>(null);
 
    const [searchTerm, setSearchTerm] = useState('');
    const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -99,14 +101,28 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
  
 
-   // Fetch open cash session on mount or when cashOpen changes
+   // Fetch open cash session on mount ou quando cashOpen muda
    useEffect(() => {
       if (user && user.id) {
          setOperatorId(user.id);
       } else {
          setOperatorId('');
       }
+
+      // Testa se IP está bloqueado ao montar
+      fetch('/api/health').then(async r => {
+         if (r.status === 403) {
+            const data = await r.json();
+            if (data.aguardando) {
+               setIpBlocked({ ip: data.ip, hostname: data.hostname });
+            }
+         }
+      }).catch(() => {});
    }, [user]);
+
+   if (ipBlocked) {
+      return <IpBlocked ip={ipBlocked.ip} hostname={ipBlocked.hostname} />;
+   }
 
 
 

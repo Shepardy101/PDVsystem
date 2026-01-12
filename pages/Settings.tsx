@@ -11,7 +11,110 @@ import {
 } from 'lucide-react';
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
+
 import SystemMonitorCards from '../components/SystemMonitorCards';
+
+// --- Painel de Controle de IPs ---
+type IpEntry = { id: number; ip: string; hostname?: string|null; tentado_em?: string; autorizado_em?: string; autorizado_por?: string|null };
+
+const IPControlPanel: React.FC = () => {
+   const [pending, setPending] = useState<IpEntry[]>([]);
+   const [allowed, setAllowed] = useState<IpEntry[]>([]);
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState<string|null>(null);
+   const [refresh, setRefresh] = useState(0);
+
+   useEffect(() => {
+      setLoading(true);
+      setError(null);
+      Promise.all([
+         fetch('/api/admin/ip-control/pending').then(r => r.json()),
+         fetch('/api/admin/ip-control/allowed').then(r => r.json())
+      ]).then(([pending, allowed]) => {
+         setPending(pending);
+         setAllowed(allowed);
+      }).catch(e => setError('Erro ao carregar IPs')).finally(() => setLoading(false));
+   }, [refresh]);
+
+   const handleAllow = async (ip: string, hostname?: string|null) => {
+      setLoading(true);
+      await fetch('/api/admin/ip-control/allow', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ ip, hostname, autorizado_por: 'admin' })
+      });
+      setRefresh(r => r + 1);
+   };
+   const handleDeny = async (ip: string) => {
+      setLoading(true);
+      await fetch('/api/admin/ip-control/deny', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ ip })
+      });
+      setRefresh(r => r + 1);
+   };
+   const handleRemove = async (ip: string) => {
+      setLoading(true);
+      await fetch('/api/admin/ip-control/remove', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ ip })
+      });
+      setRefresh(r => r + 1);
+   };
+
+   return (
+      <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8 mt-8">
+         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
+            <Globe size={14} className="text-accent" /> Controle de Dispositivos/IPs
+         </h3>
+         {error && <div className="text-red-400 text-xs">{error}</div>}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+               <h4 className="text-xs font-bold text-slate-300 mb-2">Aguardando Autorização</h4>
+               <div className="space-y-2">
+                  {pending.length === 0 && <div className="text-slate-500 text-xs">Nenhum IP pendente.</div>}
+                  {pending.map(ip => (
+                     <div key={ip.id} className="flex items-center justify-between bg-dark-950/60 border border-white/10 rounded-xl px-3 py-2">
+                        <div>
+                           <span className="font-mono text-sm text-slate-100">{ip.ip}</span>
+                           {ip.hostname && <span className="ml-2 text-slate-500 text-xs">({ip.hostname})</span>}
+                           <span className="ml-2 text-slate-500 text-[10px]">{ip.tentado_em?.replace('T',' ').slice(0,19)}</span>
+                        </div>
+                        <div className="flex gap-2">
+                           <Button size="xs" variant="success" onClick={() => handleAllow(ip.ip, ip.hostname)}>Autorizar</Button>
+                           <Button size="xs" variant="danger" onClick={() => handleDeny(ip.ip)}>Negar</Button>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+            <div>
+               <h4 className="text-xs font-bold text-slate-300 mb-2">IPs Autorizados</h4>
+               <div className="space-y-2">
+                  {allowed.length === 0 && <div className="text-slate-500 text-xs">Nenhum IP autorizado.</div>}
+                  {allowed.map(ip => (
+                     <div key={ip.id} className="flex items-center justify-between bg-dark-950/60 border border-white/10 rounded-xl px-3 py-2">
+                        <div>
+                           <span className="font-mono text-sm text-slate-100">{ip.ip}</span>
+                           {ip.hostname && <span className="ml-2 text-slate-500 text-xs">({ip.hostname})</span>}
+                           <span className="ml-2 text-slate-500 text-[10px]">{ip.autorizado_em?.replace('T',' ').slice(0,19)}</span>
+                        </div>
+                        <div className="flex gap-2">
+                           <Button size="xs" variant="danger" onClick={() => handleRemove(ip.ip)}>Remover</Button>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+         </div>
+         <div className="flex justify-end mt-4">
+            <Button size="sm" variant="secondary" onClick={() => setRefresh(r => r + 1)} icon={<RefreshCcw size={14}/>}>Atualizar</Button>
+         </div>
+      </div>
+   );
+};
 
 const Settings: React.FC = () => {
    const { user } = useAuth();
@@ -167,6 +270,9 @@ const Settings: React.FC = () => {
                  </div>
               </div>
            </div>
+
+           {/* Seção de Controle de IPs */}
+           <IPControlPanel />
 
            {/* Seção de Segurança */}
            <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">

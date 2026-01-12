@@ -17,16 +17,19 @@ import reportsRouter from './routes/reports.routes';
 import settingsRouter from './routes/settings.routes';
 import sysRouter from './routes/sys';
 import ipControlRouter from './routes/admin/ipControl.routes';
-// Controle de IPs admin
-app.use('/api/admin/ip-control', ipControlRouter);
 
+import { ipAccessControl } from './middleware/ipAccessControl';
 const app = express();
-// Servir arquivos da pasta public/uploads
-app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
-const PORT = Number(process.env.PORT) || 8787;
 
 app.use(cors());
 app.use(express.json());
+
+// Controle de IPs admin
+app.use('/api/admin/ip-control', ipControlRouter);
+
+// Servir arquivos da pasta public/uploads
+app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
+const PORT = Number(process.env.PORT) || 8787;
 
 
 // Health check
@@ -42,6 +45,12 @@ app.use('/api/users', userRouter);
 app.use('/api/clients', clientRouter);
 app.use('/api/suppliers', supplierRouter);
 
+// Middleware de controle de IPs (aplica em todas as rotas /api exceto admin-db, health e ip-control)
+app.use((req, res, next) => {
+  const skip = req.path.startsWith('/api/health') || req.path.startsWith('/api/admin-db') || req.path.startsWith('/api/admin/ip-control');
+  if (skip) return next();
+  return ipAccessControl(req, res, next);
+});
 
 app.use('/api/cash', cashRouter);
 app.use('/api/settings', settingsRouter);
