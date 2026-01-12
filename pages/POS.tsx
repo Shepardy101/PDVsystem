@@ -14,6 +14,8 @@ import ClosingModal from '../components/modals/ClosingModal';
 import OpeningModal from '../components/modals/OpeningModal';
 import SubtotalModal from '../components/modals/SubtotalModal';
 import AdminPasswordModal from '../components/AdminPasswordModal';
+
+import IpBlocked from '../components/IpBlocked';
 import { isOperator } from '../types';
 
 
@@ -444,9 +446,9 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             const key = e.key.toLowerCase();
             if (["1", "2", "3"].includes(key)) {
                e.preventDefault();
-               if (key === "1") finalizeSale("card");
-               if (key === "2") finalizeSale("pix");
-               if (key === "3") finalizeSale("cash");
+               if (key === "1") finalizeSale([{ method: "card", amount: effectiveTotal }]);
+               if (key === "2") finalizeSale([{ method: "pix", amount: effectiveTotal }]);
+               if (key === "3") finalizeSale([{ method: "cash", amount: effectiveTotal }]);
                return;
             }
          }
@@ -485,25 +487,22 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    ]);
 
 
-   // Busca produtos na API
+   // Busca local de produtos (igual Products.tsx)
+   const [products, setProducts] = useState<Product[]>([]);
    const [searchResults, setSearchResults] = useState<Product[]>([]);
    const [searchLoading, setSearchLoading] = useState(false);
    const [searchError, setSearchError] = useState<string | null>(null);
 
+   // Carrega todos os produtos ao iniciar
    useEffect(() => {
-      if (!searchTerm.trim()) {
-         setSearchResults([]);
-         return;
-      }
       setSearchLoading(true);
-      fetch(`/api/products/search?q=${encodeURIComponent(searchTerm)}`)
+      fetch('/api/products')
          .then(res => {
-            if (!res.ok) throw new Error('Erro na busca');
+            if (!res.ok) throw new Error('Erro ao buscar produtos');
             return res.json();
          })
          .then(data => {
-            // Mapeia produtos e serviços vindos da API para o formato esperado
-            const items = (data.items || []).slice(0, 6).map((product: any) => ({
+            const items = (data.items || data.products || []).map((product: any) => ({
                id: product.id,
                name: product.name,
                gtin: product.ean || product.gtin,
@@ -520,15 +519,56 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
                type: product.type || 'product',
             }));
-            setSearchResults(items);
+            setProducts(items);
             setSearchError(null);
          })
-         .catch((e) => {
-            setSearchError('Erro ao buscar produtos', e.message);
-            setSearchResults([]);
+         .catch(() => {
+            setSearchError('Erro ao carregar produtos da API.');
+            setProducts([]);
          })
          .finally(() => setSearchLoading(false));
-   }, [searchTerm]);
+   }, []);
+
+   // Atualização em tempo real via SSE
+   useEffect(() => {
+      const evtSource = new EventSource('/api/products/events');
+      evtSource.addEventListener('created', (e: any) => {
+         try {
+            const product = JSON.parse(e.data);
+            setProducts(prev => {
+               if (prev.some(p => p.id === product.id)) return prev;
+               return [...prev, product];
+            });
+         } catch {}
+      });
+      evtSource.addEventListener('updated', (e: any) => {
+         try {
+            const product = JSON.parse(e.data);
+            setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+         } catch {}
+      });
+      evtSource.addEventListener('deleted', (e: any) => {
+         try {
+            const { id } = JSON.parse(e.data);
+            setProducts(prev => prev.filter(p => p.id !== id));
+         } catch {}
+      });
+      return () => { evtSource.close(); };
+   }, []);
+
+   // Filtra localmente conforme o termo de busca
+   useEffect(() => {
+      if (!searchTerm.trim()) {
+         setSearchResults([]);
+         return;
+      }
+      const filtered = products.filter(p =>
+         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         (p.gtin || '').includes(searchTerm) ||
+         (p.internalCode || '').includes(searchTerm)
+      );
+      setSearchResults(filtered.slice(0, 6));
+   }, [searchTerm, products]);
 
    const addToCart = (product: Product) => {
       setCart(prev => {

@@ -10,7 +10,6 @@ export type UserRole = 'admin' | 'manager' | 'operator';
 export type UserStatus = 'active' | 'inactive' | 'blocked';
 
 export function isOperator(user: { role?: string } | null | undefined): boolean {
-    console.log('Checking if user is operator:', user);
   return !!user && user.role === 'operator';
 }
 

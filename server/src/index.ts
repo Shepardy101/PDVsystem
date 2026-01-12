@@ -40,7 +40,7 @@ app.use((req, res, next) => {
 });
 
 // Servir arquivos estáticos do frontend (dist)
-const distPath = path.join(__dirname, '../../frontend/dist');
+const distPath = path.join(__dirname, '../../dist');
 app.use(express.static(distPath));
 
 const PORT = Number(process.env.PORT) || 8787;

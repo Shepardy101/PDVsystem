@@ -10,9 +10,36 @@ import { useAuth } from '../components/AuthContext';
 import { isOperator } from '../types';
 
 const Products: React.FC = () => {
+      // SSE: Atualização em tempo real dos produtos
+      React.useEffect(() => {
+         const evtSource = new EventSource('/api/products/events');
+         evtSource.addEventListener('created', (e: any) => {
+            try {
+               const product = JSON.parse(e.data);
+               setProducts(prev => {
+                  // Evita duplicidade
+                  if (prev.some(p => p.id === product.id)) return prev;
+                  return [...prev, product];
+               });
+            } catch {}
+         });
+         evtSource.addEventListener('updated', (e: any) => {
+            try {
+               const product = JSON.parse(e.data);
+               setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+            } catch {}
+         });
+         evtSource.addEventListener('deleted', (e: any) => {
+            try {
+               const { id } = JSON.parse(e.data);
+               setProducts(prev => prev.filter(p => p.id !== id));
+            } catch {}
+         });
+         return () => { evtSource.close(); };
+      }, []);
    const { user } = useAuth();
    const isOperatorUser = isOperator(user);
-   console.log('isOperatorUser:', isOperatorUser);
+
    const [searchTerm, setSearchTerm] = useState('');
    const [showImages, setShowImages] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
@@ -88,31 +115,25 @@ const Products: React.FC = () => {
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
 
+   // Buscar categorias, fornecedores e produtos apenas uma vez ao iniciar
    React.useEffect(() => {
       setLoading(true);
-      // Buscar categorias do backend
       fetch('/api/categories')
          .then(res => res.json())
-         .then(data => {
-            setCategories(data.items || []);
-         });
-      // Buscar fornecedores do backend
+         .then(data => setCategories(data.items || []));
       setIsSupplierLoading(true);
       fetch('/api/suppliers')
          .then(res => res.json())
-         .then(data => {
-            setSuppliers(data.items || []);
-         })
+         .then(data => setSuppliers(data.items || []))
          .catch(() => setSuppliers([]))
          .finally(() => setIsSupplierLoading(false));
-      // Buscar produtos
+      // Buscar todos os produtos uma vez
       fetch('/api/products')
          .then(res => {
             if (!res.ok) throw new Error('Erro ao buscar produtos');
             return res.json();
          })
          .then(data => {
-            // Mapeia todos os produtos vindos da API para o formato esperado
             const items = (data.items || data.products || []).map((product: any) => ({
                id: product.id,
                name: product.name,
@@ -132,7 +153,7 @@ const Products: React.FC = () => {
             setProducts(items);
             setError(null);
          })
-         .catch(err => {
+         .catch(() => {
             setError('Erro ao carregar produtos da API.');
             setProducts([]);
          })
@@ -1000,18 +1021,91 @@ const Products: React.FC = () => {
                                              formData.append('ean', ean);
                                              formData.append('description', name);
                                              try {
+                                                console.log('[UPLOAD] Enviando imagem:', { file, ean, name });
                                                 const res = await fetch('/api/products/upload-image', {
                                                    method: 'POST',
                                                    body: formData
                                                 });
                                                 const data = await res.json();
+                                                console.log('[UPLOAD] Resposta do backend:', data);
                                                 if (data.imageUrl) {
-                                                   setSelectedProduct(p => p ? { ...p, imageUrl: data.imageUrl } : null);
-                                                   showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
+                                                   // Envie todos os campos obrigatórios do produto junto com o novo imageUrl
+                                                   const p = selectedProduct;
+                                                   if (p) {
+                                                      // Monta o objeto exatamente com os nomes esperados pelo backend (camelCase)
+                                                      const updatePayload: {
+                                                         name: any;
+                                                         ean: any;
+                                                         internalCode: any;
+                                                         unit: any;
+                                                         costPrice: number;
+                                                         salePrice: number;
+                                                         autoDiscountEnabled: any;
+                                                         autoDiscountValue: any;
+                                                         status: any;
+                                                         stockOnHand: any;
+                                                         imageUrl: any;
+                                                         type: any;
+                                                         [key: string]: any; // Allow dynamic keys
+                                                      } = {
+                                                         name: p.name || 'Produto',
+                                                         ean: p.ean || p.gtin || '0000000000000',
+                                                         internalCode: p.internal_code || p.internalCode || 'SEM-COD',
+                                                         unit: p.unit || 'unit',
+                                                         costPrice: typeof p.cost_price === 'number' ? p.cost_price : (typeof p.costPrice === 'number' ? p.costPrice : 0),
+                                                         salePrice: typeof p.sale_price === 'number' ? p.sale_price : (typeof p.salePrice === 'number' ? p.salePrice : 0),
+                                                         autoDiscountEnabled: p.auto_discount_enabled ?? p.autoDiscountEnabled ?? false,
+                                                         autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
+                                                         status: p.status || 'active',
+                                                         stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
+                                                         imageUrl: data.imageUrl,
+                                                         type: p.type || 'product'
+                                                      };
+                                                      // Só adiciona categoryId e supplierId se existirem e não forem vazios
+                                                      const catId = p.category_id || p.category;
+                                                      if (catId) updatePayload.categoryId = catId;
+                                                      const supId = p.supplier_id || p.supplier;
+                                                      if (supId) updatePayload.supplierId = supId;
+                                                      console.log('[UPLOAD] Payload FINAL para update:', JSON.stringify(updatePayload, null, 2));
+                                                      const updateRes = await fetch(`/api/products/${p.id}`, {
+                                                         method: 'PUT',
+                                                         headers: { 'Content-Type': 'application/json' },
+                                                         body: JSON.stringify(updatePayload)
+                                                      });
+                                                      const updateText = await updateRes.text();
+                                                      let updateData;
+                                                      try {
+                                                         updateData = JSON.parse(updateText);
+                                                      } catch {
+                                                         updateData = { raw: updateText };
+                                                      }
+                                                      console.log('[UPLOAD] Resposta do update (raw):', updateText);
+                                                      console.log('[UPLOAD] Resposta do update (parsed):', updateData);
+                                                      // Após update, buscar o produto atualizado do backend
+                                                      try {
+                                                         const fetchRes = await fetch(`/api/products/${p.id}`);
+                                                         const fetchData = await fetchRes.json();
+                                                         console.log('[UPLOAD] Produto após update (GET):', fetchData);
+                                                         if (fetchData && fetchData.imageUrl) {
+                                                            setSelectedProduct({ ...p, imageUrl: fetchData.imageUrl });
+                                                         } else {
+                                                            setSelectedProduct({ ...p, imageUrl: data.imageUrl });
+                                                         }
+                                                      } catch (fetchErr) {
+                                                         console.error('[UPLOAD] Erro ao buscar produto atualizado:', fetchErr);
+                                                         setSelectedProduct({ ...p, imageUrl: data.imageUrl });
+                                                      }
+                                                      // Atualiza a lista de produtos se necessário
+                                                      if (typeof setProducts === 'function') {
+                                                         setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
+                                                      }
+                                                      showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
+                                                   }
                                                 } else {
                                                    showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
                                                 }
-                                             } catch {
+                                             } catch (err) {
+                                                console.error('[UPLOAD] Erro ao enviar imagem:', err);
                                                 showPopup('error', 'Erro', 'Erro ao enviar imagem.');
                                              }
                                           }}

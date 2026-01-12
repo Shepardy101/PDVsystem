@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import { useAuth } from '../components/AuthContext';
 import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, Check, X, Filter } from 'lucide-react';
 import { Button, Input, Badge, Modal, Switch } from '../components/UI';
 import { MOCK_USERS, MOCK_SUPPLIERS } from '../constants';
@@ -111,6 +112,7 @@ const Entities: React.FC = () => {
     </button>
   );
 
+  const { user } = useAuth();
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
       {/* Header Section */}
@@ -121,7 +123,8 @@ const Entities: React.FC = () => {
           </h1>
           <p className="text-slate-500 text-sm font-medium">Controlador central de identidades e parceiros do ecossistema.</p>
         </div>
-        {userForm.role !== 'operator' && (
+        {console.log('[DEBUG] Entities user:', user)}
+        {user?.role !== 'operator' && (
           <div className="flex items-center gap-3">
             <Button 
               className="shadow-accent-glow"
