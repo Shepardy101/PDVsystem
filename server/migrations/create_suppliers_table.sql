@@ -1,3 +1,4 @@
+
 -- Migration: Criação da tabela de fornecedores
 CREATE TABLE IF NOT EXISTS suppliers (
     id TEXT PRIMARY KEY,

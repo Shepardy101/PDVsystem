@@ -216,9 +216,6 @@ O sistema abrirá automaticamente no navegador em modo app. Você pode acessar t
 - Implementar endpoints de produtos, vendas, caixa, etc.
 - Refatorar POS.tsx para buscar produtos via API.
 - Implementar build/bundle do server para portable.
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
 # Run and deploy your AI Studio app
 
@@ -240,3 +237,73 @@ View your app in AI Studio: https://ai.studio/apps/drive/17BmGhalxErcEbSyha5cvGt
 
 
    # PROXIMA ATUALIZAÇÃO SISTEMA DE KILOS
+
+## Como gerar e empacotar a versão de produção (build leve)
+
+## Passo a passo para produção
+
+### 1. Instalar dependências para build
+Execute na raiz do projeto:
+```
+npm install
+```
+
+### 2. Gerar build do frontend e backend
+```
+npm run build
+```
+- Frontend gerado em `dist/`
+- Backend gerado em `server/dist/`
+
+### 3. Empacotar a aplicação (build leve)
+Execute na raiz do projeto:
+```
+package-app.bat
+```
+O pacote gerado estará em `build/PDVsystem-YYYYMMDD.zip`.
+
+**O pacote inclui:**
+- dist/ (frontend)
+- public/uploads/ (imagens)
+- data/novabev.sqlite (banco)
+- server/ (backend compilado)
+- server/migrations/ (migrations do banco)
+- Scripts .bat (instalar, iniciar, atalho)
+- package.json, package-lock.json, README.md
+
+**Não inclui:**
+- node_modules (as dependências serão instaladas no cliente)
+
+### 4. Instalação e uso no cliente
+1. Instale o Node.js na máquina do cliente.
+2. Extraia o pacote .zip em uma pasta de sua escolha.
+3. Execute `instalar-app.bat` para instalar as dependências.
+4. Execute `iniciar-app.bat` para iniciar o sistema.
+5. (Opcional) Execute `criar-atalho-app.bat` para criar o atalho.
+
+O sistema abrirá automaticamente no navegador em modo app. Você pode acessar também via http://localhost:8787.
+
+---
+
+## Checklist do pacote
+- [x] dist/
+- [x] public/uploads/
+- [x] data/novabev.sqlite
+- [x] server/
+- [x] server/migrations/
+- [x] instalar-app.bat
+- [x] iniciar-app.bat
+- [x] criar-atalho-app.bat
+- [x] package.json
+- [x] package-lock.json
+- [x] README.md
+
+---
+
+## Observações
+- O build leve agiliza o empacotamento e reduz o tamanho do pacote.
+- As dependências são instaladas no cliente via `instalar-app.bat`.
+- Sempre execute o build antes de empacotar para garantir que o backend e frontend estejam atualizados.
+- Mantenha as migrations no pacote para inicialização do banco.
+
+Se precisar de instruções específicas para atualização ou migração, consulte o README ou solicite suporte.

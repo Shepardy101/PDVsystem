@@ -1,3 +1,4 @@
+
 -- Altera a restrição da coluna client_id em sales para ON DELETE SET NULL
 PRAGMA foreign_keys=off;
 

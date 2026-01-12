@@ -1,0 +1,2 @@
+-- Migration: Adicionar colunas extras à tabela suppliers
+-- (Removido: comandos redundantes)
