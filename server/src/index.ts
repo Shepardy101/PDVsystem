@@ -16,6 +16,9 @@ import reportRouter from './routes/report.routes';
 import reportsRouter from './routes/reports.routes';
 import settingsRouter from './routes/settings.routes';
 import sysRouter from './routes/sys';
+import ipControlRouter from './routes/admin/ipControl.routes';
+// Controle de IPs admin
+app.use('/api/admin/ip-control', ipControlRouter);
 
 const app = express();
 // Servir arquivos da pasta public/uploads
