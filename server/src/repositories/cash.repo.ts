@@ -92,11 +92,11 @@ export function addSuprimentoMovement({ amount, category, description, operatorI
 export function closeCashSession(sessionId: string, physicalCount: number) {
   const now = Date.now();
   // Busca totais das vendas do caixa
-  const salesRaw = db.prepare('SELECT * FROM sales WHERE cash_session_id = ?').all(sessionId);
+  const salesRaw = db.prepare('SELECT * FROM sales WHERE cash_session_id = ?').all(sessionId) as Array<{ id: string; total: number; [key: string]: any }>;
   // Para cada venda, busca os pagamentos
-  const sales = salesRaw.map(sale => {
-    const payments = db.prepare('SELECT method, amount FROM payments WHERE sale_id = ?').all(sale.id);
-    const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+  const sales = salesRaw.map((sale) => {
+    const payments = db.prepare('SELECT method, amount FROM payments WHERE sale_id = ?').all(sale.id) as Array<{ method: string; amount: number }>;
+    const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id) as Array<{ [key: string]: any }>;
     return { ...sale, payments, items };
   });
   const totalVendas = salesRaw.reduce((acc, s) => acc + (s.total || 0), 0);
@@ -107,25 +107,22 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
     FROM payments p
     JOIN sales s ON s.id = p.sale_id
     WHERE s.cash_session_id = ? AND p.method = 'cash'
-  `).all(sessionId);
+  `).all(sessionId) as Array<{ amount: number }>;
   const totalVendasCash = cashPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
-
-
-
 
   // Soma todas as sangrias realizadas na sessão
   const sangrias = db.prepare(`
     SELECT amount FROM cash_movements WHERE cash_session_id = ? AND type = 'withdraw_out'
-  `).all(sessionId);
+  `).all(sessionId) as Array<{ amount: number }>;
   const totalSangrias = sangrias.reduce((acc, s) => acc + (s.amount || 0), 0);
   // Soma todos os suprimentos realizados na sessão
   const suprimentos = db.prepare(`
     SELECT amount FROM cash_movements WHERE cash_session_id = ? AND type = 'supply_in'
-  `).all(sessionId);
+  `).all(sessionId) as Array<{ amount: number }>;
   const totalSuprimentos = suprimentos.reduce((acc, s) => acc + (s.amount || 0), 0);
   console.log('SANGRIAS:', sangrias, 'TOTAL SANGRIAS:', totalSangrias, 'SUPRIMENTOS:', suprimentos, 'TOTAL SUPRIMENTOS:', totalSuprimentos);
   // Atualiza sessão de caixa como fechada
-  const session = db.prepare('SELECT * FROM cash_sessions WHERE id = ?').get(sessionId);
+  const session = db.prepare('SELECT * FROM cash_sessions WHERE id = ?').get(sessionId) as { operator_id: string; opened_at: number; initial_balance: number };
   const difference = physicalCount - (session.initial_balance + totalVendasCash + totalSuprimentos - totalSangrias);
   db.prepare('UPDATE cash_sessions SET closed_at = ?, is_open = 0, physical_count_at_close = ?, difference_at_close = ?, updated_at = ? WHERE id = ?')
     .run(now, physicalCount, difference, now, sessionId);

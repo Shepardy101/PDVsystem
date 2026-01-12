@@ -126,8 +126,8 @@ export function createProduct(data: any) {
 }
 
 export function updateProduct(id: string, data: any) {
-  const existing = getProductById(id);
-  if (!existing || typeof existing !== 'object') throw { code: 'NOT_FOUND', message: 'Produto não encontrado.' };
+  const existing = getProductById(id) as Product | undefined;
+  if (!existing) throw { code: 'NOT_FOUND', message: 'Produto não encontrado.' };
   const isService = data.type === 'service' || existing.type === 'service';
   if (!data.name || !data.unit || (!isService && (!data.ean || !data.internalCode))) {
     throw { code: 'VALIDATION_ERROR', message: 'Campos obrigatórios ausentes.' };
@@ -146,8 +146,8 @@ export function updateProduct(id: string, data: any) {
     }
   }
   const now = Date.now();
-  const updated = {
-    ...(existing as object),
+  const updated: Product = {
+    ...existing,
     name: data.name,
     ean: isService ? '' : data.ean,
     internal_code: isService ? '' : data.internalCode,

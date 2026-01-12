@@ -1,8 +1,8 @@
 import db from '../db/database';
 
 export async function getSetting(key: string): Promise<string | null> {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
-  return row ? row.value : null;
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value?: string } | undefined;
+  return row && typeof row.value === 'string' ? row.value : null;
 }
 
 export async function setSetting(key: string, value: string): Promise<void> {
