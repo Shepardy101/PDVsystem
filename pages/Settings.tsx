@@ -66,10 +66,7 @@ const Settings: React.FC = () => {
 
    return (
       <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
-         {/* Cards de Monitoramento do Sistema */}
-         <div className="mb-8">
-           <SystemMonitorCards />
-         </div>
+         
          {/* Modal DB Manager */}
          {showDbManager && (
             <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center animate-in fade-in">
@@ -109,17 +106,14 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
+
+    
+
       <div className="flex-1 grid grid-cols-12 gap-8 overflow-hidden min-h-0 relative z-10">
         {/* Coluna Esquerda: Configurações */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
            
-           {/* Grid de Telemetria */}
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-              <TelemetryItem icon={Activity} label="Uptime do Sistema" value="14d 2h 44m" status="ok" />
-              <TelemetryItem icon={Zap} label="Latência DB" value="12ms" status="ok" />
-              <TelemetryItem icon={HardDrive} label="Armazenamento" value="64% / 500GB" status="ok" />
-              <TelemetryItem icon={Cpu} label="Carga CPU" value="22.4%" status="ok" />
-           </div>
+          
 
            {/* Seção de Periféricos */}
            <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
