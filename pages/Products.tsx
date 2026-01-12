@@ -522,55 +522,80 @@ const Products: React.FC = () => {
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                {!showImages ? (
                   /* LIST VIEW */
-                  <div className="bg-dark-900/40 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl animate-in fade-in duration-500">
-                     <table className="w-full text-left border-collapse">
-                        <thead>
-                           <tr className="bg-white/2 border-b border-white/5 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
-                              <th className="px-8 py-5">Identificação</th>
-                              <th className="px-8 py-5">Preço Venda</th>
-                              <th className="px-8 py-5">Estoque</th>
-                              <th className="px-8 py-5 text-right">Ações</th>
-                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                           {filtered.map(product => (
-                              <tr
-                                 key={product.id}
-                                 className="group hover:bg-white/5 transition-all cursor-pointer"
-                                 onClick={() => setSelectedProduct(product)}
-                              >
-                                 <td className="px-8 py-5 flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
-                                       {product.imageUrl ? (
-                                          <img
-                                             src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`}
-                                             className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity"
-                                             alt={product.name}
-                                          />
-                                       ) : (
-                                          <Cpu  className="text-accent opacity-40" size={20} />
-                                       )}
-                                    </div>
-                                    <div>
-                                       <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>
-                                       <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{product.gtin}</div>
-                                    </div>
-                                 </td>
-                                 <td className="px-8 py-5 font-mono text-sm font-bold text-accent">R$ {product.salePrice.toFixed(2)}</td>
-                                 <td className="px-8 py-5 text-xs text-slate-300 font-bold">
-                                    <span className={product.stock < (product.minStock || 20 ) && product.unit !== 'serv' ? 'text-red-400' : 'text-slate-300'}>
-                                       {product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}
-                                    </span>
-                                 </td>
-                                 <td className="px-8 py-5 text-right flex gap-2 justify-end">
-                                    <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
-                                    <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
-                                 </td>
-                              </tr>
-                           ))}
-                        </tbody>
-                     </table>
-                  </div>
+                           <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden animate-in fade-in duration-500 mb-8">
+                              <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
+                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
+                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.14),transparent_55%)]" />
+                                 <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
+                                 <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
+                              </div>
+                              <div className="relative rounded-2xl border border-white/10 bg-dark-900/30 overflow-hidden">
+                                 <div
+                                    className={[
+                                       "w-full overflow-x-auto overflow-y-auto",
+                                       "max-h-[calc(92vh-180px)] min-h-[420px]",
+                                       "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+                                    ].join(" ")}
+                                 >
+                                    <table className="min-w-[900px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
+                                       <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
+                                          <tr>
+                                             <th className="py-4 px-5 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[320px] max-w-[420px]">Identificação</th>
+                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Custo</th>
+                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Venda</th>
+                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque</th>
+                                             <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                          </tr>
+                                       </thead>
+                                       <tbody>
+                                          {filtered.length === 0 ? (
+                                             <tr>
+                                                <td colSpan={5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto encontrado.</td>
+                                             </tr>
+                                          ) : (
+                                             filtered.map((product, i) => {
+                                                const isOdd = i % 2 === 1;
+                                                const isLowStock = product.stock < (product.minStock || 20) && product.unit !== 'serv';
+                                                return (
+                                                   <tr
+                                                      key={product.id}
+                                                      className={["group transition-colors", isOdd ? "bg-white/[0.02]" : "bg-transparent", "hover:bg-cyan-500/5", "border-b border-white/5"].join(" ")}
+                                                      onClick={() => setSelectedProduct(product)}
+                                                      style={{ cursor: 'pointer' }}
+                                                   >
+                                                      <td className={["py-4 px-5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 min-w-[320px] max-w-[420px] overflow-hidden text-ellipsis flex items-center gap-4"].join(" ")}> 
+                                                         <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
+                                                            {product.imageUrl ? (
+                                                               <img
+                                                                  src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`}
+                                                                  className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity"
+                                                                  alt={product.name}
+                                                               />
+                                                            ) : (
+                                                               <Cpu  className="text-accent opacity-40" size={20} />
+                                                            )}
+                                                         </div>
+                                                         <div>
+                                                            <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>
+                                                            <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{product.gtin}</div>
+                                                         </div>
+                                                      </td>
+                                                      <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
+                                                      <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
+                                                      <td className={["py-4 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}</td>
+                                                      <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
+                                                         <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
+                                                         <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
+                                                      </td>
+                                                   </tr>
+                                                );
+                                             })
+                                          )}
+                                       </tbody>
+                                    </table>
+                                 </div>
+                              </div>
+                           </section>
                ) : (
                   /* CARD GRID VIEW */
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

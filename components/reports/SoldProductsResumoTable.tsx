@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 interface ProductResumo {
   product_id: string;
@@ -42,6 +42,29 @@ const SoldProductsResumoTable: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Ordenação dos cabeçalhos
+    const [sort, setSort] = useState<{ key: keyof ProductResumo, direction: 'asc' | 'desc' }>({ key: 'total_value', direction: 'desc' });
+    const handleSort = (key: keyof ProductResumo) => {
+      setSort((prev: { key: keyof ProductResumo; direction: 'asc' | 'desc' }) => {
+        if (prev.key === key) {
+          return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+        }
+        return { key, direction: 'desc' };
+      });
+    };
+    const sortedProducts = useMemo(() => {
+      const sorted = [...products];
+      sorted.sort((a, b) => {
+        const aValue = a[sort.key] ?? 0;
+        const bValue = b[sort.key] ?? 0;
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sort.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        }
+        return sort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+      });
+      return sorted;
+    }, [products, sort]);
+
   if (loading) return <div className="text-xs text-slate-400">Carregando resumo...</div>;
   if (error) return <div className="text-xs text-red-400">Erro: {error}</div>;
 
@@ -55,6 +78,7 @@ const SoldProductsResumoTable: React.FC = () => {
       </div>
       <div className="text-xs text-slate-400 font-mono mb-2">Resumo de Produtos Vendidos</div>
       <div className="relative rounded-2xl border border-white/10 bg-dark-900/30 overflow-hidden">
+    
         <div
           className={[
             "w-full overflow-x-auto overflow-y-auto",
@@ -65,11 +89,81 @@ const SoldProductsResumoTable: React.FC = () => {
           <table className="min-w-[800px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
             <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
               <tr>
-                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl">Produto</th>
-                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço de Custo</th>
-                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Total Unidades Vendidas</th>
-                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Valor Total Vendido</th>
-                <th className="py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque Restante</th>
+                <th
+                  className={[
+                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl select-none cursor-pointer transition-colors",
+                    sort.key === 'product_name' ? 'text-accent' : '',
+                    'hover:bg-cyan-500/10 hover:text-accent',
+                  ].join(' ')}
+                  onClick={() => handleSort('product_name')}
+                >
+                  Produto
+                  {sort.key === 'product_name' && (
+                    <span className="ml-1 inline-block align-middle">
+                      {sort.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th
+                  className={[
+                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+                    sort.key === 'cost_price' ? 'text-accent' : '',
+                    'hover:bg-cyan-500/10 hover:text-accent',
+                  ].join(' ')}
+                  onClick={() => handleSort('cost_price')}
+                >
+                  Preço de Custo
+                  {sort.key === 'cost_price' && (
+                    <span className="ml-1 inline-block align-middle">
+                      {sort.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th
+                  className={[
+                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+                    sort.key === 'total_quantity' ? 'text-accent' : '',
+                    'hover:bg-cyan-500/10 hover:text-accent',
+                  ].join(' ')}
+                  onClick={() => handleSort('total_quantity')}
+                >
+                  Total Unidades Vendidas
+                  {sort.key === 'total_quantity' && (
+                    <span className="ml-1 inline-block align-middle">
+                      {sort.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th
+                  className={[
+                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+                    sort.key === 'total_value' ? 'text-accent' : '',
+                    'hover:bg-cyan-500/10 hover:text-accent',
+                  ].join(' ')}
+                  onClick={() => handleSort('total_value')}
+                >
+                  Valor Total Vendido
+                  {sort.key === 'total_value' && (
+                    <span className="ml-1 inline-block align-middle">
+                      {sort.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th
+                  className={[
+                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+                    sort.key === 'stock_on_hand' ? 'text-accent' : '',
+                    'hover:bg-cyan-500/10 hover:text-accent',
+                  ].join(' ')}
+                  onClick={() => handleSort('stock_on_hand')}
+                >
+                  Estoque Restante
+                  {sort.key === 'stock_on_hand' && (
+                    <span className="ml-1 inline-block align-middle">
+                      {sort.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -78,7 +172,7 @@ const SoldProductsResumoTable: React.FC = () => {
                   <td colSpan={5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto vendido.</td>
                 </tr>
               ) : (
-                products.map((p, i) => {
+                sortedProducts.map((p: ProductResumo, i: number) => {
                   const isOdd = i % 2 === 1;
                   const isLowStock = p.stock_on_hand <= 0;
                   return (

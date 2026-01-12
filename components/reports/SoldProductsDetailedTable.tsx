@@ -36,7 +36,7 @@ const SoldProductsDetailedTable: React.FC = () => {
     >({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-   
+
     // Estado para o filtro de datas
     const [dateRange, setDateRange] = useState<'30d' | '60d' | '90d' | 'all' | 'custom'>('30d');
     const [customStart, setCustomStart] = useState<string>("");
@@ -105,33 +105,33 @@ const SoldProductsDetailedTable: React.FC = () => {
 
 
     // Ordenação
-type SortKey = 'sale_date' | 'product_name' | 'cost_price' | 'total_quantity' | 'total_value' | 'stock_on_hand';
-const [sortKey, setSortKey] = useState<SortKey>('sale_date');
-const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+    type SortKey = 'sale_date' | 'product_name' | 'cost_price' | 'total_quantity' | 'total_value' | 'stock_on_hand';
+    const [sortKey, setSortKey] = useState<SortKey>('sale_date');
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-const sortedProducts = useMemo(() => {
-  const arr = products.map(p => ({
-    ...p,
-    cost_price: productInfo[p.product_id]?.cost_price ?? 0,
-    stock_on_hand: productInfo[p.product_id]?.stock_on_hand ?? 0,
-  }));
-  arr.sort((a, b) => {
-    let vA = a[sortKey];
-    let vB = b[sortKey];
-    if (typeof vA === 'string' && typeof vB === 'string') {
-      vA = vA.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-      vB = vB.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-      if (vA < vB) return sortDir === 'asc' ? -1 : 1;
-      if (vA > vB) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    }
-    if (typeof vA === 'number' && typeof vB === 'number') {
-      return sortDir === 'asc' ? vA - vB : vB - vA;
-    }
-    return 0;
-  });
-  return arr;
-}, [products, sortKey, sortDir, productInfo]);
+    const sortedProducts = useMemo(() => {
+        const arr = products.map(p => ({
+            ...p,
+            cost_price: productInfo[p.product_id]?.cost_price ?? 0,
+            stock_on_hand: productInfo[p.product_id]?.stock_on_hand ?? 0,
+        }));
+        arr.sort((a, b) => {
+            let vA = a[sortKey];
+            let vB = b[sortKey];
+            if (typeof vA === 'string' && typeof vB === 'string') {
+                vA = vA.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+                vB = vB.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+                if (vA < vB) return sortDir === 'asc' ? -1 : 1;
+                if (vA > vB) return sortDir === 'asc' ? 1 : -1;
+                return 0;
+            }
+            if (typeof vA === 'number' && typeof vB === 'number') {
+                return sortDir === 'asc' ? vA - vB : vB - vA;
+            }
+            return 0;
+        });
+        return arr;
+    }, [products, sortKey, sortDir, productInfo]);
 
     // Filtragem por data
     useEffect(() => {
@@ -266,66 +266,66 @@ const sortedProducts = useMemo(() => {
                     {/* Tabela */}
                     <table className="min-w-[980px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
                         <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
-  <tr>
-    <th
-      className={`py-3 px-3 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'sale_date' ? 'text-cyan-300' : ''}`}
-      onClick={() => { if (sortKey === 'sale_date') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('sale_date'); }}
-    >
-      <span className="inline-flex items-center gap-1">
-        Data da venda
-        {sortKey === 'sale_date' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-      </span>
-    </th>
-    <th
-      className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'product_name' ? 'text-cyan-300' : ''}`}
-      onClick={() => { if (sortKey === 'product_name') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('product_name'); }}
-    >
-      <span className="inline-flex items-center gap-1">
-        Produto
-        {sortKey === 'product_name' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-      </span>
-    </th>
-    <th
-      className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'cost_price' ? 'text-cyan-300' : ''}`}
-      onClick={() => { if (sortKey === 'cost_price') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('cost_price'); }}
-    >
-      <span className="inline-flex items-center gap-1">
-        Custo
-        {sortKey === 'cost_price' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-      </span>
-    </th>
-    <th
-      className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'total_quantity' ? 'text-cyan-300' : ''}`}
-      onClick={() => { if (sortKey === 'total_quantity') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_quantity'); }}
-    >
-      <span className="inline-flex items-center gap-1">
-        Quantidade
-        {sortKey === 'total_quantity' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-      </span>
-    </th>
-    <th
-      className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'total_value' ? 'text-cyan-300' : ''}`}
-      onClick={() => { if (sortKey === 'total_value') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_value'); }}
-    >
-      <span className="inline-flex items-center gap-1">
-        Valor total
-        {sortKey === 'total_value' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-      </span>
-    </th>
-    <th
-      className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'stock_on_hand' ? 'text-cyan-300' : ''}`}
-      onClick={() => { if (sortKey === 'stock_on_hand') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('stock_on_hand'); }}
-    >
-      <span className="inline-flex items-center gap-1">
-        Estoque restante
-        {sortKey === 'stock_on_hand' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
-      </span>
-    </th>
-  </tr>
-</thead>
+                            <tr>
+                                <th
+                                    className={`py-3 px-3 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'sale_date' ? 'text-cyan-300' : ''}`}
+                                    onClick={() => { if (sortKey === 'sale_date') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('sale_date'); }}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Data da venda
+                                        {sortKey === 'sale_date' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                    </span>
+                                </th>
+                                <th
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'product_name' ? 'text-cyan-300' : ''}`}
+                                    onClick={() => { if (sortKey === 'product_name') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('product_name'); }}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Produto
+                                        {sortKey === 'product_name' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                    </span>
+                                </th>
+                                <th
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'cost_price' ? 'text-cyan-300' : ''}`}
+                                    onClick={() => { if (sortKey === 'cost_price') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('cost_price'); }}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Custo
+                                        {sortKey === 'cost_price' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                    </span>
+                                </th>
+                                <th
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'total_quantity' ? 'text-cyan-300' : ''}`}
+                                    onClick={() => { if (sortKey === 'total_quantity') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_quantity'); }}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Quantidade
+                                        {sortKey === 'total_quantity' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                    </span>
+                                </th>
+                                <th
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'total_value' ? 'text-cyan-300' : ''}`}
+                                    onClick={() => { if (sortKey === 'total_value') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_value'); }}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Valor total
+                                        {sortKey === 'total_value' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                    </span>
+                                </th>
+                                <th
+                                    className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group ${sortKey === 'stock_on_hand' ? 'text-cyan-300' : ''}`}
+                                    onClick={() => { if (sortKey === 'stock_on_hand') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('stock_on_hand'); }}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Estoque restante
+                                        {sortKey === 'stock_on_hand' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                    </span>
+                                </th>
+                            </tr>
+                        </thead>
 
                         <tbody>
-                           {sortedProducts.length === 0 ? (
+                            {sortedProducts.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={6}
