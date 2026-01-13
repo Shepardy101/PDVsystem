@@ -1,4 +1,3 @@
-
 -- Migration: Criação da tabela de sessões de caixa
 CREATE TABLE IF NOT EXISTS cash_sessions (
     id TEXT PRIMARY KEY,

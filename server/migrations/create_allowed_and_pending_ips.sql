@@ -1,4 +1,3 @@
-
 -- migrations/create_allowed_ips.sql
 CREATE TABLE IF NOT EXISTS allowed_ips (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

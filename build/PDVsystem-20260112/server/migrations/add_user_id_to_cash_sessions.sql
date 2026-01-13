@@ -1,1 +1,0 @@
-UPDATE cash_sessions SET user_id = 'root' WHERE user_id = '' OR user_id IS NULL;

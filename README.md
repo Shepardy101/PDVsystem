@@ -1,309 +1,131 @@
-# NBPOS - PDV Portable
-# Como gerar e rodar a versão de produção (Windows)
-# Guia detalhado de build, empacotamento e uso
+# Plano de Implantação — PDVsystem
 
-## O que cada comando faz e o que é gerado
+## 1. Visão Geral do Sistema
 
-### 1. `npm install`
-Instala todas as dependências do projeto (Node.js, React, Express, etc). Não cria novas pastas, apenas atualiza/instala `node_modules/` e `package-lock.json`.
+O **PDVsystem** é uma solução de ponto de venda (POS) para distribuidores de bebidas, com foco em performance, controle de estoque, vendas, auditoria de caixa e relatórios em tempo real.
 
-### 2. `npm run build`
-Gera o build do frontend (Vite):
-- Cria/atualiza a pasta `dist/` na raiz do projeto.
-- Dentro de `dist/`:
-   - `index.html` (página principal)
-   - `assets/` (arquivos JS/CSS otimizados)
-   - `uploads/` (imagens de produtos, se existirem)
+- **Frontend**: SPA React (Vite) servida pelo backend.
+- **Backend**: Node.js/Express (TypeScript) com SQLite, responsável por autenticação, lógica de negócios, controle de caixa, estoque, relatórios e controle de IP.
+- **Banco de Dados**: SQLite, persistido em arquivo local.
+- **Scripts de automação**: `.bat` para Windows, facilitando instalação, inicialização e criação de atalhos.
 
-### 3. `cd build && package-app.bat`
-Empacota tudo para produção:
-- Cria uma nova pasta `PDVsystem-YYYYMMDD/` dentro de `build/` (YYYYMMDD = data do build).
-- Copia para essa pasta:
-   - `dist/` (frontend pronto)
-   - `node_modules/` (dependências)
-   - `novabev.sqlite` (banco de dados)
-   - `uploads/` (imagens)
-   - Scripts `.bat` (instalar, iniciar, atalho)
-   - `package.json` e `package-lock.json`
-- Gera o arquivo `PDVsystem-YYYYMMDD.zip` com todo o conteúdo acima.
-
-### 4. Extração e instalação
-Ao extrair o `.zip`, você terá:
-- Pasta `PDVsystem-YYYYMMDD/` com:
-   - `dist/` (frontend)
-   - `node_modules/` (dependências)
-   - `novabev.sqlite` (banco)
-   - `uploads/` (imagens)
-   - Scripts `.bat`
-   - `package.json`, `package-lock.json`, `README.md`
-
-### 5. `instalar-app.bat`
-Instala dependências na pasta extraída (caso precise atualizar ou instalar em outro PC). Atualiza/cria `node_modules/`.
-
-### 6. `iniciar-app.bat`
-Inicia o backend e abre o sistema no navegador em modo app.
-- Backend escuta na porta 8787.
-- O navegador abre automaticamente em modo app (janela dedicada).
-
-### 7. `criar-atalho-app.bat`
-Cria um atalho na área de trabalho para abrir o sistema rapidamente.
+**Interconexão**: Frontend e backend rodam no mesmo host, comunicando-se via HTTP (`localhost:8787`). O backend serve tanto a API quanto os arquivos estáticos do frontend.
 
 ---
 
-## Como utilizar o sistema
-1. Extraia o `.zip` em uma pasta de sua escolha.
-2. Execute `instalar-app.bat` (apenas na primeira vez ou após atualização de dependências).
-3. Execute `iniciar-app.bat` para rodar o sistema.
-4. (Opcional) Execute `criar-atalho-app.bat` para criar o atalho.
-5. O sistema abrirá automaticamente no navegador em modo app. Você pode acessar também via http://localhost:8787 ou pelo IP da máquina.
-6. Para liberar acesso externo, autorize o IP no painel admin.
+## 2. Controle de IPs e Portas
+
+- **Porta principal**: `8787` (HTTP, backend e frontend).
+- **Controle de IP**: Apenas IPs autorizados podem acessar o sistema (tabela `allowed_ips`). IPs não autorizados são registrados em `pending_ips` e bloqueados até aprovação.
+- **Firewall**: Permitir entrada na porta `8787` apenas para IPs confiáveis (idealmente, apenas rede local). Bloquear todas as outras portas não utilizadas. Se acesso externo for necessário, restringir por IP e considerar VPN.
 
 ---
 
-## Estrutura final da pasta extraída
-```
-PDVsystem-YYYYMMDD/
-├── dist/                # Frontend pronto para produção
-│   ├── index.html
-│   └── assets/
-├── node_modules/        # Dependências do Node.js
-├── novabev.sqlite       # Banco de dados SQLite
-├── uploads/             # Imagens de produtos
-├── instalar-app.bat     # Instala dependências
-├── iniciar-app.bat      # Inicia o sistema
-├── criar-atalho-app.bat # Cria atalho na área de trabalho
-├── package.json
-├── package-lock.json
-├── README.md
-└── ...
-```
+## 3. Empacotamento e Estrutura de Arquivos/Pastas
+
+- **Empacotamento**: O script [`build/package-app.bat`](build/package-app.bat) gera um `.zip` com todos os arquivos essenciais.
+- **Estrutura recomendada após extração**:
+  ```
+  PDVsystem-YYYYMMDD/
+  ├── dist/                # Frontend pronto para produção
+  ├── public/uploads/      # Imagens de produtos
+  ├── data/novabev.sqlite  # Banco de dados SQLite
+  ├── server/              # Backend compilado (Node.js)
+  ├── server/migrations/   # Scripts de migração do banco
+  ├── node_modules/        # (gerado após instalar dependências)
+  ├── instalar-app.bat     # Instala dependências e backend
+  ├── iniciar-app.bat      # Inicia backend e frontend
+  ├── criar-atalho-app.bat # Cria atalho na área de trabalho
+  ├── package.json
+  ├── package-lock.json
+  ├── README.md
+  └── ...
+  ```
 
 ---
 
-## Observações importantes
-- O controle de IP estará ativo em produção.
-- O banco de dados (novabev.sqlite) e imagens ficam na pasta extraída.
-- Para liberar acesso externo, autorize o IP no painel admin.
-- Scripts .bat automatizam todo o processo.
-- Não é necessário Node instalado no cliente final (portable).
+## 4. Scripts de Instalação e Inicialização
+
+- **Instalação**: Execute `instalar-app.bat` para instalar dependências, pm2 e configurar o backend como serviço.
+- **Inicialização**: Execute `iniciar-app.bat` para iniciar o backend (via pm2) e abrir o frontend no Chrome em modo app.
+- **Criação de atalho**: Execute `criar-atalho-app.bat` para criar um atalho na área de trabalho.
+- **Parada do sistema**: Para parar o backend: `pm2 stop PDVsystem`. Para reiniciar: `pm2 restart PDVsystem`.
+- **Comandos manuais (caso automação falhe)**:
+  1. `npm install` (instalar dependências)
+  2. `npm run build` (gerar frontend/backend)
+  3. `pm2 start server/dist/index.js --name PDVsystem --env production`
+  4. Abrir `http://localhost:8787` no navegador
 
 ---
 
-## Passo a passo completo
+## 5. Geração de Build e Preparação para Produção
 
-### 1. Preparar ambiente
-1. Certifique-se de que todos os arquivos estejam salvos e o projeto atualizado.
-2. Abra o terminal na pasta raiz do projeto.
-
-### 2. Instalar dependências
-```sh
-npm install
-```
-
-### 3. Gerar build do frontend
-```sh
-npm run build
-```
-O build será gerado na pasta `dist/`.
-
-### 4. Empacotar aplicação para produção
-Execute o script de empacotamento:
-```sh
-cd build
-package-app.bat
-```
-Isso irá criar a pasta `PDVsystem-YYYYMMDD` e o arquivo `PDVsystem-YYYYMMDD.zip` com tudo pronto para uso.
-
-### 5. Instalar e rodar o sistema
-1. Extraia o arquivo `.zip` em uma pasta de sua escolha.
-2. Abra a pasta extraída.
-3. Execute o script de instalação:
-```sh
-instalar-app.bat
-```
-4. Execute o script de inicialização:
-```sh
-iniciar-app.bat
-```
-O sistema irá instalar dependências, iniciar o backend e abrir o navegador em modo app.
-
-### 6. Criar atalho na área de trabalho (opcional)
-```sh
-criar-atalho-app.bat
-```
-
-### 7. Acessar o sistema
-O sistema abrirá automaticamente no navegador em modo app. Você pode acessar também via http://localhost:8787 ou pelo IP da máquina.
+- **Build do Frontend**: Execute `npm run build:client` para gerar a pasta `dist/` com os arquivos otimizados do React.
+- **Build do Backend**: Execute `npm run build:server` para compilar o código TypeScript do backend para `server/dist/`.
+- **Build Completo**: Execute `npm run build` para compilar frontend e backend juntos.
+- **Validação**: Certifique-se de que `dist/` e `server/dist/` estejam presentes e completos.
 
 ---
 
-## Observações importantes
-- O controle de IP estará ativo em produção.
-- O banco de dados (novabev.sqlite) e imagens ficam na pasta extraída.
-- Para liberar acesso externo, autorize o IP no painel admin.
-- Scripts .bat automatizam todo o processo.
+## 6. Preparação do Banco de Dados para Produção
+
+- **Migrações**: Execute os scripts de migração localizados em `server/migrations/` e `server/src/db/migrations/` para criar e atualizar o banco de dados `data/novabev.sqlite`.
+- **População Inicial**: Garanta que o usuário root/admin e dados essenciais estejam criados via migrations.
+- **Backup**: Realize um backup do banco após a preparação inicial.
 
 ---
 
-## Resumo dos comandos principais
-- `npm install` — Instala dependências
-- `npm run build` — Gera build do frontend
-- `build/package-app.bat` — Empacota tudo para produção
-- `instalar-app.bat` — Instala dependências na pasta extraída
-- `iniciar-app.bat` — Inicia o sistema e abre o navegador
-- `criar-atalho-app.bat` — Cria atalho na área de trabalho
+## 7. Empacotamento e Distribuição
 
-## Comandos de Desenvolvimento
-
-- `npm run dev` — Inicia Vite (porta 3000) + API backend (porta 8787) em modo watch.
-- `npm run dev:api` — Inicia apenas o backend (porta 8787) em modo watch.
-
-## Proxy Vite
-- O proxy `/api` no Vite está configurado para `http://localhost:8787`.
-
-## Como testar
-1. Rode `npm install` (se não rodou ainda)
-2. Rode `npm run dev`
-3. Acesse http://localhost:3000 (frontend)
-4. Teste a API: http://localhost:8787/api/health
-
-## Observações
-- O backend usa apenas `import/export` (ESM).
-- O backend roda com TSX (não use ts-node-dev).
-- O Vite sempre na porta 3000, API sempre na 8787.
-# NBPOS - PDV Portable
-
-## Checklist de Desenvolvimento
-
-### DEV
-- [x] `npm install` (instala dependências frontend e backend)
-- [x] `npm run dev` (Vite + API em paralelo)
-- [x] Frontend acessa API via `/api` (proxy)
-
-### PROD LOCAL
-- [x] `npm run build` (gera dist/ do Vite)
-- [x] `npm run start:local` (server serve dist/ e API na mesma porta)
-
-### PORTABLE (Windows)
-- [ ] Gerar build do frontend: `npm run build`
-- [ ] Gerar bundle do server (CJS): `npm run build:server`
-- [ ] Montar pasta `dist-package/`:
-   - `server/node.exe` (baixar do site oficial)
-   - `server/server.cjs` (bundle do server)
-   - `server/start-server.bat` (inicia node.exe server.cjs)
-   - `app/` (conteúdo de dist/ do Vite)
-   - `data/novabev.sqlite` (criado na primeira execução)
-
-### Scripts principais
-- `npm run dev` - Vite + API (dev)
-- `npm run build` - Build frontend + backend
-- `npm run start:local` - Servidor local (prod)
-
-### Observações
-- O backend usa SQLite em arquivo, persistente.
-- O frontend consome dados da API local.
-- Não é necessário Node instalado no cliente final (portable).
+- **Empacotamento**: Utilize o script `build/package-app.bat` para gerar um pacote `.zip` com todos os arquivos necessários para o cliente.
+- **Checklist de Conteúdo**: O pacote deve conter: `dist/`, `server/dist/`, `data/novabev.sqlite`, `public/uploads/`, scripts `.bat`, `package.json`, `README.md` e demais arquivos essenciais.
+- **Distribuição**: Envie o pacote ao cliente final ou equipe de operações para implantação.
 
 ---
 
-## Estrutura do Backend
-- `server/src/index.ts` - Bootstrap Express + static
-- `server/src/db/database.ts` - Conexão SQLite
-- `server/src/routes/health.routes.ts` - Health check
-- `server/src/db/migrations/0001_init.sql` - Schema inicial
+## 8. Estrutura da Aplicação e Acesso
 
-## Próximos passos
-- Implementar endpoints de produtos, vendas, caixa, etc.
-- Refatorar POS.tsx para buscar produtos via API.
-- Implementar build/bundle do server para portable.
-
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/17BmGhalxErcEbSyha5cvGteT2_DeIc5F
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
-
-
-
-   # PROXIMA ATUALIZAÇÃO SISTEMA DE KILOS
-
-## Como gerar e empacotar a versão de produção (build leve)
-
-## Passo a passo para produção
-
-### 1. Instalar dependências para build
-Execute na raiz do projeto:
-```
-npm install
-```
-
-### 2. Gerar build do frontend e backend
-```
-npm run build
-```
-- Frontend gerado em `dist/`
-- Backend gerado em `server/dist/`
-
-### 3. Empacotar a aplicação (build leve)
-Execute na raiz do projeto:
-```
-package-app.bat
-```
-O pacote gerado estará em `build/PDVsystem-YYYYMMDD.zip`.
-
-**O pacote inclui:**
-- dist/ (frontend)
-- public/uploads/ (imagens)
-- data/novabev.sqlite (banco)
-- server/ (backend compilado)
-- server/migrations/ (migrations do banco)
-- Scripts .bat (instalar, iniciar, atalho)
-- package.json, package-lock.json, README.md
-
-**Não inclui:**
-- node_modules (as dependências serão instaladas no cliente)
-
-### 4. Instalação e uso no cliente
-1. Instale o Node.js na máquina do cliente.
-2. Extraia o pacote .zip em uma pasta de sua escolha.
-3. Execute `instalar-app.bat` para instalar as dependências.
-4. Execute `iniciar-app.bat` para iniciar o sistema.
-5. (Opcional) Execute `criar-atalho-app.bat` para criar o atalho.
-
-O sistema abrirá automaticamente no navegador em modo app. Você pode acessar também via http://localhost:8787.
+- **Estrutura interna**: Frontend: SPA React em `dist/`. Backend: Node.js/Express em `server/dist/index.js`. API: `/api/*`
+- **Acesso**: URL padrão: `http://localhost:8787`. Login inicial: Usuário: `root`, Senha: `root` (ou conforme definido em migração). Autenticação: JWT/session (verificar implementação). Controle de IP: Apenas IPs autorizados podem acessar (admin libera via painel).
 
 ---
 
-## Checklist do pacote
-- [x] dist/
-- [x] public/uploads/
-- [x] data/novabev.sqlite
-- [x] server/
-- [x] server/migrations/
-- [x] instalar-app.bat
-- [x] iniciar-app.bat
-- [x] criar-atalho-app.bat
-- [x] package.json
-- [x] package-lock.json
-- [x] README.md
+## 9. Plano de Funcionamento e Monitoramento
+
+- **Fluxo principal**:
+  1. Backend inicia via pm2.
+  2. Frontend é servido pelo backend.
+  3. Usuário acessa via navegador (modo app).
+  4. Controle de IP bloqueia acessos não autorizados.
+  5. Operações de venda, estoque, caixa e relatórios são realizadas normalmente.
+- **Monitoramento**: Logs do backend via pm2 (`pm2 logs PDVsystem`). Logs de acesso e eventos críticos no banco (`logs`, `cash_movements`, etc). Recomenda-se configurar alertas para falhas críticas (ex: falha ao iniciar backend, corrupção do banco).
+- **Recuperação de desastres**: Backup regular do arquivo `data/novabev.sqlite` e da pasta `public/uploads/`. Em caso de falha, restaurar o backup mais recente. Documentar procedimentos de restauração e reset de senha admin/root.
 
 ---
 
-## Observações
-- O build leve agiliza o empacotamento e reduz o tamanho do pacote.
-- As dependências são instaladas no cliente via `instalar-app.bat`.
-- Sempre execute o build antes de empacotar para garantir que o backend e frontend estejam atualizados.
-- Mantenha as migrations no pacote para inicialização do banco.
+## Checklist de Implantação e Operação
 
-Se precisar de instruções específicas para atualização ou migração, consulte o README ou solicite suporte.
+- [ ] Validar ambiente do cliente (Windows, Node.js instalado, Chrome disponível)
+
+- [ ] Gerar build do frontend (`npm run build:client`)
+- [ ] Gerar build do backend (`npm run build:server`)
+- [ ] Gerar build completo (`npm run build`)
+- [ ] Executar migrações do banco (primeira inicialização)
+- [ ] Preparar banco de dados para produção (população inicial, backup)
+- [ ] Empacotar aplicação para distribuição (`package-app.bat`)
+- [ ] Instalar dependências (`instalar-app.bat`)
+- [ ] Iniciar backend e frontend (`iniciar-app.bat`)
+- [ ] Testar acesso local e controle de IP
+- [ ] Autorizar IPs necessários via painel admin
+- [ ] Testar login com usuário root/admin
+- [ ] Realizar testes manuais de vendas, estoque, caixa e relatórios
+- [ ] Validar geração de backups e restauração
+- [ ] Validar logs e monitoramento do backend
+- [ ] Corrigir eventuais bugs encontrados
+- [ ] Atualizar documentação conforme ajustes
+- [ ] Validar instalação e uso em ambiente de produção
+- [ ] Checklist final aprovado e versão marcada como estável
+
+---
+
+> **Observação:** Sempre priorize a automação e a segurança. Restrinja o acesso ao backend e ao banco de dados, mantenha backups regulares e monitore o sistema em produção.
