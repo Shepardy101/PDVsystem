@@ -1,41 +1,50 @@
-# Copilot Instructions for PDVsystem
+## Copilot Instructions — PDVsystem / NovaBev POS
 
-## Project Architecture
-- **Frontend**: React (Vite) SPA in `dist/`, source in `components/`, `pages/`, and `src/`.
-- **Backend**: Node.js/Express in `server/` (TypeScript source in `server/src/`, compiled JS in `server/dist/`).
-- **Database**: SQLite, file at `data/novabev.sqlite`. Migrations in `server/migrations/` and `server/src/db/migrations/`.
-- **Scripts**: Windows `.bat` scripts for install, build, and launch automation.
+**Arquitetura**
+- SPA React/Vite servida pelo backend Express na mesma porta (8787); build do cliente em `dist/`, build do servidor em `server/dist/`.
+- Backend TypeScript em `server/src/` (rotas em `server/src/routes/`, repositórios em `server/src/repositories/`); fallback de SPA em `server/src/index.ts`.
+- Banco SQLite único em `data/novabev.sqlite` com PRAGMAs WAL + foreign_keys; migrations SQL em `server/src/db/migrations/`.
 
-## Key Workflows
-- **Install**: Run `instalar-app.bat` (installs dependencies, pm2, prepares backend).
-- **Build**: Run `npm run build` (builds both frontend and backend).
-- **Start (prod)**: `npm run start:prod` (runs backend via pm2, serves frontend).
-- **Manual start**: `pm2 start server/dist/index.js --name PDVsystem --env production`.
-- **Frontend access**: Open `http://localhost:8787` (served by backend).
-- **Migrations**: Run on first start or manually via scripts in `server/migrations/`.
+**Execução e builds**
+- Dev: `npm run dev` (backend watch + Vite em 3000).
+- Build: `npm run build:client`, `npm run build:server`, ou `npm run build` (full).
+- Migração: `npm run migrate` (ts-node em `server/src/db/migrate.ts`).
+- Produção: `npm run start:prod` ou `pm2 start server/dist/index.js --name PDVsystem --env production`.
 
-## Patterns & Conventions
-- **IP Whitelisting**: Only allowed IPs (table `allowed_ips`) can access; others are blocked and logged.
-- **User Auth**: Default admin is `root`/`root` (see migrations for changes).
-- **API**: All endpoints under `/api/*`.
-- **Database**: Always use `data/novabev.sqlite` (see `server/src/db/database.ts`).
-- **Logs**: Use `pm2 logs PDVsystem` for backend logs.
-- **Backups**: Regularly backup `data/novabev.sqlite` and `public/uploads/`.
+**Padrões e dados**
+- Valores monetários em centavos (inteiros); timestamps em epoch ms; IDs são TEXT/UUID.
+- Produtos: unidade `cx|unit|kg|serv`, `min_stock` padrão 20, `status` active/inactive.
+- Rotas principais em `/api/*`: POS (`/api/pos`), Caixa (`/api/cash` + `/api/cash/history`), Produtos/Categorias, Entidades (users/clients/suppliers), Relatórios (`/api/report`, `/api/reports`), Settings, Admin DB, IP Control.
 
-## Integration Points
-- **Frontend/Backend**: Served together; no CORS needed in production.
-- **External**: No external APIs by default, but dependencies include `better-sqlite3`, `express`, `multer`, etc.
+**Segurança e guardrails**
+- Middleware `ipAccessControl` com whitelist; exceções: `/api/health`, `/api/admin-db`, `/api/admin/ip-control`, `/uploads`. IPs desconhecidos vão para `pending_ips` e são bloqueados.
+- Admin DB Manager apenas com `ENABLE_DB_ADMIN=true` e acesso localhost; `POST /api/admin-db/reset` limpa tabelas e recria root.
+- Backups recomendados de `data/novabev.sqlite` e `public/uploads/`.
 
-## Examples
-- To add a new migration: Place SQL in `server/migrations/`, run via SQLite CLI or migration script.
-- To add a new API route: Implement in `server/src/routes/`, export via `server/src/index.ts`.
-- To debug: Use `pm2 logs PDVsystem` and check `data/novabev.sqlite` for data integrity.
+**Fluxo UI → API → DB**
+- UI (pages/components + services) chama `/api/*`; middlewares (CORS, json, ipAccessControl) → rotas em `server/src/routes/*` → repositórios em `server/src/repositories/*` → SQLite.
 
-## Special Notes
-- All automation assumes Windows environment.
-- Always check that the backend is using the correct database file (`data/novabev.sqlite`).
-- For production, restrict firewall to port 8787 and trusted IPs only.
+**Automação Windows/pm2**
+- Scripts `.bat` (`instalar-app.bat`, `iniciar-app.bat`, `package-app.bat` e variantes em `build/`) para instalar, iniciar e empacotar; uso típico do processo pm2 `PDVsystem`.
 
----
+**Documentação e hooks**
+- Docs em `docs/` (índice em `docs/README.md`); `npm run docs:check` valida presença/referências e roda no pre-commit via `.githooks/pre-commit`.
 
-For more, see `README.md` and scripts in the project root.
+**Como contribuir com segurança**
+- Alterou rotas ou payloads? Atualize `docs/06-api-express.md` e mantenha centavos/epoch.
+- Alterou schema/migrations? Atualize `docs/05-banco-de-dados.md`.
+- Alterou fluxos de caixa/POS? Revise `docs/07-regras-de-negocio.md` e `docs/08-relatorios-e-bi.md`.
+- Mantenha caminhos reais do repositório ao documentar (services, pages, routes, repos).
+
+**Verificações rápidas**
+- Porta esperada 8787; DB em `data/novabev.sqlite`.
+- IP whitelist ativo por padrão; admin-db é restrito e opcional.
+- Rodar `npm run docs:check` antes de commitar.
+
+**Modo de trabalho do agente (priorize rapidez com segurança)**
+- Antes de codar: localizar arquivos relevantes (rotas, repos, services, pages) e citar docs usadas; não inventar rotas/tabelas/campos.
+- Planejar em passos curtos e manter lista TODO; executar item a item e validar erros (lint/execução relevante quando aplicável).
+- Para backend: editar rota em `server/src/routes/<domínio>.routes.ts` e lógica em `server/src/repositories/<domínio>.repo.ts`; manter centavos/epoch/UUID; se alterar schema, criar migration em `server/src/db/migrations/` e atualizar docs.
+- Para frontend: pages em `pages/*.tsx`, componentes em `components/`, serviços HTTP em `services/*.ts`; respeitar padrões de dados (centavos, epoch) e unidades de produto.
+- Segurança: não relaxar `ipAccessControl`; admin-db só com flag + localhost; reset de DB é destrutivo.
+- Checklist por mudança: (1) apontar arquivos tocados, (2) sugerir testes manuais HTTP (curl/fetch) e UI, (3) rodar/lembrar `npm run docs:check`, (4) se buildar, usar scripts oficiais.

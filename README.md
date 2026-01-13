@@ -1,131 +1,91 @@
-# Plano de Implantação — PDVsystem
+# PDVsystem / NovaBev POS — Mapa de Conhecimento (a partir de docs)
 
-## 1. Visão Geral do Sistema
+## Resumo executivo (10–15 linhas)
+- SPA React/Vite servida pelo backend Express na mesma porta (8787).
+- Backend TypeScript → build em server/dist; frontend build em dist/.
+- Banco único SQLite em data/novabev.sqlite com PRAGMAs WAL + foreign_keys.
+- Whitelist de IP via middleware ipAccessControl (exceções: /api/health, /api/admin-db, /api/admin/ip-control, /uploads).
+- Módulos: POS (vendas/pagamentos), Caixa (sessões e movimentos), Produtos/Categorias, Entidades (usuários/clientes/fornecedores), Relatórios/BI, Settings, DB Manager.
+- Valores monetários em centavos (inteiros); timestamps em epoch ms; IDs TEXT/UUID.
+- Admin DB Manager exige ENABLE_DB_ADMIN=true e acesso localhost; inclui reset de DB e CRUD genérico.
+- Relatórios: sold-products, sold-products-detailed, product-mix; sessions-movements para auditoria.
+- Automação Windows/pm2 com scripts .bat para instalar, iniciar, empacotar.
 
-O **PDVsystem** é uma solução de ponto de venda (POS) para distribuidores de bebidas, com foco em performance, controle de estoque, vendas, auditoria de caixa e relatórios em tempo real.
+## Como rodar (docs)
+- Dev: `npm run dev` (backend watch + Vite em 3000).
+- Build: `npm run build:client`, `npm run build:server` ou `npm run build`.
+- Migrate: `npm run migrate` (ts-node em server/src/db/migrate.ts).
+- Produção local: `npm run start:prod` ou `pm2 start server/dist/index.js --name PDVsystem --env production`.
+- Start sem build: `npm run start:local` (usa TS direto).
 
-- **Frontend**: SPA React (Vite) servida pelo backend.
-- **Backend**: Node.js/Express (TypeScript) com SQLite, responsável por autenticação, lógica de negócios, controle de caixa, estoque, relatórios e controle de IP.
-- **Banco de Dados**: SQLite, persistido em arquivo local.
-- **Scripts de automação**: `.bat` para Windows, facilitando instalação, inicialização e criação de atalhos.
+## Arquitetura em 1 minuto
+UI (pages/components/services) → fetch para /api/* → middlewares (CORS, json, ipAccessControl) → rotas em server/src/routes/* → repositórios em server/src/repositories/* → SQLite data/novabev.sqlite → JSON de resposta usado por tabelas, modais, dashboards e recibos. SPA fallback responde dist/index.html para rotas não-API.
 
-**Interconexão**: Frontend e backend rodam no mesmo host, comunicando-se via HTTP (`localhost:8787`). O backend serve tanto a API quanto os arquivos estáticos do frontend.
+## Pontos críticos
+- IP whitelist obrigatória; IP desconhecido vai para pending_ips e é bloqueado.
+- Admin DB Manager: só com ENABLE_DB_ADMIN=true e localhost; reset limpa tabelas e recria root.
+- Porta padrão 8787; uploads servidos em /uploads.
+- Dados monetários: sempre centavos; tempos: epoch ms; unidades de produto incluem serv.
+- Product-mix requer intervalo from/to epoch ms.
+- Backups de data/novabev.sqlite e public/uploads/ recomendados.
 
----
+## Checklist de desenvolvimento
+- Alterou rotas? Revisar docs/06-api-express.md e services que chamam /api/*.
+- Alterou schema/migration? Atualizar docs/05-banco-de-dados.md.
+- Alterou fluxos POS/caixa? Rever docs/07-regras-de-negocio.md.
+- BI/relatórios? Conferir docs/08-relatorios-e-bi.md.
+- Segurança/IP/Admin DB? Checar docs/11-seguranca-e-guardrails.md.
+- Sempre rodar `npm run docs:check` antes de commitar; hook pre-commit executa isso.
 
-## 2. Controle de IPs e Portas
 
-- **Porta principal**: `8787` (HTTP, backend e frontend).
-- **Controle de IP**: Apenas IPs autorizados podem acessar o sistema (tabela `allowed_ips`). IPs não autorizados são registrados em `pending_ips` e bloqueados até aprovação.
-- **Firewall**: Permitir entrada na porta `8787` apenas para IPs confiáveis (idealmente, apenas rede local). Bloquear todas as outras portas não utilizadas. Se acesso externo for necessário, restringir por IP e considerar VPN.
 
----
+# PROMPT DO AGENTE (Copiar e usar como contexto padrão)
 
-## 3. Empacotamento e Estrutura de Arquivos/Pastas
+Você é engenheiro(a) full-stack deste projeto PDVsystem/NovaBev POS. Use apenas o que está documentado em docs/*. Se faltar informação, diga claramente que precisa abrir o código correspondente.
 
-- **Empacotamento**: O script [`build/package-app.bat`](build/package-app.bat) gera um `.zip` com todos os arquivos essenciais.
-- **Estrutura recomendada após extração**:
-  ```
-  PDVsystem-YYYYMMDD/
-  ├── dist/                # Frontend pronto para produção
-  ├── public/uploads/      # Imagens de produtos
-  ├── data/novabev.sqlite  # Banco de dados SQLite
-  ├── server/              # Backend compilado (Node.js)
-  ├── server/migrations/   # Scripts de migração do banco
-  ├── node_modules/        # (gerado após instalar dependências)
-  ├── instalar-app.bat     # Instala dependências e backend
-  ├── iniciar-app.bat      # Inicia backend e frontend
-  ├── criar-atalho-app.bat # Cria atalho na área de trabalho
-  ├── package.json
-  ├── package-lock.json
-  ├── README.md
-  └── ...
-  ```
+Stack e convenções (docs):
+- Frontend: React 19 + Vite (SPA servida pelo backend).
+- Backend: Node/Express em TypeScript; build em server/dist; porta 8787.
+- DB: SQLite em data/novabev.sqlite com WAL + foreign_keys; acesso via better-sqlite3.
+- Valores monetários em centavos; timestamps em epoch ms; IDs TEXT/UUID.
+- Unidades de produto: cx|unit|kg|serv; status active/inactive; min_stock padrão 20.
+- Segurança: ipAccessControl (whitelist; exceções /api/health, /api/admin-db, /api/admin/ip-control, /uploads); Admin DB requer ENABLE_DB_ADMIN=true e localhost.
+- Builds: `npm run build:client`, `npm run build:server`, `npm run build`; migrate: `npm run migrate`; start prod: `npm run start:prod` ou pm2.
+- Documentação obrigatória: `npm run docs:check` (hook pre-commit).
 
----
+Regras de atuação:
+- Não invente rotas, tabelas ou campos; cite arquivos de docs usados.
+- Mantenha centavos/epoch ms/UUID conforme docs.
+- Respeite boundaries: rotas em server/src/routes/*; repositórios em server/src/repositories/*; DB em data/novabev.sqlite.
+- Políticas de segurança: não expor/relaxar ipAccessControl; não habilitar admin-db fora de localhost/flag; reset de DB só com confirmação.
+- Antes de codar: localizar arquivos relevantes (rotas, repos, pages, services).
+- Proponha passos e liste arquivos a editar antes de mostrar código.
+- Gere código por arquivo, com paths explícitos.
+- Inclua checklist de testes manuais (curl ou chamadas HTTP + UI) para cada mudança.
 
-## 4. Scripts de Instalação e Inicialização
+Templates de tarefas:
+- Novo endpoint Express + repo + migration:
+  1) Identificar rota em server/src/routes/<domínio>.routes.ts e repo em server/src/repositories/<domínio>.repo.ts.
+  2) Definir payload/validações conforme padrões (centavos/epoch).
+  3) Adicionar migration em server/src/db/migrations/*.sql se schema mudar; atualizar docs/05-banco-de-dados.md e docs/06-api-express.md.
+  4) Testes: curl POST/GET no endpoint; validar resposta e efeitos no DB.
+- Nova tela/aba React + integração:
+  1) Criar page ou componente em pages/ ou components/ mantendo estilo existente.
+  2) Consumir serviço em services/<domínio>.ts ou criar novo; chamar rota /api/* existente.
+  3) Validar dados (centavos/epoch) e exibir com formatação adequada.
+  4) Testes: navegar na SPA, acionar fetch e verificar dados retornados.
+- Ajustar BI/relatórios (from/to, agregações):
+  1) Usar parâmetros epoch ms (start/end/from/to) conforme docs/08-relatorios-e-bi.md.
+  2) Alterar lógica em reports.repo (consultar código) e refletir em docs.
+  3) Testes: curl GET /api/report/* ou /api/reports/product-mix com intervalo; conferir agregações.
+- Refatorar componente mantendo visual futurista:
+  1) Localizar componente em components/ ou pages/.
+  2) Preservar estrutura e interações; ajustar estilos de forma consistente com existentes (Tailwind via CDN, lucide-react).
+  3) Testes: renderizar página e validar UI/estado.
 
-- **Instalação**: Execute `instalar-app.bat` para instalar dependências, pm2 e configurar o backend como serviço.
-- **Inicialização**: Execute `iniciar-app.bat` para iniciar o backend (via pm2) e abrir o frontend no Chrome em modo app.
-- **Criação de atalho**: Execute `criar-atalho-app.bat` para criar um atalho na área de trabalho.
-- **Parada do sistema**: Para parar o backend: `pm2 stop PDVsystem`. Para reiniciar: `pm2 restart PDVsystem`.
-- **Comandos manuais (caso automação falhe)**:
-  1. `npm install` (instalar dependências)
-  2. `npm run build` (gerar frontend/backend)
-  3. `pm2 start server/dist/index.js --name PDVsystem --env production`
-  4. Abrir `http://localhost:8787` no navegador
-
----
-
-## 5. Geração de Build e Preparação para Produção
-
-- **Build do Frontend**: Execute `npm run build:client` para gerar a pasta `dist/` com os arquivos otimizados do React.
-- **Build do Backend**: Execute `npm run build:server` para compilar o código TypeScript do backend para `server/dist/`.
-- **Build Completo**: Execute `npm run build` para compilar frontend e backend juntos.
-- **Validação**: Certifique-se de que `dist/` e `server/dist/` estejam presentes e completos.
-
----
-
-## 6. Preparação do Banco de Dados para Produção
-
-- **Migrações**: Execute os scripts de migração localizados em `server/migrations/` e `server/src/db/migrations/` para criar e atualizar o banco de dados `data/novabev.sqlite`.
-- **População Inicial**: Garanta que o usuário root/admin e dados essenciais estejam criados via migrations.
-- **Backup**: Realize um backup do banco após a preparação inicial.
-
----
-
-## 7. Empacotamento e Distribuição
-
-- **Empacotamento**: Utilize o script `build/package-app.bat` para gerar um pacote `.zip` com todos os arquivos necessários para o cliente.
-- **Checklist de Conteúdo**: O pacote deve conter: `dist/`, `server/dist/`, `data/novabev.sqlite`, `public/uploads/`, scripts `.bat`, `package.json`, `README.md` e demais arquivos essenciais.
-- **Distribuição**: Envie o pacote ao cliente final ou equipe de operações para implantação.
-
----
-
-## 8. Estrutura da Aplicação e Acesso
-
-- **Estrutura interna**: Frontend: SPA React em `dist/`. Backend: Node.js/Express em `server/dist/index.js`. API: `/api/*`
-- **Acesso**: URL padrão: `http://localhost:8787`. Login inicial: Usuário: `root`, Senha: `root` (ou conforme definido em migração). Autenticação: JWT/session (verificar implementação). Controle de IP: Apenas IPs autorizados podem acessar (admin libera via painel).
-
----
-
-## 9. Plano de Funcionamento e Monitoramento
-
-- **Fluxo principal**:
-  1. Backend inicia via pm2.
-  2. Frontend é servido pelo backend.
-  3. Usuário acessa via navegador (modo app).
-  4. Controle de IP bloqueia acessos não autorizados.
-  5. Operações de venda, estoque, caixa e relatórios são realizadas normalmente.
-- **Monitoramento**: Logs do backend via pm2 (`pm2 logs PDVsystem`). Logs de acesso e eventos críticos no banco (`logs`, `cash_movements`, etc). Recomenda-se configurar alertas para falhas críticas (ex: falha ao iniciar backend, corrupção do banco).
-- **Recuperação de desastres**: Backup regular do arquivo `data/novabev.sqlite` e da pasta `public/uploads/`. Em caso de falha, restaurar o backup mais recente. Documentar procedimentos de restauração e reset de senha admin/root.
-
----
-
-## Checklist de Implantação e Operação
-
-- [ ] Validar ambiente do cliente (Windows, Node.js instalado, Chrome disponível)
-
-- [x] Gerar build do frontend (`npm run build:client`)
-- [x] Gerar build do backend (`npm run build:server`)
-- [ ] Gerar build completo (`npm run build`)
-- [ ] Executar migrações do banco (primeira inicialização)
-- [ ] Preparar banco de dados para produção (população inicial, backup)
-- [ ] Empacotar aplicação para distribuição (`package-app.bat`)
-- [ ] Instalar dependências (`instalar-app.bat`)
-- [ ] Iniciar backend e frontend (`iniciar-app.bat`)
-- [ ] Testar acesso local e controle de IP
-- [ ] Autorizar IPs necessários via painel admin
-- [ ] Testar login com usuário root/admin
-- [ ] Realizar testes manuais de vendas, estoque, caixa e relatórios
-- [ ] Validar geração de backups e restauração
-- [ ] Validar logs e monitoramento do backend
-- [ ] Corrigir eventuais bugs encontrados
-- [ ] Atualizar documentação conforme ajustes
-- [ ] Validar instalação e uso em ambiente de produção
-- [ ] Checklist final aprovado e versão marcada como estável
-
----
-
-> **Observação:** Sempre priorize a automação e a segurança. Restrinja o acesso ao backend e ao banco de dados, mantenha backups regulares e monitore o sistema em produção.
+Quando pedir mais contexto (abrir no código):
+- Rotas detalhadas: server/src/routes/*.ts.
+- Regras/validações: server/src/repositories/*.ts.
+- Contratos usados no frontend: services/*.ts e pages/*.tsx.
+- Migrations e schema: server/src/db/migrations/*.sql.
+- Admin DB / segurança IP: server/src/services/adminDb.service.ts, server/src/middleware/ipAccessControl.ts.
