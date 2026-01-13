@@ -84,6 +84,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    const inputRef = useAutoFocus<HTMLInputElement>();
    const searchRef = useRef<HTMLDivElement>(null);
+   // Ref para o input de quantidade do último produto do carrinho
+   const lastQtyInputRef = useRef<HTMLInputElement>(null);
+   // Estado para edição de quantidade
+   const [editingQty, setEditingQty] = useState(false);
+   const [tempQty, setTempQty] = useState('');
+   // Guarda o último produto adicionado ao carrinho
+   const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
 
 
 
@@ -277,7 +284,6 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          ) return;
          // Só foca se não estiver em input/textarea já
          const active = document.activeElement;
-         // SÓ TERÁ EFEITO SE O INPUT JÁ NAO ESTIVER FOCADO
          if (
             (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) &&
             active === inputRef.current
@@ -297,6 +303,31 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       isClosingModalOpen,
       isSubtotalModalOpen
    ]);
+
+   // Handler para TAB no input de pesquisa
+   useEffect(() => {
+      const handleTab = (e: KeyboardEvent) => {
+         if (
+            document.activeElement === inputRef.current &&
+            !searchTerm &&
+            cart.length > 0 &&
+            !editingQty &&
+            e.key === 'Tab'
+         ) {
+            e.preventDefault();
+            const fallbackLast = cart[cart.length - 1];
+            const targetItem = cart.find(i => i.product.id === lastAddedProductId) || fallbackLast;
+            setEditingQty(true);
+            setTempQty(targetItem.quantity.toString());
+            setTimeout(() => {
+               lastQtyInputRef.current?.focus();
+               lastQtyInputRef.current?.select();
+            }, 10);
+         }
+      };
+      window.addEventListener('keydown', handleTab);
+      return () => window.removeEventListener('keydown', handleTab);
+   }, [cart, searchTerm, editingQty, lastAddedProductId]);
 
 
 
@@ -467,8 +498,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             return;
          }
 
-         // Focar input principal se apertar qualquer número
-         if (!isPaymentModalOpen && /^[0-9]$/.test(e.key)) {
+         // Focar input principal se apertar qualquer número (exceto se editando quantidade)
+         if (!isPaymentModalOpen && !editingQty && /^[0-9]$/.test(e.key)) {
             inputRef.current?.focus();
          }
       };
@@ -574,15 +605,17 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       setCart(prev => {
          const existing = prev.find(item => item.product.id === product.id);
          const discount = product.autoDiscount || 0;
-         // Para serviços, sempre quantidade 1 e não controla estoque
+         let nextCart: CartItem[];
          if (product.type === 'service') {
             if (existing) return prev;
-            return [...prev, { product, quantity: 1, appliedDiscount: discount }];
+            nextCart = [...prev, { product, quantity: 1, appliedDiscount: discount }];
+         } else if (existing) {
+            nextCart = prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+         } else {
+            nextCart = [...prev, { product, quantity: 1, appliedDiscount: discount }];
          }
-         if (existing) {
-            return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-         }
-         return [...prev, { product, quantity: 1, appliedDiscount: discount }];
+         setLastAddedProductId(product.id);
+         return nextCart;
       });
       setSearchTerm('');
       setSelectedIndex(0);
@@ -597,6 +630,16 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          if (item.product.id === productId) {
             const newQty = Math.max(1, item.quantity + delta);
             return { ...item, quantity: newQty };
+         }
+         return item;
+      }));
+   };
+
+   // Atualiza quantidade manualmente (input)
+   const setQuantity = (productId: string, qty: number) => {
+      setCart(prev => prev.map(item => {
+         if (item.product.id === productId) {
+            return { ...item, quantity: Math.max(1, qty) };
          }
          return item;
       }));
@@ -772,20 +815,20 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <div className="relative z-50 max-w-3xl mx-auto w-full" ref={searchRef}>
             <div className={`gradient-border-wrapper flex items-center gap-4 transition-all duration-300 rounded-2xl p-2 bg-dark-900/60 backdrop-blur-xl border border-white/10 ${isSearchFocused ? 'border-accent/50 shadow-accent-glow' : ''
                }`}>
-                  <div className="pl-4 text-slate-500">
-                    <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
-                  </div>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="Pressione '[SPACE]' para buscar produto ou GTIN..."
-                    className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    onKeyDown={handleSearchKeyDown}
-                  />
+                    <div className="pl-4 text-slate-500">
+                     <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
+                    </div>
+                    <input
+                     ref={inputRef}
+                     type="text"
+                     placeholder={isSearchFocused ? "Digite o código ou nome do produto..." : "Pressione '[SPACE]' para buscar produto ou GTIN..."}
+                     className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
+                     onFocus={() => setIsSearchFocused(true)}
+                     onBlur={() => setIsSearchFocused(false)}
+                     onKeyDown={handleSearchKeyDown}
+                    />
                {searchTerm && (
                   <button onClick={() => { setSearchTerm(''); inputRef.current?.focus(); }} className="p-2 text-slate-500 hover:text-white">
                      <X size={18} />
@@ -837,7 +880,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                      onClick={() => setIsClosingModalOpen(true)}
                      className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
                    >
-                     Encerrar Turno
+                     Fechar Caixa
                    </button>
 
                    <div className="flex items-center gap-2">
@@ -884,7 +927,36 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                             </div>
                             <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10">
                               <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
-                              <span className="w-8 text-center text-xs font-pdv font-bold text-slate-200">{item.quantity}</span>
+                              {lastAddedProductId === item.product.id && editingQty ? (
+                                 <input
+                                    ref={lastQtyInputRef}
+                                    type="number"
+                                    min={1}
+                                    className="w-12 text-center text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
+                                    value={tempQty}
+                                    onChange={e => setTempQty(e.target.value.replace(/\D/g, ''))}
+                                    onKeyDown={e => {
+                                       if (e.key === 'Enter') {
+                                          const qty = parseInt(tempQty) || 1;
+                                          setQuantity(item.product.id, qty);
+                                          setEditingQty(false);
+                                          setTimeout(() => {
+                                             inputRef.current?.focus();
+                                             inputRef.current?.select();
+                                          }, 10);
+                                       } else if (e.key === 'Escape') {
+                                          setEditingQty(false);
+                                          setTimeout(() => {
+                                             inputRef.current?.focus();
+                                             inputRef.current?.select();
+                                          }, 10);
+                                       }
+                                    }}
+                                    onFocus={e => e.stopPropagation()}
+                                 />
+                              ) : (
+                                 <span className="w-8 text-center text-xs font-pdv font-bold text-slate-200">{item.quantity}</span>
+                              )}
                               <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
                             </div>
                             <div className="w-24 text-right">
