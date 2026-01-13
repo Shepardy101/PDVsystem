@@ -2,6 +2,28 @@ import db from '../db/database';
 import { v4 as uuidv4 } from 'uuid';
 
 export function finalizeSale(saleData: any) {
+  const allowNegativeRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('Enable_Negative_Casher') as { value?: string } | undefined;
+  const allowNegativeStock = (allowNegativeRow?.value ?? 'true') === 'true';
+  const txValidate = db.transaction(() => {
+    for (const item of saleData.items || []) {
+      const qty = Number(item?.quantity ?? 0);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error('Quantidade inválida na venda.');
+      }
+      const product = db.prepare('SELECT id, name, type, stock_on_hand FROM products WHERE id = ?').get(item.productId) as { id: string, name?: string, type?: string, stock_on_hand?: number } | undefined;
+      if (!product) {
+        throw new Error('Produto não encontrado para finalizar a venda.');
+      }
+      if (!allowNegativeStock && product.type !== 'service') {
+        const available = product.stock_on_hand ?? 0;
+        if (qty > available) {
+          throw new Error(`Estoque insuficiente para ${product.name || 'produto'} (disponível: ${available}, solicitado: ${qty}).`);
+        }
+      }
+    }
+  });
+  txValidate();
+
   const now = Date.now();
   const saleId = uuidv4();
   const { operatorId, cashSessionId, items, payments, subtotal, discountTotal, total, clientId } = saleData;

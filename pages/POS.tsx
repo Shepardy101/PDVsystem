@@ -93,6 +93,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
    // Configuração: permitir estoque negativo
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
+   const isFinalizingRef = useRef(false);
 
 
 
@@ -358,8 +359,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    // Função para finalizar venda real
    const finalizeSale = useCallback(async (payments: { method: string, amount: number, metadata?: any }[]) => {
+      if (isFinalizingRef.current) return;
+      isFinalizingRef.current = true;
       if (!cashSessionId) {
          alert('Nenhuma sessão de caixa aberta. Abra o caixa para registrar vendas.');
+         isFinalizingRef.current = false;
          return;
       }
       const items = cart.map(item => ({
@@ -411,6 +415,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          setSelectedClient(null);
       } catch (err) {
          alert('Erro ao registrar venda. Tente novamente.');
+      } finally {
+         isFinalizingRef.current = false;
       }
    }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient]);
 
@@ -476,23 +482,6 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             e.preventDefault();
             if (!isPaymentModalOpen) {
                openPaymentModal();
-               return;
-            }
-         }
-
-         // Finalizar com atalho quando NÃO está no multiMode
-         if (isPaymentModalOpen && !multiMode) {
-            // Se algum input ou textarea está focado, não executa atalhos de pagamento
-            const active = document.activeElement;
-            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
-               return;
-            }
-            const key = e.key.toLowerCase();
-            if (["1", "2", "3"].includes(key)) {
-               e.preventDefault();
-               if (key === "1") finalizeSale([{ method: "card", amount: effectiveTotal }]);
-               if (key === "2") finalizeSale([{ method: "pix", amount: effectiveTotal }]);
-               if (key === "3") finalizeSale([{ method: "cash", amount: effectiveTotal }]);
                return;
             }
          }
@@ -977,6 +966,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                     onChange={e => setTempQty(e.target.value.replace(/\D/g, ''))}
                                     onKeyDown={e => {
                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           const qty = parseInt(tempQty) || 1;
                                           setQuantity(item.product.id, qty);
                                           setEditingQty(false);
@@ -985,6 +976,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                              inputRef.current?.select();
                                           }, 10);
                                        } else if (e.key === 'Escape') {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           setEditingQty(false);
                                           setTimeout(() => {
                                              inputRef.current?.focus();
