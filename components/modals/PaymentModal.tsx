@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Wallet, X, Zap, CreditCard, DollarSign } from 'lucide-react';
 import { Button, Input } from '../UI';
-import { useState as useReactState, useEffect as useReactEffect, useRef as useReactRef, useContext } from 'react';
-import POSContext from '../../pages/POS';
 export interface PaymentModalProps {
     isOpen: boolean;
     total: number;
@@ -364,12 +362,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                 <Button
                                     ref={addBtnRef}
                                     className="py-3 px-6"
-                                    disabled={parseFloat(paymentAmount) <= 0 || (parseFloat(paymentAmount) * 100) > remaining}
+                                    disabled={(() => {
+                                        const amt = parseFloat(paymentAmount.replace(',', '.'));
+                                        return !amt || amt <= 0 || (amt * 100) > remaining;
+                                    })()}
                                     onClick={() => {
-                                        setPartialPayments(prev => [...prev, { method: paymentMethod, amount: Math.round(parseFloat(paymentAmount) * 100) }]);
+                                        const amt = parseFloat(paymentAmount.replace(',', '.'));
+                                        if (!amt || amt <= 0) return; // bloqueia valor vazio ou zero
+                                        const cents = Math.round(amt * 100);
+                                        if (cents > remaining) return;
+                                        setPartialPayments(prev => [...prev, { method: paymentMethod, amount: cents }]);
                                         setPaymentAmount('');
                                         setTimeout(() => {
-                                            if ((remaining - Math.round(parseFloat(paymentAmount) * 100)) > 0) {
+                                            if ((remaining - cents) > 0) {
                                                 setFocusStep('input');
                                             } else {
                                                 setFocusStep('finalize');
@@ -379,6 +384,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                     onFocus={() => setFocusStep('add')}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') {
+                                            const amt = parseFloat(paymentAmount.replace(',', '.'));
+                                            if (!amt || amt <= 0 || (amt * 100) > remaining) return;
                                             if (addBtnRef.current) addBtnRef.current.click();
                                         }
                                     }}
