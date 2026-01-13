@@ -13,6 +13,7 @@ import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
 
 import SystemMonitorCards from '../components/SystemMonitorCards';
+import { toast } from 'react-hot-toast';
 
 // --- Painel de Controle de IPs ---
 type IpEntry = { id: number; ip: string; hostname?: string|null; tentado_em?: string; autorizado_em?: string; autorizado_por?: string|null };
@@ -125,6 +126,8 @@ const Settings: React.FC = () => {
    }
    const [logs, setLogs] = useState<{time: string, event: string, level: 'info' | 'warn' | 'error'}[]>([]);
    const [showDbManager, setShowDbManager] = useState(false);
+   const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
+   const [settingsLoading, setSettingsLoading] = useState(false);
   
   // Simular feed de logs técnicos
   useEffect(() => {
@@ -150,6 +153,35 @@ const Settings: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+   // Carrega configuração Enable_Negative_Casher
+   useEffect(() => {
+      setSettingsLoading(true);
+      fetch('/api/settings/Enable_Negative_Casher')
+         .then(r => r.ok ? r.json() : { value: 'true' })
+         .then(data => {
+            const v = (data?.value ?? 'true') === 'true';
+            setAllowNegativeStock(v);
+         })
+         .catch(() => setAllowNegativeStock(true))
+         .finally(() => setSettingsLoading(false));
+   }, []);
+
+   const toggleNegativeStock = async (value: boolean) => {
+      setAllowNegativeStock(value);
+      try {
+         const res = await fetch('/api/settings/Enable_Negative_Casher', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: value ? 'true' : 'false' })
+         });
+         if (!res.ok) throw new Error('Falha ao salvar');
+         toast.success(value ? 'Permitir estoque negativo ativado' : 'Bloqueio de estoque negativo ativado');
+      } catch (err) {
+         toast.error('Erro ao salvar configuração');
+         setAllowNegativeStock(!value); // reverte se falhar
+      }
+   };
 
   const TelemetryItem = ({ icon: Icon, label, value, status }: any) => (
     <div className="p-4 bg-dark-900/40 border border-white/5 rounded-2xl space-y-3 relative overflow-hidden group">
@@ -215,6 +247,28 @@ const Settings: React.FC = () => {
       <div className="flex-1 grid grid-cols-12 gap-8 overflow-hidden min-h-0 relative z-10">
         {/* Coluna Esquerda: Configurações */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+          {/* Controle de Estoque no Caixa */}
+          <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-6">
+             <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
+                      <Zap size={14} className="text-accent" /> Estoque no Caixa
+                   </p>
+                   <p className="text-sm text-slate-200 font-bold">Permitir vender acima do estoque?</p>
+                   <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl">
+                      Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
+                   </p>
+                </div>
+                <div className="flex items-center gap-3 bg-dark-900/60 border border-white/10 rounded-2xl px-4 py-2">
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{allowNegativeStock ? 'Habilitado' : 'Bloqueado'}</span>
+                   <Switch
+                      enabled={allowNegativeStock}
+                      disabled={settingsLoading}
+                      onChange={v => toggleNegativeStock(v)}
+                   />
+                </div>
+             </div>
+          </div>
            
           
 

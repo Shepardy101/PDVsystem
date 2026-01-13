@@ -91,6 +91,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const [tempQty, setTempQty] = useState('');
    // Guarda o último produto adicionado ao carrinho
    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
+   // Configuração: permitir estoque negativo
+   const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
 
 
 
@@ -256,6 +258,17 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          }, 50);
       }
    }, [cashOpen, isClosingModalOpen]);
+
+   // Busca configuração de estoque negativo
+   useEffect(() => {
+      fetch('/api/settings/Enable_Negative_Casher')
+         .then(r => r.ok ? r.json() : { value: 'true' })
+         .then(data => {
+            const v = (data?.value ?? 'true') === 'true';
+            setAllowNegativeStock(v);
+         })
+         .catch(() => setAllowNegativeStock(true));
+   }, []);
 
 
 
@@ -610,8 +623,18 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             if (existing) return prev;
             nextCart = [...prev, { product, quantity: 1, appliedDiscount: discount }];
          } else if (existing) {
-            nextCart = prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+            const currentQty = existing.quantity;
+            const desired = currentQty + 1;
+            if (!allowNegativeStock && desired > (product.stock ?? 0)) {
+               triggerNotification('Estoque insuficiente', 'Quantidade excede o estoque disponível');
+               return prev;
+            }
+            nextCart = prev.map(item => item.product.id === product.id ? { ...item, quantity: desired } : item);
          } else {
+            if (!allowNegativeStock && 1 > (product.stock ?? 0)) {
+               triggerNotification('Estoque insuficiente', 'Quantidade excede o estoque disponível');
+               return prev;
+            }
             nextCart = [...prev, { product, quantity: 1, appliedDiscount: discount }];
          }
          setLastAddedProductId(product.id);
@@ -628,7 +651,15 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const updateQuantity = (productId: string, delta: number) => {
       setCart(prev => prev.map(item => {
          if (item.product.id === productId) {
-            const newQty = Math.max(1, item.quantity + delta);
+            let desired = Math.max(1, item.quantity + delta);
+            if (!allowNegativeStock) {
+               const limit = item.product.stock ?? 0;
+               desired = Math.min(desired, limit);
+               if (desired === item.quantity && delta > 0) {
+                  triggerNotification('Estoque insuficiente', 'Quantidade excede o estoque disponível');
+               }
+            }
+            const newQty = desired;
             return { ...item, quantity: newQty };
          }
          return item;
@@ -639,7 +670,15 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const setQuantity = (productId: string, qty: number) => {
       setCart(prev => prev.map(item => {
          if (item.product.id === productId) {
-            return { ...item, quantity: Math.max(1, qty) };
+            let desired = Math.max(1, qty);
+            if (!allowNegativeStock) {
+               const limit = item.product.stock ?? 0;
+               desired = Math.min(desired, limit);
+               if (desired < qty) {
+                  triggerNotification('Estoque insuficiente', 'Quantidade excede o estoque disponível');
+               }
+            }
+            return { ...item, quantity: desired };
          }
          return item;
       }));
@@ -932,6 +971,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                     ref={lastQtyInputRef}
                                     type="number"
                                     min={1}
+                                    max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
                                     className="w-12 text-center text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
                                     value={tempQty}
                                     onChange={e => setTempQty(e.target.value.replace(/\D/g, ''))}
