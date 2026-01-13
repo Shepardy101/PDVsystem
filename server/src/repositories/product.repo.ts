@@ -25,8 +25,8 @@ export function deleteProduct(id: string) {
 export interface Product {
   id: string;
   name: string;
-  ean: string;
-  internal_code: string;
+  ean: string | null;
+  internal_code: string | null;
   unit: 'cx' | 'unit' | 'kg' | 'serv';
   cost_price: number;
   sale_price: number;
@@ -40,6 +40,7 @@ export interface Product {
   updated_at: number;
   imageUrl: string;
   type: 'product' | 'service';
+  min_stock: number;
 }
 
 export function listProducts(limit = 50, offset = 0) {
@@ -95,8 +96,8 @@ export function createProduct(data: any) {
   const product: Product = {
     id: uuidv4(),
     name: data.name,
-    ean: isService ? '' : data.ean,
-    internal_code: isService ? '' : data.internalCode,
+    ean: isService ? null : data.ean,
+    internal_code: isService ? null : data.internalCode,
     unit: data.unit,
     cost_price: Math.round((data.costPrice || 0) * 100),
     sale_price: Math.round((data.salePrice || 0) * 100),
@@ -151,8 +152,8 @@ export function updateProduct(id: string, data: any) {
   const updated: Product = {
     ...existing,
     name: data.name,
-    ean: isService ? '' : data.ean,
-    internal_code: isService ? '' : data.internalCode,
+    ean: isService ? null : data.ean,
+    internal_code: isService ? null : data.internalCode,
     unit: data.unit,
     cost_price: Math.round((data.costPrice || 0) * 100),
     sale_price: Math.round((data.salePrice || 0) * 100),
