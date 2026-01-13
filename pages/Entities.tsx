@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { Search, Plus, UserPlus, Users, Truck, Shield, Mail, Phone, MapPin, MoreVertical, Edit2, Trash2, Check, X, Filter } from 'lucide-react';
@@ -113,6 +112,7 @@ const Entities: React.FC = () => {
   );
 
   const { user } = useAuth();
+  console.log('[DEBUG] Current user in Entities:', user);
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
       {/* Header Section */}
@@ -191,9 +191,7 @@ const Entities: React.FC = () => {
             </>
           )}
           {/* Só mostra coluna de ações se usuário não for operador */}
-          {userForm.role !== 'operator' && (
-            <th className="px-8 py-5 text-right">Ações</th>
-          )}
+          <th className="px-8 py-5 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -266,70 +264,70 @@ const Entities: React.FC = () => {
             )}
 
             {/* Só mostra ações se usuário não for operador */}
-            {userForm.role !== 'operator' && (
+            {user?.role !== 'operator' && (
               <td className="px-8 py-5 text-right">
                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-             <button 
-              onClick={() => {
-                setEditingItem(item);
-                if (activeTab === 'users') setIsUserModalOpen(true);
-                if (activeTab === 'clients') setIsClientModalOpen(true);
-                if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
-              }}
-              className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
-             >
-               <Edit2 size={14} />
-             </button>
-             <button
-               className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90"
-               onClick={async (e) => {
-                 e.stopPropagation();
-                 if (activeTab === 'users') {
-                   try {
-               await deleteUser(item.id);
-               setPopup({open: true, type: 'success', title: 'Usuário excluído', message: 'Usuário removido com sucesso!'});
-               setLoadingUsers(true);
-               const updated = await listUsers();
-               setUsers(updated);
-                   } catch {
-               setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
-                   }
-                 }
-                 if (activeTab === 'clients') {
-                   try {
-               await deleteClient(item.id);
-               setPopup({open: true, type: 'success', title: 'Cliente excluído', message: 'Cliente removido com sucesso!'});
-               setLoadingClients(true);
-               const updated = await listClients();
-               setClients(updated);
-                   } catch {
-               setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
-                   }
-                 }
-                 if (activeTab === 'suppliers') {
-                   try {
-               console.log('[UI] Tentando excluir fornecedor id:', item.id);
-               const result = await deleteSupplier(item.id);
-               console.log('[UI] Resultado da exclusão:', result);
-               if (result && result.changes > 0) {
-                 setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
-                 setLoadingSuppliers(true);
-                 const updated = await listSuppliers();
-                 console.log('[UI] Lista de fornecedores após exclusão:', updated);
-                 setSuppliers(updated);
-               } else {
-                 console.error('[UI] Erro: Exclusão não retornou changes > 0', result);
-                 setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
-               }
-                   } catch (e) {
-               console.error('[UI] Catch erro ao excluir fornecedor:', e);
-               setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
-                   }
-                 }
-               }}
-             >
-               <Trash2 size={14} />
-             </button>
+                  <button 
+                    onClick={() => {
+                      setEditingItem(item);
+                      if (activeTab === 'users') setIsUserModalOpen(true);
+                      if (activeTab === 'clients') setIsClientModalOpen(true);
+                      if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
+                    }}
+                    className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button
+                    className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-red-500 border border-white/5 transition-all hover:scale-110 active:scale-90"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (activeTab === 'users') {
+                        try {
+                          await deleteUser(item.id);
+                          setPopup({open: true, type: 'success', title: 'Usuário excluído', message: 'Usuário removido com sucesso!'});
+                          setLoadingUsers(true);
+                          const updated = await listUsers();
+                          setUsers(updated);
+                        } catch {
+                          setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
+                        }
+                      }
+                      if (activeTab === 'clients') {
+                        try {
+                          await deleteClient(item.id);
+                          setPopup({open: true, type: 'success', title: 'Cliente excluído', message: 'Cliente removido com sucesso!'});
+                          setLoadingClients(true);
+                          const updated = await listClients();
+                          setClients(updated);
+                        } catch {
+                          setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
+                        }
+                      }
+                      if (activeTab === 'suppliers') {
+                        try {
+                          console.log('[UI] Tentando excluir fornecedor id:', item.id);
+                          const result = await deleteSupplier(item.id);
+                          console.log('[UI] Resultado da exclusão:', result);
+                          if (result && result.changes > 0) {
+                            setPopup({open: true, type: 'success', title: 'Fornecedor excluído', message: 'Fornecedor removido com sucesso!'});
+                            setLoadingSuppliers(true);
+                            const updated = await listSuppliers();
+                            console.log('[UI] Lista de fornecedores após exclusão:', updated);
+                            setSuppliers(updated);
+                          } else {
+                            console.error('[UI] Erro: Exclusão não retornou changes > 0', result);
+                            setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                          }
+                        } catch (e) {
+                          console.error('[UI] Catch erro ao excluir fornecedor:', e);
+                          setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </td>
             )}

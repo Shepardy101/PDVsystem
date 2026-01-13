@@ -13,13 +13,22 @@ router.get('/', (req, res) => {
 
 // Criar fornecedor
 router.post('/', (req, res) => {
-        const { name, fantasy, cnpj, category, email, phone, address } = req.body;
-        if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
-        const id = uuidv4();
-        db.prepare(`INSERT INTO suppliers (id, name, fantasy, cnpj, category, email, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-            .run(id, name, fantasy || '', cnpj || '', category || '', email || '', phone || '', address || '');
-        const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
-        res.json({ supplier });
+    let { name, fantasy, cnpj, category, email, phone, address } = req.body;
+    if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
+    // Se não houver CNPJ, define como 'não informado'
+    cnpj = (cnpj && String(cnpj).trim()) ? String(cnpj).trim() : 'não informado';
+    // Normaliza CNPJ para comparação
+    const cnpjNormalized = cnpj.replace(/\D/g, '').padStart(5, '0');
+    // Verifica se já existe fornecedor com o mesmo CNPJ
+    const exists = db.prepare('SELECT id FROM suppliers WHERE cnpj = ?').get(cnpjNormalized);
+    if (exists) {
+        return res.status(409).json({ error: 'Já existe fornecedor com este CNPJ.' });
+    }
+    const id = uuidv4();
+    db.prepare(`INSERT INTO suppliers (id, name, fantasy, cnpj, category, email, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, name, fantasy || '', cnpjNormalized, category || '', email || '', phone || '', address || '');
+    const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    res.json({ supplier });
 });
 
 // Buscar fornecedor por id
