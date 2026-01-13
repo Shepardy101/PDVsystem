@@ -203,7 +203,7 @@ const Products: React.FC = () => {
          minStock: Number(formData.get('minStock')) || 0,
          autoDiscountEnabled: formData.get('autoDiscountEnabled') === 'on' ? true : false,
          autoDiscountValue: Number(formData.get('autoDiscountValue')) || 0,
-         imageUrl: formData.get('imageUrl') || '',
+         imageUrl: selectedProduct?.imageUrl || formData.get('imageUrl') || '',
          categoryId: formData.get('categoryId') || null,
          supplierId: isService ? null : (formData.get('supplier') || null),
          type,
@@ -255,6 +255,36 @@ const Products: React.FC = () => {
          });
          setIsCreateModalOpen(false);
          setSelectedProduct(null);
+         // Buscar produtos atualizados para garantir sincronia
+         setLoading(true);
+         fetch('/api/products')
+            .then(res => res.json())
+            .then(data => {
+               const items = (data.items || data.products || []).map((product: any) => ({
+                  id: product.id,
+                  name: product.name,
+                  gtin: product.ean || product.gtin,
+                  internalCode: product.internal_code || product.internalCode,
+                  unit: product.unit,
+                  costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
+                  salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
+                  stock: product.stock_on_hand ?? product.stock ?? 0,
+                  minStock: product.min_stock ?? 20,
+                  category: product.category_id || product.category,
+                  supplier: product.supplier_id || product.supplier || '',
+                  status: product.status,
+                  imageUrl: product.imageUrl || '',
+                  autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+                  type: product.type || 'product',
+               }));
+               setProducts(items);
+               setError(null);
+            })
+            .catch(() => {
+               setError('Erro ao carregar produtos da API.');
+               setProducts([]);
+            })
+            .finally(() => setLoading(false));
          showPopup('success', selectedProduct ? 'Produto/Serviço atualizado' : 'Produto/Serviço criado', selectedProduct ? 'O item foi atualizado com sucesso.' : 'O item foi criado com sucesso.');
       } catch (err) {
          showPopup('error', 'Erro ao salvar produto/serviço', 'Verifique os campos e tente novamente.');
@@ -960,7 +990,7 @@ const Products: React.FC = () => {
                                  <div className="flex items-center gap-4">
                                     <Input
                                        name="minStock"
-                                       defaultValue={selectedProduct?.minStock || 20}
+                                       defaultValue={selectedProduct?.minStock !== undefined ? selectedProduct.minStock : 20}
                                        placeholder="20"
                                        type="number"
                                        icon={<Activity size={14} className="text-red-400/60" />}
@@ -1044,6 +1074,7 @@ const Products: React.FC = () => {
                                                          autoDiscountValue: any;
                                                          status: any;
                                                          stockOnHand: any;
+                                                         minStock: any;
                                                          imageUrl: any;
                                                          type: any;
                                                          [key: string]: any; // Allow dynamic keys
@@ -1058,6 +1089,7 @@ const Products: React.FC = () => {
                                                          autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
                                                          status: p.status || 'active',
                                                          stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
+                                                         minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
                                                          imageUrl: data.imageUrl,
                                                          type: p.type || 'product'
                                                       };

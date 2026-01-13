@@ -106,6 +106,7 @@ export function createProduct(data: any) {
     supplier_id: isService ? null : (data.supplierId || null),
     status: data.status || 'active',
     stock_on_hand: isService ? 0 : (data.stockOnHand || 0),
+    min_stock: typeof data.minStock === 'number' ? data.minStock : (typeof data.min_stock === 'number' ? data.min_stock : 20),
     imageUrl: data.imageUrl || '',
     created_at: now,
     updated_at: now,
@@ -113,9 +114,9 @@ export function createProduct(data: any) {
   };
   try {
     db.prepare(`INSERT INTO products (
-      id, name, ean, internal_code, unit, cost_price, sale_price, auto_discount_enabled, auto_discount_value, category_id, supplier_id, status, stock_on_hand, imageUrl, created_at, updated_at, type
+      id, name, ean, internal_code, unit, cost_price, sale_price, auto_discount_enabled, auto_discount_value, category_id, supplier_id, status, stock_on_hand, min_stock, imageUrl, created_at, updated_at, type
     ) VALUES (
-      @id, @name, @ean, @internal_code, @unit, @cost_price, @sale_price, @auto_discount_enabled, @auto_discount_value, @category_id, @supplier_id, @status, @stock_on_hand, @imageUrl, @created_at, @updated_at, @type
+      @id, @name, @ean, @internal_code, @unit, @cost_price, @sale_price, @auto_discount_enabled, @auto_discount_value, @category_id, @supplier_id, @status, @stock_on_hand, @min_stock, @imageUrl, @created_at, @updated_at, @type
     )`).run(product);
     console.log('[createProduct] Produto/Serviço inserido com sucesso:', product);
     return product;
@@ -146,6 +147,7 @@ export function updateProduct(id: string, data: any) {
     }
   }
   const now = Date.now();
+  // Só atualiza imageUrl se vier definido no payload, senão mantém o valor existente
   const updated: Product = {
     ...existing,
     name: data.name,
@@ -160,12 +162,13 @@ export function updateProduct(id: string, data: any) {
     supplier_id: isService ? null : (data.supplierId || null),
     status: data.status || 'active',
     stock_on_hand: isService ? 0 : (data.stockOnHand || 0),
-    imageUrl: data.imageUrl || '',
+    min_stock: typeof data.minStock === 'number' ? data.minStock : (typeof data.min_stock === 'number' ? data.min_stock : existing.min_stock ?? 20),
+    imageUrl: (typeof data.imageUrl !== 'undefined') ? data.imageUrl : existing.imageUrl,
     updated_at: now,
     type: data.type === 'service' ? 'service' : (existing.type || 'product'),
   };
   db.prepare(`UPDATE products SET
-    name=@name, ean=@ean, internal_code=@internal_code, unit=@unit, cost_price=@cost_price, sale_price=@sale_price, auto_discount_enabled=@auto_discount_enabled, auto_discount_value=@auto_discount_value, category_id=@category_id, supplier_id=@supplier_id, status=@status, stock_on_hand=@stock_on_hand, imageUrl=@imageUrl, updated_at=@updated_at, type=@type
+    name=@name, ean=@ean, internal_code=@internal_code, unit=@unit, cost_price=@cost_price, sale_price=@sale_price, auto_discount_enabled=@auto_discount_enabled, auto_discount_value=@auto_discount_value, category_id=@category_id, supplier_id=@supplier_id, status=@status, stock_on_hand=@stock_on_hand, min_stock=@min_stock, imageUrl=@imageUrl, updated_at=@updated_at, type=@type
     WHERE id=@id
   `).run({ ...updated, id });
   return updated;
