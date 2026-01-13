@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
+import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, ChevronUp, ChevronDown, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
 import { Input, Button, Badge, Modal, Switch } from '../components/UI';
 import { Product, Category } from '../types';
 import { FeedbackPopup } from '@/components/FeedbackPopup';
@@ -64,6 +64,23 @@ const Products: React.FC = () => {
    const [stockStatus, setStockStatus] = useState<'all' | 'low' | 'normal'>('all');
    const [showCategoryList, setShowCategoryList] = useState(false);
    const [showStockList, setShowStockList] = useState(false);
+   type SortKey = 'name' | 'costPrice' | 'salePrice' | 'stock';
+   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
+
+   const toggleSort = (key: SortKey) => {
+      setSortConfig(prev => prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' });
+   };
+
+   const renderSortIcon = (key: SortKey) => {
+      const isActive = sortConfig.key === key;
+      if (!isActive) {
+         return <ChevronUp size={12} className="opacity-0 group-hover:opacity-60 transition-all duration-150" strokeWidth={3} />;
+      }
+      if (sortConfig.direction === 'asc') {
+         return <ChevronUp size={12} className="text-accent transition-transform duration-150 -translate-y-0.5" strokeWidth={3} />;
+      }
+      return <ChevronDown size={12} className="text-accent transition-transform duration-150 translate-y-0.5" strokeWidth={3} />;
+   };
 
    // Estado do popup de feedback
    const [popup, setPopup] = useState<{ open: boolean; type: 'success' | 'error' | 'info' | 'loading'; title: string; message: string }>(
@@ -161,13 +178,37 @@ const Products: React.FC = () => {
    }, []);
 
    const filtered = useMemo(() => {
-      return products.filter(p => {
+      const base = products.filter(p => {
          const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.gtin || '').includes(searchTerm);
          const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
          const matchesStock = stockStatus === 'all' || (stockStatus === 'low' ? p.stock < (p.minStock || 20) : p.stock >= (p.minStock || 20));
          return matchesSearch && matchesCategory && matchesStock;
       });
-   }, [products, searchTerm, selectedCategory, stockStatus]);
+
+      const sorted = [...base].sort((a, b) => {
+         const dir = sortConfig.direction === 'asc' ? 1 : -1;
+         const getVal = (p: Product) => {
+            switch (sortConfig.key) {
+               case 'costPrice': return p.costPrice ?? 0;
+               case 'salePrice': return p.salePrice ?? 0;
+               case 'stock': return p.stock ?? 0;
+               default: return (p.name || '').toLowerCase();
+            }
+         };
+
+         const va = getVal(a);
+         const vb = getVal(b);
+
+         if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb) * dir;
+         const na = typeof va === 'number' ? va : 0;
+         const nb = typeof vb === 'number' ? vb : 0;
+         if (na > nb) return 1 * dir;
+         if (na < nb) return -1 * dir;
+         return 0;
+      });
+
+      return sorted;
+   }, [products, searchTerm, selectedCategory, stockStatus, sortConfig]);
    // Função para deletar produto
    async function handleDeleteProduct(productId: string) {
       if (!window.confirm('Tem certeza que deseja remover este produto?')) return;
@@ -627,10 +668,42 @@ const Products: React.FC = () => {
                            <table className="min-w-[900px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
                               <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
                                  <tr>
-                                    <th className="py-4 px-5 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[320px] max-w-[420px]">Identificação</th>
-                                    <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Custo</th>
-                                    <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Preço Venda</th>
-                                    <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">Estoque</th>
+                                    <th
+                                       className="group py-4 px-5 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[320px] max-w-[420px] cursor-pointer hover:text-accent transition-all"
+                                       onClick={() => toggleSort('name')}
+                                    >
+                                       <span className="flex items-center gap-2">
+                                          Identificação
+                                          {renderSortIcon('name')}
+                                       </span>
+                                    </th>
+                                    <th
+                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all"
+                                       onClick={() => toggleSort('costPrice')}
+                                    >
+                                       <span className="flex items-center gap-2">
+                                          Preço Custo
+                                          {renderSortIcon('costPrice')}
+                                       </span>
+                                    </th>
+                                    <th
+                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all"
+                                       onClick={() => toggleSort('salePrice')}
+                                    >
+                                       <span className="flex items-center gap-2">
+                                          Preço Venda
+                                          {renderSortIcon('salePrice')}
+                                       </span>
+                                    </th>
+                                    <th
+                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all"
+                                       onClick={() => toggleSort('stock')}
+                                    >
+                                       <span className="flex items-center gap-2">
+                                          Estoque
+                                          {renderSortIcon('stock')}
+                                       </span>
+                                    </th>
                                     {!isOperatorUser && (
                                        <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
                                     )}
