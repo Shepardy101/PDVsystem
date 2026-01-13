@@ -48,6 +48,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role?: UserRole;
+  status?: UserStatus;
 }
 
 export interface Client {

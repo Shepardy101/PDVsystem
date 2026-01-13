@@ -19,11 +19,11 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const ok = await login(email, password);
-    if (ok) {
+    const result = await login(email, password);
+    if (result.ok) {
       setStep('cashier');
     } else {
-      setError('Usuário ou senha inválidos');
+      setError(result.message || 'Usuário ou senha inválidos');
     }
   };
 

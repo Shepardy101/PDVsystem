@@ -42,6 +42,10 @@ userRouter.post('/login', async (req, res) => {
       console.log('[LOGIN] Falha na autenticação.');
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
+    if (user.status && user.status.toLowerCase() === 'inactive') {
+      console.warn('[LOGIN] Tentativa de login com usuário inativo:', email);
+      return res.status(403).json({ error: 'USER_INACTIVE', message: 'Usuário inativo. Contate o administrador.' });
+    }
     // Retorna dados básicos do usuário
     console.log('[LOGIN] Autenticação bem-sucedida para:', email);
     res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status });

@@ -4,15 +4,17 @@ import { setSecureItem, getSecureItem } from '../utils/secureStorage';
 
 
 
+interface LoginResult { ok: boolean; message?: string; }
+
 interface AuthContextType {
   user: AuthUser | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: async () => false,
+  login: async () => ({ ok: false }),
   logout: () => {},
 });
 
@@ -27,20 +29,24 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     if (stored) setUser(stored);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     try {
       const res = await fetch('/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        let payload: any = {};
+        try { payload = await res.json(); } catch {}
+        return { ok: false, message: payload?.message || payload?.error || 'Usuário ou senha inválidos' };
+      }
       const userData = await res.json();
       setUser(userData);
       setSecureItem('auth_user', userData);
-      return true;
+      return { ok: true };
     } catch {
-      return false;
+      return { ok: false, message: 'Falha ao autenticar. Tente novamente.' };
     }
   };
 
