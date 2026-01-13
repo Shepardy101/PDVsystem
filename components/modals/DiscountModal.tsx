@@ -22,6 +22,10 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, tempDiscount, onC
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (e.key === 'Enter') onApply();
+
+    //fecha o modal ao pressionar Escape
+    else if (e.key === 'Escape') onClose();
+    
   };
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

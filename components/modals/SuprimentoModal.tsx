@@ -8,6 +8,8 @@ interface SuprimentoModalProps {
   onClose: () => void;
   txCategories: string[];
   onCategoryModalOpen: () => void;
+  operatorId?: string;
+  cashSessionId?: string;
 }
 
 
@@ -16,6 +18,8 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
   onClose,
   txCategories,
   onCategoryModalOpen,
+  operatorId,
+  cashSessionId,
 }) => {
   const [amount, setAmount] = React.useState('');
   const [category, setCategory] = React.useState(txCategories[0] || '');
@@ -44,6 +48,8 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
           amount: parseFloat(amount),
           category,
           description,
+          operatorId,
+          cashSessionId,
         }),
       });
       if (!res.ok) throw new Error('Erro ao registrar suprimento');

@@ -7,9 +7,11 @@ interface PagamentoModalProps {
   onClose: () => void;
   txCategories: string[];
   onCategoryModalOpen: () => void;
+  operatorId?: string;
+  cashSessionId?: string;
 }
 
-const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen }) => {
+const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen, operatorId, cashSessionId }) => {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(txCategories[0] || '');
   const [description, setDescription] = useState('');
@@ -30,7 +32,9 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
         body: JSON.stringify({
           amount: parseFloat(amount.replace(',', '.')),
           category,
-          description
+          description,
+          operatorId,
+          cashSessionId
         })
       });
       if (!response.ok) {

@@ -7,18 +7,32 @@ interface SangriaModalProps {
   onClose: () => void;
   txCategories: string[];
   onCategoryModalOpen: () => void;
+  operatorId?: string;
+  cashSessionId?: string;
 }
 
-const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen }) => {
+const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen, operatorId, cashSessionId }) => {
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState(txCategories[0] || '');
+  const [category, setCategory] = useState(txCategories[0] || 'Sangria');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Reset estado ao abrir
+  React.useEffect(() => {
+    if (isOpen) {
+      setAmount('');
+      setDescription('');
+      setError('');
+      setCategory(txCategories[0] || 'Sangria');
+    }
+  }, [isOpen, txCategories]);
+
   const handleSubmit = async () => {
     setError('');
-    if (!amount || !category || !description) {
+    const normalizedCategory = category || 'Sangria';
+    const numericAmount = parseFloat(amount.replace(',', '.'));
+    if (!amount || isNaN(numericAmount) || numericAmount <= 0 || !normalizedCategory || !description) {
       setError('Preencha todos os campos.');
       return;
     }
@@ -28,9 +42,11 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: parseFloat(amount.replace(',', '.')),
-          category,
-          description
+          amount: numericAmount,
+          category: normalizedCategory,
+          description,
+          operatorId,
+          cashSessionId
         })
       });
       if (!response.ok) {

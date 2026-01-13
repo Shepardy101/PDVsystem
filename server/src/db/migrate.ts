@@ -22,7 +22,17 @@ function runMigrations() {
     const filePath = path.join(migrationsDir, file);
     const sql = fs.readFileSync(filePath, 'utf-8');
     console.log(`Executando migration: ${file}`);
-    db.exec(sql);
+    try {
+      db.exec(sql);
+    } catch (err) {
+      const message = (err as Error)?.message || '';
+      // Ignora erros de coluna já existente para permitir reexecução idempotente
+      if (message.includes('duplicate column name') || message.includes('already exists')) {
+        console.warn(`Migration ${file} ignorada (já aplicada): ${message}`);
+        continue;
+      }
+      throw err;
+    }
   }
   console.log('Todas as migrations foram aplicadas com sucesso!');
 }

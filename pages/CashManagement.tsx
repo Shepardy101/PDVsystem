@@ -141,7 +141,7 @@ const CashManagement: React.FC = () => {
                const salesRes = await fetch(`/api/pos/sales?cashSessionId=${sessionId}`);
                const salesData = salesRes.ok ? await salesRes.json() : { sales: [] };
                // Buscar suprimentos
-               const suprimentosRes = await fetch(`/api/cash/movements`);
+               const suprimentosRes = await fetch(`/api/cash/movements?operatorId=${encodeURIComponent(user.id)}`);
                const suprimentosData = suprimentosRes.ok ? await suprimentosRes.json() : { movements: [] };
                // Unir vendas e suprimentos
                const allMovements = [
@@ -1260,6 +1260,8 @@ const CashManagement: React.FC = () => {
             }}
             txCategories={txCategories}
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+            operatorId={user?.id || ''}
+            cashSessionId={session?.id || ''}
          />
 
          <SangriaModal
@@ -1270,6 +1272,8 @@ const CashManagement: React.FC = () => {
             }}
             txCategories={txCategories}
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+            operatorId={user?.id || ''}
+            cashSessionId={session?.id || ''}
          />
 
          <PagamentoModal
@@ -1280,6 +1284,8 @@ const CashManagement: React.FC = () => {
             }}
             txCategories={txCategories}
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+            operatorId={user?.id || ''}
+            cashSessionId={session?.id || ''}
          />
 
          {/* MODAL CRIAR CATEGORIA DE TRANSAÇÃO */}
