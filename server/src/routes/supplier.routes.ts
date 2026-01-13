@@ -25,8 +25,46 @@ router.post('/', (req, res) => {
         return res.status(409).json({ error: 'Já existe fornecedor com este CNPJ.' });
     }
     const id = uuidv4();
-    db.prepare(`INSERT INTO suppliers (id, name, fantasy, cnpj, category, email, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, name, fantasy || '', cnpjNormalized, category || '', email || '', phone || '', address || '');
+    const now = Date.now();
+    db.prepare(`INSERT INTO suppliers (id, name, cnpj, address, phone, email, category, created_at, updated_at, fantasy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, name, cnpjNormalized, address || '', phone || '', email || '', category || '', now, now, fantasy || '');
+    const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    res.json({ supplier });
+});
+
+// Atualizar fornecedor
+router.put('/:id', (req, res) => {
+    const { id } = req.params;
+    let { name, fantasy, cnpj, category, email, phone, address } = req.body;
+    const existing = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    if (!existing) return res.status(404).json({ error: 'Fornecedor não encontrado' });
+    if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
+
+    // Mantém CNPJ existente se não vier no payload; se vier vazio, limpa para ''
+    const incomingCnpj = (cnpj === undefined || cnpj === null) ? existing.cnpj : String(cnpj).trim();
+    const normalizedCnpj = incomingCnpj === '' ? '' : incomingCnpj.replace(/\D/g, '').padStart(5, '0');
+    // Verifica duplicidade apenas se houver CNPJ após normalização
+    if (normalizedCnpj) {
+        const duplicate = db.prepare('SELECT id FROM suppliers WHERE cnpj = ? AND id != ?').get(normalizedCnpj, id);
+        if (duplicate) {
+            return res.status(409).json({ error: 'Já existe fornecedor com este CNPJ.' });
+        }
+    }
+
+    const now = Date.now();
+    db.prepare(`UPDATE suppliers SET name = ?, fantasy = ?, cnpj = ?, category = ?, email = ?, phone = ?, address = ?, updated_at = ? WHERE id = ?`)
+        .run(
+            name,
+            fantasy ?? existing.fantasy ?? '',
+            normalizedCnpj,
+            category ?? existing.category ?? '',
+            email ?? existing.email ?? '',
+            phone ?? existing.phone ?? '',
+            address ?? existing.address ?? '',
+            now,
+            id
+        );
+
     const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
     res.json({ supplier });
 });

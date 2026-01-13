@@ -506,8 +506,9 @@ const Entities: React.FC = () => {
           <div className="flex gap-4 pt-4">
             <Button variant="secondary" className="flex-1" onClick={() => { setIsSupplierModalOpen(false); setEditingItem(null); }}>Descartar</Button>
             <Button className="flex-1 shadow-accent-glow" onClick={async () => {
-              if (!editingItem?.name || !editingItem?.category) {
-               setPopup({open: true, type: 'error', title: 'Preencha todos os campos obrigatórios', message: 'Nome e especialidade são obrigatórios.'});
+              // Nome é o único campo obrigatório segundo o schema; demais são opcionais
+              if (!editingItem?.name) {
+               setPopup({open: true, type: 'error', title: 'Nome obrigatório', message: 'Informe pelo menos o nome do fornecedor.'});
                return;
               }
               try {
