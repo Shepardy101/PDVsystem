@@ -15,14 +15,13 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
     let { name, fantasy, cnpj, category, email, phone, address } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
-    // Se não houver CNPJ, define como 'não informado'
-    cnpj = (cnpj && String(cnpj).trim()) ? String(cnpj).trim() : 'não informado';
-    // Normaliza CNPJ para comparação
-    const cnpjNormalized = cnpj.replace(/\D/g, '').padStart(5, '0');
-    // Verifica se já existe fornecedor com o mesmo CNPJ
-    const exists = db.prepare('SELECT id FROM suppliers WHERE cnpj = ?').get(cnpjNormalized);
-    if (exists) {
-        return res.status(409).json({ error: 'Já existe fornecedor com este CNPJ.' });
+    const incomingCnpj = (cnpj && String(cnpj).trim()) ? String(cnpj).trim() : '';
+    const cnpjNormalized = incomingCnpj ? incomingCnpj.replace(/\D/g, '').padStart(5, '0') : '';
+    if (cnpjNormalized) {
+        const exists = db.prepare('SELECT id FROM suppliers WHERE cnpj = ?').get(cnpjNormalized);
+        if (exists) {
+            return res.status(409).json({ error: 'Já existe fornecedor com este CNPJ.' });
+        }
     }
     const id = uuidv4();
     const now = Date.now();

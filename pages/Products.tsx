@@ -1380,9 +1380,11 @@ const Products: React.FC = () => {
                            return;
                         }
                         let importedCount = 0;
+                        const normalize = (val: string) => (val || '').trim().toLowerCase();
+
                         // Buscar categorias e fornecedores existentes do backend
                         let allCategories = [...categories];
-                        let allSuppliers: { id: string, name: string }[] = [];
+                        let allSuppliers: { id: string, name: string, category?: string }[] = [];
                         try {
                            const res = await fetch('/api/suppliers');
                            if (res.ok) {
@@ -1391,51 +1393,96 @@ const Products: React.FC = () => {
                            }
                         } catch { }
 
+                        // 1) Criar categorias faltantes (se coluna existir e tiver dados)
+                        const categorySet = new Map<string, string>(); // normalized -> original
+                        validProducts.forEach((item: any) => {
+                           if (item.category && item.category !== 'sem categoria') {
+                              const norm = normalize(item.category);
+                              if (norm) categorySet.set(norm, item.category.trim());
+                           }
+                        });
+
+                        // Mapa de categorias existentes (normalized -> id)
+                        const categoryIdMap = new Map<string, string>();
+                        allCategories.forEach(c => {
+                           categoryIdMap.set(normalize(c.name), c.id);
+                        });
+
+                        for (const [normName, originalName] of categorySet.entries()) {
+                           if (categoryIdMap.has(normName)) continue;
+                           try {
+                              const res = await fetch('/api/categories', {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ name: originalName })
+                              });
+                              if (res.ok) {
+                                 const data = await res.json();
+                                 const catId = data.category?.id;
+                                 if (catId) {
+                                    categoryIdMap.set(normName, catId);
+                                    allCategories.push(data.category);
+                                    setCategories(prev => [...prev, data.category]);
+                                 }
+                              }
+                           } catch { }
+                        }
+
+                        // 2) Criar fornecedores faltantes e associar texto de categoria se houver
+                        const supplierMap = new Map<string, { name: string, category?: string }>(); // normalized -> payload
+                        validProducts.forEach((item: any) => {
+                           if (item.supplier && item.supplier !== 'sem fornecedor') {
+                              const normSup = normalize(item.supplier);
+                              if (!normSup) return;
+                              // prioriza categoria do próprio item, se existir
+                              const catText = item.category && item.category !== 'sem categoria' ? item.category.trim() : undefined;
+                              if (!supplierMap.has(normSup)) {
+                                 supplierMap.set(normSup, { name: item.supplier.trim(), category: catText });
+                              } else {
+                                 const current = supplierMap.get(normSup);
+                                 if (!current?.category && catText) {
+                                    supplierMap.set(normSup, { name: current?.name || item.supplier.trim(), category: catText });
+                                 }
+                              }
+                           }
+                        });
+
+                        const supplierIdMap = new Map<string, string>();
+                        allSuppliers.forEach(s => supplierIdMap.set(normalize(s.name), s.id));
+
+                        for (const [normSup, payload] of supplierMap.entries()) {
+                           if (supplierIdMap.has(normSup)) continue;
+                           try {
+                              const res = await fetch('/api/suppliers', {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ name: payload.name, category: payload.category || '' })
+                              });
+                              if (res.ok) {
+                                 const data = await res.json();
+                                 const supId = data.supplier?.id;
+                                 if (supId) {
+                                    supplierIdMap.set(normSup, supId);
+                                    allSuppliers.push(data.supplier);
+                                 }
+                              }
+                           } catch { }
+                        }
+
+                        // 3) Criar produtos usando os mapas resolvidos
                         for (const item of validProducts) {
                            let categoryId = null;
-                           let supplierId = null;
-                           // Se categoria informada, tenta buscar ou criar
                            if (item.category && item.category !== 'sem categoria') {
-                              try {
-                                 let cat = allCategories.find(c => c.name.toLowerCase() === item.category.toLowerCase());
-                                 if (!cat) {
-                                    // Cria categoria se não existir
-                                    const res = await fetch('/api/categories', {
-                                       method: 'POST',
-                                       headers: { 'Content-Type': 'application/json' },
-                                       body: JSON.stringify({ name: item.category })
-                                    });
-                                    if (res.ok) {
-                                       const data = await res.json();
-                                       categoryId = data.category?.id;
-                                       allCategories.push(data.category);
-                                       setCategories(prev => [...prev, data.category]);
-                                    }
-                                 } else {
-                                    categoryId = cat.id;
-                                 }
-                              } catch { }
+                              const cid = categoryIdMap.get(normalize(item.category));
+                              if (cid) categoryId = cid;
                            }
-                           // Se fornecedor informado, tenta buscar ou criar
+
+                           let supplierId = null;
                            if (item.supplier && item.supplier !== 'sem fornecedor') {
-                              try {
-                                 let sup = allSuppliers.find(s => s.name.toLowerCase() === item.supplier.toLowerCase());
-                                 if (!sup) {
-                                    const res = await fetch('/api/suppliers', {
-                                       method: 'POST',
-                                       headers: { 'Content-Type': 'application/json' },
-                                       body: JSON.stringify({ name: item.supplier })
-                                    });
-                                    if (res.ok) {
-                                       const data = await res.json();
-                                       supplierId = data.supplier?.id;
-                                       allSuppliers.push(data.supplier);
-                                    }
-                                 } else {
-                                    supplierId = sup.id;
-                                 }
-                              } catch { }
+                              const sid = supplierIdMap.get(normalize(item.supplier));
+                              if (sid) supplierId = sid;
                            }
+
                            const payload = {
                               name: item.name,
                               ean: item.gtin,
