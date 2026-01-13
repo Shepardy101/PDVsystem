@@ -1092,174 +1092,161 @@ const Products: React.FC = () => {
                            </div>
                         )}
 
-                        <div className="space-y-4 pb-4 mt-6">
-                           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>
-                           <div className="flex gap-4 items-center">
-                              <div className="flex-1">
+                        {modalType === 'product' && (
+                           <div className="space-y-4 pb-4 mt-6">
+                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>
+                             <div className="flex gap-4 items-center">
+                               <div className="flex-1">
                                  <Input
                                     name="imageUrl"
                                     value={selectedProduct?.imageUrl || ''}
-                                    onChange={e => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)}
                                     placeholder="Selecione ou faça upload..."
                                     icon={<ImageIcon size={14} />}
                                     readOnly
                                     disabled
                                  />
-                                 {!isOperatorUser && (
+                                  {!isOperatorUser && (
                                     <>
-                                       <input
-                                          type="file"
-                                          accept="image/*"
-                                          style={{ display: 'none' }}
-                                          id="product-image-upload"
-                                          onChange={async e => {
-                                             const file = e.target.files?.[0];
-                                             if (!file) return;
-                                             const ean = selectedProduct?.gtin || selectedProduct?.ean ||
-                                                (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
-                                                (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
-                                             const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
-                                             const formData = new FormData();
-                                             formData.append('image', file);
-                                             formData.append('ean', ean);
-                                             formData.append('description', name);
-                                             try {
-                                                console.log('[UPLOAD] Enviando imagem:', { file, ean, name });
-                                                const res = await fetch('/api/products/upload-image', {
-                                                   method: 'POST',
-                                                   body: formData
-                                                });
-                                                const data = await res.json();
-                                                console.log('[UPLOAD] Resposta do backend:', data);
-                                                if (data.imageUrl) {
-                                                   // Envie todos os campos obrigatórios do produto junto com o novo imageUrl
-                                                   const p = selectedProduct;
-                                                   if (p) {
-                                                      // Monta o objeto exatamente com os nomes esperados pelo backend (camelCase)
-                                                      const updatePayload: {
-                                                         name: any;
-                                                         ean: any;
-                                                         internalCode: any;
-                                                         unit: any;
-                                                         costPrice: number;
-                                                         salePrice: number;
-                                                         autoDiscountEnabled: any;
-                                                         autoDiscountValue: any;
-                                                         status: any;
-                                                         stockOnHand: any;
-                                                         minStock: any;
-                                                         imageUrl: any;
-                                                         type: any;
-                                                         [key: string]: any; // Allow dynamic keys
-                                                      } = {
-                                                         name: p.name || 'Produto',
-                                                         ean: p.ean || p.gtin || '0000000000000',
-                                                         internalCode: p.internal_code || p.internalCode || 'SEM-COD',
-                                                         unit: p.unit || 'unit',
-                                                         costPrice: typeof p.cost_price === 'number' ? p.cost_price : (typeof p.costPrice === 'number' ? p.costPrice : 0),
-                                                         salePrice: typeof p.sale_price === 'number' ? p.sale_price : (typeof p.salePrice === 'number' ? p.salePrice : 0),
-                                                         autoDiscountEnabled: p.auto_discount_enabled ?? p.autoDiscountEnabled ?? false,
-                                                         autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
-                                                         status: p.status || 'active',
-                                                         stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
-                                                         minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
-                                                         imageUrl: data.imageUrl,
-                                                         type: p.type || 'product'
-                                                      };
-                                                      // Só adiciona categoryId e supplierId se existirem e não forem vazios
-                                                      const catId = p.category_id || p.category;
-                                                      if (catId) updatePayload.categoryId = catId;
-                                                      const supId = p.supplier_id || p.supplier;
-                                                      if (supId) updatePayload.supplierId = supId;
-                                                      console.log('[UPLOAD] Payload FINAL para update:', JSON.stringify(updatePayload, null, 2));
-                                                      const updateRes = await fetch(`/api/products/${p.id}`, {
-                                                         method: 'PUT',
-                                                         headers: { 'Content-Type': 'application/json' },
-                                                         body: JSON.stringify(updatePayload)
-                                                      });
-                                                      const updateText = await updateRes.text();
-                                                      let updateData;
-                                                      try {
-                                                         updateData = JSON.parse(updateText);
-                                                      } catch {
-                                                         updateData = { raw: updateText };
-                                                      }
-                                                      console.log('[UPLOAD] Resposta do update (raw):', updateText);
-                                                      console.log('[UPLOAD] Resposta do update (parsed):', updateData);
-                                                      // Após update, buscar o produto atualizado do backend
-                                                      try {
-                                                         const fetchRes = await fetch(`/api/products/${p.id}`);
-                                                         const fetchData = await fetchRes.json();
-                                                         console.log('[UPLOAD] Produto após update (GET):', fetchData);
-                                                         if (fetchData && fetchData.imageUrl) {
-                                                            setSelectedProduct({ ...p, imageUrl: fetchData.imageUrl });
-                                                         } else {
-                                                            setSelectedProduct({ ...p, imageUrl: data.imageUrl });
-                                                         }
-                                                      } catch (fetchErr) {
-                                                         console.error('[UPLOAD] Erro ao buscar produto atualizado:', fetchErr);
-                                                         setSelectedProduct({ ...p, imageUrl: data.imageUrl });
-                                                      }
-                                                      // Atualiza a lista de produtos se necessário
-                                                      if (typeof setProducts === 'function') {
-                                                         setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
-                                                      }
-                                                      showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
-                                                   }
+                                      <input
+                                       type="file"
+                                       accept="image/*"
+                                       style={{ display: 'none' }}
+                                       id="product-image-upload"
+                                       onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                         const file = e.target.files?.[0];
+                                         if (!file) return;
+                                         const ean = selectedProduct?.gtin || selectedProduct?.ean ||
+                                          (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
+                                          (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
+                                         const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
+                                         const formData = new FormData();
+                                         formData.append('image', file);
+                                         formData.append('ean', ean);
+                                         formData.append('description', name);
+                                         try {
+                                          console.log('[UPLOAD] Enviando imagem:', { file, ean, name });
+                                          const res = await fetch('/api/products/upload-image', {
+                                             method: 'POST',
+                                             body: formData
+                                          });
+                                          const data = await res.json();
+                                          console.log('[UPLOAD] Resposta do backend:', data);
+                                          if (data.imageUrl) {
+                                             // Envie todos os campos obrigatórios do produto junto com o novo imageUrl
+                                             const p = selectedProduct;
+                                             if (p) {
+                                              // Monta o objeto exatamente com os nomes esperados pelo backend (camelCase)
+                                              const updateData: Record<string, any> = {
+                                                name: p.name || 'Produto',
+                                                ean: p.ean || p.gtin || '0000000000000',
+                                                internalCode: p.internal_code || p.internalCode || 'SEM-COD',
+                                                unit: p.unit || 'unit',
+                                                costPrice: typeof p.cost_price === 'number' ? p.cost_price : (typeof p.costPrice === 'number' ? p.costPrice : 0),
+                                                salePrice: typeof p.sale_price === 'number' ? p.sale_price : (typeof p.salePrice === 'number' ? p.salePrice : 0),
+                                                autoDiscountEnabled: p.auto_discount_enabled ?? p.autoDiscountEnabled ?? false,
+                                                autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
+                                                status: p.status || 'active',
+                                                stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
+                                                minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
+                                                imageUrl: data.imageUrl,
+                                                type: p.type || 'product'
+                                              };
+                                              // Só adiciona categoryId e supplierId se existirem e não forem vazios
+                                              const catId = p.category_id || p.category;
+                                              if (catId) updateData.categoryId = catId;
+                                              const supId = p.supplier_id || p.supplier;
+                                              if (supId) updateData.supplierId = supId;
+                                              console.log('[UPLOAD] Payload FINAL para update:', JSON.stringify(updateData, null, 2));
+                                              const updateRes = await fetch(`/api/products/${p.id}`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(updateData)
+                                              });
+                                              const updateText = await updateRes.text();
+                                              let parsedUpdateData: any;
+                                              try {
+                                                parsedUpdateData = JSON.parse(updateText);
+                                              } catch {
+                                                parsedUpdateData = { raw: updateText };
+                                              }
+                                              console.log('[UPLOAD] Resposta do update (raw):', updateText);
+                                              console.log('[UPLOAD] Resposta do update (parsed):', parsedUpdateData);
+                                              // Após update, buscar o produto atualizado do backend
+                                              try {
+                                                const fetchRes = await fetch(`/api/products/${p.id}`);
+                                                const fetchData = await fetchRes.json();
+                                                console.log('[UPLOAD] Produto após update (GET):', fetchData);
+                                                if (fetchData && fetchData.imageUrl) {
+                                                 setSelectedProduct({ ...p, imageUrl: fetchData.imageUrl });
                                                 } else {
-                                                   showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
+                                                 setSelectedProduct({ ...p, imageUrl: data.imageUrl });
                                                 }
-                                             } catch (err) {
-                                                console.error('[UPLOAD] Erro ao enviar imagem:', err);
-                                                showPopup('error', 'Erro', 'Erro ao enviar imagem.');
+                                              } catch (fetchErr) {
+                                                console.error('[UPLOAD] Erro ao buscar produto atualizado:', fetchErr);
+                                                setSelectedProduct({ ...p, imageUrl: data.imageUrl });
+                                              }
+                                              // Atualiza a lista de produtos se necessário
+                                              if (typeof setProducts === 'function') {
+                                                setProducts((prev: Product[]) => prev.map((prod: Product) => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
+                                              }
+                                              showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
                                              }
-                                          }}
-                                       />
-                                       <Button
-                                          type="button"
-                                          variant="secondary"
-                                          size="sm"
-                                          style={{ marginTop: 8 }}
-                                          onClick={() => document.getElementById('product-image-upload')?.click()}
-                                          icon={<UploadCloud size={16} />}
-                                       >
-                                          Selecionar Foto
-                                       </Button>
+                                          } else {
+                                             showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
+                                          }
+                                         } catch (err) {
+                                          console.error('[UPLOAD] Erro ao enviar imagem:', err);
+                                          showPopup('error', 'Erro', 'Erro ao enviar imagem.');
+                                         }
+                                       }}
+                                      />
+                                      <Button
+                                       type="button"
+                                       variant="secondary"
+                                       size="sm"
+                                       style={{ marginTop: 8 }}
+                                       onClick={() => document.getElementById('product-image-upload')?.click()}
+                                       icon={<UploadCloud size={16} />}
+                                      >
+                                       Selecionar Foto
+                                      </Button>
                                     </>
-                                 )}
-                              </div>
-                              <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden relative">
+                                  )}
+                               </div>
+                               <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden relative">
                                  {selectedProduct?.imageUrl ? (
                                     <>
-                                       <img src={selectedProduct.imageUrl?.startsWith('/uploads/') ? selectedProduct.imageUrl : `/uploads/${selectedProduct.imageUrl}`} className="w-full h-full object-cover opacity-50" />
-                                       {!isOperatorUser && (
-                                          <button
-                                             type="button"
-                                             className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all"
-                                             title="Remover imagem"
-                                             onClick={async () => {
-                                                const imagePath = selectedProduct.imageUrl;
-                                                try {
-                                                   await fetch('/api/products/delete-image', {
-                                                      method: 'POST',
-                                                      headers: { 'Content-Type': 'application/json' },
-                                                      body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
-                                                   });
-                                                   setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
-                                                   showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
-                                                } catch {
-                                                   showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
-                                                }
-                                             }}
-                                          >
-                                             <Trash2 size={12} />
-                                          </button>
-                                       )}
+                                      <img src={selectedProduct.imageUrl?.startsWith('/uploads/') ? selectedProduct.imageUrl : `/uploads/${selectedProduct.imageUrl}`} className="w-full h-full object-cover opacity-50" />
+                                      {!isOperatorUser && (
+                                        <button
+                                          type="button"
+                                          className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all"
+                                          title="Remover imagem"
+                                          onClick={async () => {
+                                             const imagePath = selectedProduct.imageUrl;
+                                             try {
+                                               await fetch('/api/products/delete-image', {
+                                                 method: 'POST',
+                                                 headers: { 'Content-Type': 'application/json' },
+                                                 body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
+                                               });
+                                               setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
+                                               showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
+                                             } catch {
+                                               showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
+                                             }
+                                          }}
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
                                     </>
                                  ) : <ImageIcon size={20} className="opacity-40" />}
-                              </div>
+                               </div>
+                             </div>
                            </div>
-                        </div>
+                        )}
                      </form>
 
 
