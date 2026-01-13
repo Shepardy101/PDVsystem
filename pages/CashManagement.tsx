@@ -13,7 +13,11 @@ import { getUserById, getOperatorNameById } from '../services/user';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus, TrendingUp, ArrowUpDown, } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
-import { CashSession, SaleTransaction, MovementTransaction } from '../types';
+import { CashSession, MovementTransaction, SaleTransaction } from '@/types';
+import { calculateCashBalance } from '@/utils/calculateCashBalance';
+
+
+
 
 
 // Função para buscar histórico real de caixas
@@ -430,37 +434,7 @@ const CashManagement: React.FC = () => {
                      <Card className="bg-dark-900/40 border-white/5 p-4">
                         <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
                         <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
-                           R$ {
-                              (() => {
-                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                 // Saldo inicial do caixa
-                                 let initialBalanceCents = session.initial_balance ?? 0;
-                                 if (initialBalanceCents < 100 && initialBalanceCents % 1 !== 0) {
-                                    initialBalanceCents = Math.round(initialBalanceCents * 100);
-                                 }
-                                 // Somar todas as vendas cujo método de pagamento seja 'cash'
-                                 let totalVendasCash = 0;
-                                 let totalSuprimentos = 0;
-                                 let totalSangrias = 0;
-                                 session.transactions.forEach(tx => {
-                                    if ('type' in tx && tx.type === 'suprimento' && 'amount' in tx && typeof tx.amount === 'number') {
-                                       totalSuprimentos += tx.amount;
-                                    }
-                                    if ('type' in tx && tx.type === 'sangria' && 'amount' in tx && typeof tx.amount === 'number') {
-                                       totalSangrias += tx.amount;
-                                    }
-                                    if ('payments' in tx && Array.isArray(tx.payments)) {
-                                       tx.payments.forEach(pay => {
-                                          if (pay.method === 'cash' && typeof pay.amount === 'number') {
-                                             totalVendasCash += pay.amount;
-                                          }
-                                       });
-                                    }
-                                 });
-                                 const lastro = initialBalanceCents + totalVendasCash + totalSuprimentos - totalSangrias;
-                                 return (lastro / 100).toFixed(2);
-                              })()
-                           }
+                           R$ {calculateCashBalance(session)}
                         </h3>
                      </Card>
                   </div>
@@ -583,9 +557,9 @@ const CashManagement: React.FC = () => {
                   </div>
                </div>
                {cashHistoryLoading ? (
-                 <div className="flex-1 flex items-center justify-center h-full">
-                   <FuturisticSpinner />
-                 </div>
+                  <div className="flex-1 flex items-center justify-center h-full">
+                     <FuturisticSpinner />
+                  </div>
                ) : (
                   <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col min-h-0">
                      {console.log('Histórico de caixas:', cashHistory)}
@@ -603,72 +577,72 @@ const CashManagement: React.FC = () => {
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-white/5">
-                             {cashHistoryError ? (
-                               <tr><td colSpan={7} className="text-center text-red-500 py-8">{cashHistoryError}</td></tr>
-                             ) : (
-                                                cashHistory
-                                                   .filter((history: any) => {
-                                                      if (!historySearch) return true;
-                                                      // Permitir busca por data no formato dd/mm/yyyy, dd-mm-yyyy ou yyyy-mm-dd
-                                                      const search = historySearch.trim().replace(/\//g, '-');
-                                                      const date = history.opened_at ? new Date(history.opened_at) : null;
-                                                      if (!date) return false;
-                                                      const day = String(date.getDate()).padStart(2, '0');
-                                                      const month = String(date.getMonth() + 1).padStart(2, '0');
-                                                      const year = date.getFullYear();
-                                                      const dateStrings = [
-                                                         `${day}-${month}-${year}`,
-                                                         `${day}/${month}/${year}`,
-                                                         `${year}-${month}-${day}`,
-                                                         date.toLocaleDateString('pt-BR'),
-                                                         date.toLocaleDateString('en-CA'),
-                                                      ];
-                                                      return dateStrings.some(ds => ds.includes(search));
-                                                   })
-                                                   .map((history: any) => (
-                                  <tr
-                                    key={history.id}
-                                    className="group hover:bg-white/5 transition-all cursor-pointer"
-                                    onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
-                                  >
-                                    <td className="px-6 py-4">
-                                      <div className="flex items-center gap-3">
-                                        <div className="p-1.5 rounded bg-accent/10 border border-accent/20">
-                                          <Archive size={12} className="text-accent" />
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-300">{history.opened_at ? new Date(history.opened_at).toLocaleDateString() : '-'}</span>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className="text-[11px] font-medium text-slate-400">{operatorNames[history.operator_id] || history.operator_id || '-'}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.initial_balance === 'number' ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.difference_at_close === 'number' ? (history.difference_at_close / 100).toFixed(2) : '0,00'}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.sales_total === 'number' ? (history.sales_total / 100).toFixed(2) : '0,00'}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      {history.closed_at ? (
-                                           <Badge variant="success">Consolidado</Badge>
-                                      ) : (
-                                           <Badge variant="warning">Aberto</Badge>
-                                      )}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                      <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); }}>Ver</Button>
-                                    </td>
-                                  </tr>
-                                ))
-                             )}
+                              {cashHistoryError ? (
+                                 <tr><td colSpan={7} className="text-center text-red-500 py-8">{cashHistoryError}</td></tr>
+                              ) : (
+                                 cashHistory
+                                    .filter((history: any) => {
+                                       if (!historySearch) return true;
+                                       // Permitir busca por data no formato dd/mm/yyyy, dd-mm-yyyy ou yyyy-mm-dd
+                                       const search = historySearch.trim().replace(/\//g, '-');
+                                       const date = history.opened_at ? new Date(history.opened_at) : null;
+                                       if (!date) return false;
+                                       const day = String(date.getDate()).padStart(2, '0');
+                                       const month = String(date.getMonth() + 1).padStart(2, '0');
+                                       const year = date.getFullYear();
+                                       const dateStrings = [
+                                          `${day}-${month}-${year}`,
+                                          `${day}/${month}/${year}`,
+                                          `${year}-${month}-${day}`,
+                                          date.toLocaleDateString('pt-BR'),
+                                          date.toLocaleDateString('en-CA'),
+                                       ];
+                                       return dateStrings.some(ds => ds.includes(search));
+                                    })
+                                    .map((history: any) => (
+                                       <tr
+                                          key={history.id}
+                                          className="group hover:bg-white/5 transition-all cursor-pointer"
+                                          onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
+                                       >
+                                          <td className="px-6 py-4">
+                                             <div className="flex items-center gap-3">
+                                                <div className="p-1.5 rounded bg-accent/10 border border-accent/20">
+                                                   <Archive size={12} className="text-accent" />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-slate-300">{history.opened_at ? new Date(history.opened_at).toLocaleDateString() : '-'}</span>
+                                             </div>
+                                          </td>
+                                          <td className="px-6 py-4">
+                                             <span className="text-[11px] font-medium text-slate-400">{operatorNames[history.operator_id] || history.operator_id || '-'}</span>
+                                          </td>
+                                          <td className="px-6 py-4">
+                                             <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.initial_balance === 'number' ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
+                                          </td>
+                                          <td className="px-6 py-4">
+                                             <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.difference_at_close === 'number' ? (history.difference_at_close / 100).toFixed(2) : '0,00'}</span>
+                                          </td>
+                                          <td className="px-6 py-4">
+                                             <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.sales_total === 'number' ? (history.sales_total / 100).toFixed(2) : '0,00'}</span>
+                                          </td>
+                                          <td className="px-6 py-4">
+                                             {history.closed_at ? (
+                                                <Badge variant="success">Consolidado</Badge>
+                                             ) : (
+                                                <Badge variant="warning">Aberto</Badge>
+                                             )}
+                                          </td>
+                                          <td className="px-6 py-4 text-right">
+                                             <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); }}>Ver</Button>
+                                          </td>
+                                       </tr>
+                                    ))
+                              )}
                            </tbody>
                         </table>
-                      </div>
-                    </div>
-                  )}
+                     </div>
+                  </div>
+               )}
             </div>
          ) : activeTab === 'performance' ? (
             <div className="flex-1 animate-in fade-in duration-300 min-h-0 flex flex-col">
@@ -936,7 +910,7 @@ const CashManagement: React.FC = () => {
                      <div className="flex-1  animate-in fade-in duration-300 min-h-0 flex flex-col">
                         {/* Componente externo para detalhamento de vendas */}
                         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
-                          <CashSalesBreakdown sales={sales} movements={movements} />
+                           <CashSalesBreakdown sales={sales} movements={movements} />
                         </div>
                      </div>
                   ) : null}
@@ -958,22 +932,22 @@ const CashManagement: React.FC = () => {
          >
             {selectedTx && (
                <div className="space-y-8 animate-in zoom-in-95 duration-200">
-                                {console.log('Selected transaction for detail modal:', selectedTx)}
+                  {console.log('Selected transaction for detail modal:', selectedTx)}
 
                   {/* Card de Cabeçalho com Valor e Tipo */}
                   <div className="flex items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 shadow-inner">
                      <div className="flex items-center gap-4">
                         <div className="p-4 rounded-2xl bg-white/2 text-accent border border-white/5 flex items-center gap-1">
                            <ArrowUpDown size={16} />
-                           
+
                         </div>
                         <div>
                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Natureza</p>
-                              <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">
-                                {Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0
-                                  ? 'Venda'
-                                  : selectedTx.type}
-                              </h3>
+                           <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">
+                              {Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0
+                                 ? 'Venda'
+                                 : selectedTx.type}
+                           </h3>
                         </div>
                      </div>
                      <div className="text-right">
@@ -1085,22 +1059,22 @@ const CashManagement: React.FC = () => {
          >
             {selectedTx && (
                <div className="space-y-8 animate-in zoom-in-95 duration-200">
-                                {console.log('Selected transaction for detail modal:', selectedTx)}
+                  {console.log('Selected transaction for detail modal:', selectedTx)}
 
                   {/* Card de Cabeçalho com Valor e Tipo */}
                   <div className="flex items-center justify-between p-6 bg-dark-950/80 rounded-2xl border border-white/5 shadow-inner">
                      <div className="flex items-center gap-4">
                         <div className="p-4 rounded-2xl bg-white/2 text-accent border border-white/5 flex items-center gap-1">
                            <ArrowUpDown size={16} />
-                           
+
                         </div>
                         <div>
                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Natureza</p>
-                              <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">
-                                {Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0
-                                  ? 'Venda'
-                                  : selectedTx.type}
-                              </h3>
+                           <h3 className="text-xl font-bold text-slate-100 uppercase tracking-tighter">
+                              {Array.isArray(selectedTx.payments) && selectedTx.payments.length > 0
+                                 ? 'Venda'
+                                 : selectedTx.type}
+                           </h3>
                         </div>
                      </div>
                      <div className="text-right">

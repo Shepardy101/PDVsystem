@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Button, Badge, Modal, Input } from '../components/UI';
-import { Product, CartItem, Client } from '../types';
+import { Product, CartItem, Client, CashSession } from '../types';
 import { listClients } from '../services/client';
 import PaymentModal from '../components/modals/PaymentModal';
 import ClientModal from '../components/modals/ClientModal';
@@ -14,6 +14,7 @@ import ClosingModal from '../components/modals/ClosingModal';
 import OpeningModal from '../components/modals/OpeningModal';
 import SubtotalModal from '../components/modals/SubtotalModal';
 import AdminPasswordModal from '../components/AdminPasswordModal';
+import { calculateCashBalanceCents } from '../utils/calculateCashBalance';
 
 import IpBlocked from '../components/IpBlocked';
 import { isOperator } from '../types';
@@ -65,6 +66,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const { user } = useAuth();
    const [operatorId, setOperatorId] = useState<string>('');
    const [isLoadingSession, setIsLoadingSession] = useState(true);
+   const [availableCashCents, setAvailableCashCents] = useState<number | null>(null);
 
    // Modais de Estado do Caixa
    const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
@@ -173,8 +175,47 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          if (inputRef.current) inputRef.current.focus();
       }, 50);
    };
+   // Snapshot do lastro em caixa para validar troco
+   const refreshAvailableCash = useCallback(async () => {
+      if (!operatorId) return;
+      try {
+         const openRes = await fetch(`/api/cash/open?userId=${operatorId}`);
+         if (!openRes.ok) return;
+         const openData = await openRes.json();
+         const session = openData?.session as CashSession | undefined;
+         if (!session?.id) return;
+
+         const [salesRes, movementsRes] = await Promise.all([
+            fetch(`/api/pos/sales?cashSessionId=${session.id}`),
+            fetch(`/api/cash/movements?operatorId=${encodeURIComponent(operatorId)}`)
+         ]);
+
+         const salesData = salesRes.ok ? await salesRes.json() : { sales: [] };
+         const movementsData = movementsRes.ok ? await movementsRes.json() : { movements: [] };
+
+         const normalizedMovements = (movementsData.movements || []).map((m: any) => ({
+            ...m,
+            type: m.type === 'supply_in' ? 'suprimento'
+               : m.type === 'withdraw_out' ? 'sangria'
+               : m.type === 'adjustment' ? 'pagamento'
+               : m.type
+         }));
+
+         const transactions = [
+            ...(salesData.sales || []),
+            ...normalizedMovements
+         ];
+
+         const enrichedSession: CashSession = { ...session, transactions };
+         setAvailableCashCents(calculateCashBalanceCents(enrichedSession));
+      } catch (err) {
+         console.error('[POS] Falha ao atualizar lastro em caixa', err);
+      }
+   }, [operatorId]);
+
    // Funções auxiliares para controle do PaymentModal
    const openPaymentModal = () => {
+      refreshAvailableCash();
       setIsPaymentModalOpen(true);
    };
    const closePaymentModal = () => {
@@ -258,6 +299,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             }, 500); // Garante spinner mínimo
          });
    }, [cashOpen, operatorId]);
+
+   useEffect(() => {
+      if (cashSessionId && operatorId) {
+         refreshAvailableCash();
+      }
+   }, [cashSessionId, operatorId, refreshAvailableCash]);
 
 
    useEffect(() => {
@@ -422,12 +469,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          setIsPaymentModalOpen(false);
          setIsReceiptModalOpen(true);
          setSelectedClient(null);
+         refreshAvailableCash();
       } catch (err) {
          alert('Erro ao registrar venda. Tente novamente.');
       } finally {
          isFinalizingRef.current = false;
       }
-   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient]);
+   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient, refreshAvailableCash]);
 
    const applyManualDiscount = () => {
       setManualDiscount(parseFloat(tempDiscount) || 0);
@@ -1087,7 +1135,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                    <Button
                      className="w-full py-6 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow transition-all active:scale-95"
                      disabled={cart.length === 0}
-                     onClick={() => setIsPaymentModalOpen(true)}
+                               onClick={openPaymentModal}
                    >
                      PROCESSAR [ENTER]
                    </Button>
@@ -1112,6 +1160,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             total={effectiveTotal}
             multiMode={multiMode}
             setMultiMode={setMultiMode}
+            availableCashCents={availableCashCents ?? undefined}
             onClose={() => setIsPaymentModalOpen(false)}
             onFinalize={payments => finalizeSale(payments)}
             selectedClient={selectedClient}

@@ -9,6 +9,7 @@ export interface PaymentModalProps {
     onClose: () => void;
     onFinalize: (payments: { method: string, amount: number, metadata?: any }[]) => void;
     selectedClient?: { name: string; cpf?: string } | null;
+    availableCashCents?: number; // lastro em caixa para validar troco
 }
 
 const paymentOptions = [
@@ -19,7 +20,7 @@ const paymentOptions = [
 
 
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, setMultiMode, onClose, onFinalize, selectedClient }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, setMultiMode, onClose, onFinalize, selectedClient, availableCashCents }) => {
         // Mini modal para dinheiro
         const [showCashChangeModal, setShowCashChangeModal] = useState(false);
         const [cashReceived, setCashReceived] = useState('');
@@ -29,6 +30,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         const totalCents = Math.round(total * 100);
         const cashReceivedCents = Math.round(parseFloat(cashReceived.replace(',', '.')) * 100) || 0;
         const changeCents = cashReceivedCents - totalCents;
+    const maxReceivableCents = typeof availableCashCents === 'number' ? totalCents + availableCashCents : undefined;
+    const hasInsufficientChange = typeof availableCashCents === 'number' && changeCents > availableCashCents;
 
         // Abre mini modal ao clicar ou pressionar '3'
         const openCashChangeModal = () => {
@@ -50,6 +53,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         const confirmCashPayment = () => {
             if (cashReceivedCents < totalCents) {
                 setCashError('Valor recebido deve ser maior ou igual ao total da venda.');
+                return;
+            }
+            if (hasInsufficientChange) {
+                setCashError('Troco insuficiente em caixa.');
                 return;
             }
             setCashError('');
@@ -268,6 +275,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                 <span className="text-xs text-slate-400">Pressione <b>C</b> para adicionar cliente</span>
                             </div>
                         </div>
+                        
                         {/* MINI MODAL DINHEIRO */}
                         {showCashChangeModal && (
                             <div className="fixed inset-0 z-[200] flex items-center justify-center">
@@ -280,6 +288,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                         type="number"
                                         step="0.01"
                                         min={total.toFixed(2)}
+                                        max={maxReceivableCents ? (maxReceivableCents / 100).toFixed(2) : undefined}
                                         className="w-full p-3 text-xl font-mono text-center rounded border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent text-slate-800 placeholder:text-slate-500"
                                         value={cashReceived}
                                         onChange={e => {
@@ -292,14 +301,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                         }}
                                         autoFocus
                                     />
-                                    <div className="w-full text-center mt-2 text-lg font-bold text-emerald-400">
+                                    <div className={`w-full text-center mt-2 text-lg font-bold ${hasInsufficientChange ? 'text-red-400' : 'text-emerald-400'}`}>
                                         Troco: R$ {(changeCents > 0 ? (changeCents / 100).toFixed(2) : '0,00')}
+                                        {hasInsufficientChange && <span className="block text-xs font-bold">Troco insuficiente em caixa</span>}
+                                        {typeof availableCashCents === 'number' && (
+                                            <span className="block text-[11px] text-slate-400 font-normal mt-1">Lastro disponível: R$ {(availableCashCents / 100).toFixed(2)}</span>
+                                        )}
                                     </div>
                                     {cashError && <div className="text-red-400 text-xs mt-2">{cashError}</div>}
                                     <div className="flex gap-4 mt-6">
                                         <Button
                                             className="px-6 py-2 font-bold"
-                                            disabled={cashReceivedCents < totalCents}
+                                            disabled={cashReceivedCents < totalCents || hasInsufficientChange}
                                             onClick={confirmCashPayment}
                                         >Confirmar</Button>
                                         <Button
