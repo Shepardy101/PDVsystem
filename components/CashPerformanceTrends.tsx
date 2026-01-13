@@ -65,7 +65,7 @@ const CashPerformanceTrends: React.FC = () => {
 
   const [periodType, setPeriodType] = useState<PeriodType>('day');
   // Estado para saber qual botão de dias está ativo
-  const [activeDays, setActiveDays] = useState<30 | 60 | 90 | null>(30);
+  const [activeDays, setActiveDays] = useState<1 | 30 | 60 | 90 | null>(30);
   // Inicializa datas com base na primeira/última venda
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [data, setData] = useState<any>(null);
@@ -248,7 +248,7 @@ const CashPerformanceTrends: React.FC = () => {
         <div className="flex items-center gap-2">
           {/* Botões de período automático */}
           <div className="flex gap-1 mr-2">
-            {[30, 60, 90].map(days => (
+            {[1, 30, 60, 90].map(days => (
                 <button
                   key={days}
                   type="button"
@@ -266,7 +266,12 @@ const CashPerformanceTrends: React.FC = () => {
                     }
                     const end = new Date(endDateStr);
                     const start = new Date(end);
-                    start.setDate(end.getDate() - (days - 1));
+                    if (days === 1) {
+                      // Últimas 24h
+                      start.setDate(end.getDate() - 1);
+                    } else {
+                      start.setDate(end.getDate() - (days - 1));
+                    }
                     setDateRange({
                       start: start.toISOString().slice(0, 10),
                       end: end.toISOString().slice(0, 10),

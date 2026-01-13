@@ -796,18 +796,23 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                </div>
 
                <div className="space-y-3">
-                  <h2 className="text-2xl font-bold text-white tracking-widest uppercase assemble-text">Terminal em Modo Restrito</h2>
+                  <h2 className="text-2xl font-bold text-white tracking-widest uppercase assemble-text">Terminal Fechado</h2>
                   <p className="text-slate-500 text-sm font-medium tracking-tight">O caixa atual encontra-se encerrado. Realize a abertura para iniciar o fluxo transacional.</p>
                </div>
 
-               <Button
-                  onClick={() => setIsOpeningModalOpen(true)}
-                  size="lg"
-                  className="px-12 py-5 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow"
-                  icon={<Unlock size={18} />}
-               >
-                  Abrir Terminal
-               </Button>
+                  <div className="flex flex-col items-center gap-2">
+                    <Button
+                      onClick={() => setIsOpeningModalOpen(true)}
+                      size="lg"
+                      className="px-12 py-5 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow"
+                      icon={<Unlock size={18} />}
+                    >
+                      Abrir Terminal
+                    </Button>
+                    <p className="text-[9px] text-slate-600 font-mono uppercase tracking-widest">
+                      Pressione [ENTER] ou [ESPAÇO]
+                    </p>
+                  </div>
 
                <div className="flex items-center gap-6 pt-8 opacity-40">
                   <div className="flex flex-col items-center">
