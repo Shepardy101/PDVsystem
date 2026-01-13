@@ -61,7 +61,7 @@ const palette = {
 
 const CashPerformanceTrends: React.FC = () => {
   // Troque para false para usar a API real
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const [periodType, setPeriodType] = useState<PeriodType>('day');
   // Estado para saber qual botão de dias está ativo
@@ -101,6 +101,7 @@ const CashPerformanceTrends: React.FC = () => {
           setData(apiData);
           // Definir datas padrão após carregar API
           const sales = apiData.sales;
+          console.log('Vendas carregadas para CashPerformanceTrends:', sales);
           if (sales && sales.length > 0) {
             const sorted = [...sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
             const end = new Date(sorted[sorted.length - 1].timestamp);
@@ -121,6 +122,7 @@ const CashPerformanceTrends: React.FC = () => {
   // Filtro de vendas por data inicial/final (para os cards)
   const filteredSalesForCards = React.useMemo(() => {
     if (!data || !Array.isArray(data.sales)) return [];
+    console.log('Filtrando vendas para cards com dataRange:', dateRange);
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
     end.setHours(23, 59, 59, 999);
@@ -133,6 +135,7 @@ const CashPerformanceTrends: React.FC = () => {
   // Totais por método (apenas filtro de data)
   const totals = React.useMemo(() => {
     let cash = 0, card = 0, pix = 0;
+    console.log('Calculando totais para cards a partir de vendas filtradas:', filteredSalesForCards);
     filteredSalesForCards.forEach((sale: any) => {
       if (Array.isArray(sale.payments)) {
         sale.payments.forEach((p: any) => {

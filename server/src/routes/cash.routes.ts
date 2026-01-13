@@ -30,19 +30,15 @@ cashRouter.get('/sessions-movements', async (req, res) => {
     // Buscar todas as movimentações
     const movements = db.prepare('SELECT * FROM cash_movements ORDER BY timestamp DESC').all();
 
-    // Buscar todas as vendas (caso estejam em outra tabela, ex: sales)
+    // Buscar todas as vendas e anexar pagamentos/itens
     let sales: any[] = [];
-    try {
-      sales = db.prepare('SELECT * FROM sales ORDER BY timestamp DESC').all();
-      // Buscar pagamentos e itens de cada venda, se existirem
-      sales = sales.map(sale => {
-        const payments = db.prepare('SELECT * FROM sale_payments WHERE sale_id = ?').all(sale.id);
-        const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
-        return { ...sale, payments, items };
-      });
-    } catch (e) {
-      // Se não existir tabela de vendas, ignora
-    }
+    sales = db.prepare('SELECT * FROM sales ORDER BY timestamp DESC').all();
+    sales = sales.map(sale => {
+      // Usa tabela "payments" existente (não existe sale_payments)
+      const payments = db.prepare('SELECT * FROM payments WHERE sale_id = ?').all(sale.id);
+      const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+      return { ...sale, payments, items };
+    });
 
     res.json({ sessions, movements, sales });
   } catch (err) {
