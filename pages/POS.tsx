@@ -45,6 +45,14 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
 
+   
+   // Busca local de produtos (igual Products.tsx)
+   const [products, setProducts] = useState<Product[]>([]);
+   const [searchResults, setSearchResults] = useState<Product[]>([]);
+   const [searchLoading, setSearchLoading] = useState(false);
+   const [searchError, setSearchError] = useState<string | null>(null);
+
+
    // Discount Modal State
    const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
@@ -84,6 +92,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    const inputRef = useAutoFocus<HTMLInputElement>();
    const searchRef = useRef<HTMLDivElement>(null);
+   const suppressEnterShortcutRef = useRef(false); // evita acionar pagamento quando Enter adiciona produto
    // Ref para o input de quantidade do último produto do carrinho
    const lastQtyInputRef = useRef<HTMLInputElement>(null);
    // Estado para edição de quantidade
@@ -430,6 +439,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    // Gerenciamento de atalhos de teclado
    useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+         // Se Enter acabou de ser usado para selecionar produto, não abre pagamento neste evento
+         if (e.key === 'Enter' && suppressEnterShortcutRef.current) {
+            suppressEnterShortcutRef.current = false;
+            return;
+         }
+
          // Bloqueia todos os atalhos do POS enquanto o modal de fechamento de caixa está aberto
          if (isClosingModalOpen) return;
 
@@ -477,13 +492,25 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             return;
          }
 
-         // Sempre previne o padrão do navegador para F10
-         if (e.key === 'F10') {
+         // Atalho para abrir pagamentos com Enter; permite quando o input principal está focado e há itens no carrinho
+         const active = document.activeElement as HTMLElement | null;
+         const isSearchInput = active && inputRef.current && active === inputRef.current;
+         const hasActiveSearch = isSearchInput && searchTerm.trim() && searchResults.length > 0;
+         const isFormField = active && (
+            active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.tagName === 'SELECT' ||
+            active.getAttribute('contenteditable') === 'true'
+         );
+         if (e.key === 'Enter' && !isPaymentModalOpen) {
+            // Se estiver em outro campo de formulário que não o input de busca, não aciona
+            if (isFormField && !isSearchInput) return;
+            // Se está navegando na lista de resultados, deixa o enter só adicionar produto
+            if (hasActiveSearch) return;
+            if (cart.length === 0) return;
             e.preventDefault();
-            if (!isPaymentModalOpen) {
-               openPaymentModal();
-               return;
-            }
+            openPaymentModal();
+            return;
          }
 
          // Alternar modo multi pagamento (caso exista)
@@ -516,15 +543,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       closePaymentModal,
       toggleMultiMode,
       isClosingModalOpen,
-      cart.length
+      cart.length,
+      searchResults.length,
+      searchTerm
    ]);
 
 
-   // Busca local de produtos (igual Products.tsx)
-   const [products, setProducts] = useState<Product[]>([]);
-   const [searchResults, setSearchResults] = useState<Product[]>([]);
-   const [searchLoading, setSearchLoading] = useState(false);
-   const [searchError, setSearchError] = useState<string | null>(null);
 
    // Carrega todos os produtos ao iniciar
    useEffect(() => {
@@ -681,7 +705,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       if (searchResults.length === 0) return;
       if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % searchResults.length); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(prev => (prev - 1 + searchResults.length) % searchResults.length); }
-      else if (e.key === 'Enter') { e.preventDefault(); if (searchResults[selectedIndex]) addToCart(searchResults[selectedIndex]); }
+      else if (e.key === 'Enter') {
+         e.preventDefault();
+         if (searchResults[selectedIndex]) {
+            suppressEnterShortcutRef.current = true; // evita acionar modal nesta tecla
+            addToCart(searchResults[selectedIndex]);
+         }
+      }
    };
 
    // Mostra loading enquanto está carregando status do caixa
@@ -1052,7 +1082,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                      disabled={cart.length === 0}
                      onClick={() => setIsPaymentModalOpen(true)}
                    >
-                     PROCESSAR [F10]
+                     PROCESSAR [ENTER]
                    </Button>
 
 
