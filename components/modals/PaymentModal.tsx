@@ -65,6 +65,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
     const addBtnRef = useRef<HTMLButtonElement>(null);
     const finalizeBtnRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
+    const optionRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+    const [selectedOptionKey, setSelectedOptionKey] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -73,6 +76,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
             setPaymentAmount('');
             setPaymentMethod('cash');
             setMultiMode(false);
+            setSelectedOptionKey(null);
+            setShowCashChangeModal(false);
+            setCashReceived('');
+            setCashError('');
             setTimeout(() => {
                 modalRef.current?.focus();
             }, 10);
@@ -145,13 +152,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
             // ======================
             if (["1", "2", "3"].includes(e.key)) {
                 e.preventDefault();
-                const opt = paymentOptions.find(o => o.key === e.key);
-                if (opt?.id === 'cash') {
-                    openCashChangeModal();
-                } else if (opt) {
-                    onFinalize([{ method: opt.id, amount: Math.round(total * 100) }]);
-                }
+                setSelectedOptionKey(e.key);
+                const btn = optionRefs.current[e.key];
+                btn?.focus();
                 return;
+            }
+
+            if (e.key === "Enter" && selectedOptionKey) {
+                e.preventDefault();
+                const btn = optionRefs.current[selectedOptionKey];
+                if (btn) {
+                    btn.click();
+                    return;
+                }
             }
 
             if (e.key === "/") {
@@ -166,7 +179,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
 
-    }, [isOpen, multiMode, total, focusStep, onFinalize]);
+    }, [isOpen, multiMode, total, focusStep, onFinalize, selectedOptionKey]);
 
     // Quando entrar no multiMode, foca o input imediatamente
     useEffect(() => {
@@ -238,8 +251,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                             {paymentOptions.map(m => (
                                 <div key={m.id} className="space-y-3 assemble-text">
                                     <button
+                                        ref={el => { optionRefs.current[m.key] = el; }}
+                                        onFocus={() => setSelectedOptionKey(m.key)}
                                         onClick={() => m.id === 'cash' ? openCashChangeModal() : onFinalize([{ method: m.id, amount: Math.round(total * 100) }])}
-                                        className="w-full flex flex-col items-center gap-4 p-8 border border-white/5 bg-dark-950/50 rounded-2xl hover:border-accent/40 hover:bg-accent/5 transition-all group relative overflow-hidden"
+                                        className={`w-full flex flex-col items-center gap-4 p-8 border rounded-2xl transition-all group relative overflow-hidden ${selectedOptionKey === m.key ? 'border-accent/60 bg-accent/10 ring-2 ring-accent/30 scale-[1.01]' : 'border-white/5 bg-dark-950/50 hover:border-accent/40 hover:bg-accent/5'}`}
                                     >
                                         <m.icon size={28} className={`${m.color} group-hover:scale-110 transition-transform relative z-10`} />
                                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-200 relative z-10">{m.label}</span>
