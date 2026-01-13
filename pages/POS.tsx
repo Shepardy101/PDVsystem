@@ -627,6 +627,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       setSearchResults(filtered.slice(0, 6));
    }, [searchTerm, products]);
 
+   // Sempre mantém a primeira opção selecionada ao obter novos resultados
+   useEffect(() => {
+      if (searchResults.length > 0) {
+         setSelectedIndex(0);
+      }
+   }, [searchResults]);
+
    const addToCart = (product: Product) => {
       setCart(prev => {
          const existing = prev.find(item => item.product.id === product.id);
