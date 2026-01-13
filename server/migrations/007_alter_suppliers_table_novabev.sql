@@ -1,2 +1,0 @@
--- Migration: Adicionar colunas extras à tabela suppliers em data/novabev.sqlite
--- (Removido: comandos redundantes)

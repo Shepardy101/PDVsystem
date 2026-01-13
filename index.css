@@ -1,0 +1,9 @@
+/* index.css gerado automaticamente para build Vite */
+@import './styles/fonts.css';
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: #18181b;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+}

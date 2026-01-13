@@ -107,8 +107,8 @@ O **PDVsystem** é uma solução de ponto de venda (POS) para distribuidores de 
 
 - [ ] Validar ambiente do cliente (Windows, Node.js instalado, Chrome disponível)
 
-- [ ] Gerar build do frontend (`npm run build:client`)
-- [ ] Gerar build do backend (`npm run build:server`)
+- [x] Gerar build do frontend (`npm run build:client`)
+- [x] Gerar build do backend (`npm run build:server`)
 - [ ] Gerar build completo (`npm run build`)
 - [ ] Executar migrações do banco (primeira inicialização)
 - [ ] Preparar banco de dados para produção (população inicial, backup)
