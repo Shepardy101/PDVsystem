@@ -14,7 +14,7 @@ import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Rec
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
 import { CashSession, MovementTransaction, SaleTransaction } from '@/types';
-import { calculateCashBalance } from '@/utils/calculateCashBalance';
+import { calculateCashBalance, calculateCashBalanceCents, calculateSessionSalesTotalCents } from '@/utils/calculateCashBalance';
 
 
 
@@ -70,6 +70,13 @@ const CashManagement: React.FC = () => {
    const [error, setError] = useState<string>('');
 
    const [showAdminPasswordModal, setShowAdminPasswordModal] = useState<'' | 'suprimento' | 'sangria' | 'pagamento'>("");
+
+   const cashBalanceCents = useMemo(() => calculateCashBalanceCents(session), [session]);
+   const sessionSalesCents = useMemo(() => calculateSessionSalesTotalCents(session), [session]);
+   const paymentLimitCents = useMemo(
+      () => (sessionSalesCents > 0 ? sessionSalesCents : cashBalanceCents),
+      [sessionSalesCents, cashBalanceCents]
+   );
 
    // Buscar vendas e movimentações da sessão de caixa aberta
    const fetchAndSetSessionTransactions = useCallback(async () => {
@@ -1248,6 +1255,7 @@ const CashManagement: React.FC = () => {
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
             operatorId={user?.id || ''}
             cashSessionId={session?.id || ''}
+            availableCashCents={cashBalanceCents}
          />
 
          <PagamentoModal
@@ -1260,6 +1268,7 @@ const CashManagement: React.FC = () => {
             onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
             operatorId={user?.id || ''}
             cashSessionId={session?.id || ''}
+            paymentLimitCents={paymentLimitCents}
          />
 
          {/* MODAL CRIAR CATEGORIA DE TRANSAÇÃO */}

@@ -9,19 +9,34 @@ interface PagamentoModalProps {
   onCategoryModalOpen: () => void;
   operatorId?: string;
   cashSessionId?: string;
+  paymentLimitCents?: number;
 }
 
-const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen, operatorId, cashSessionId }) => {
+const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen, operatorId, cashSessionId, paymentLimitCents }) => {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(txCategories[0] || '');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const parsedAmount = parseFloat(amount.replace(',', '.')) || 0;
+  const amountCents = Math.round(parsedAmount * 100);
+  const exceedsLimit = typeof paymentLimitCents === 'number' && amountCents > paymentLimitCents;
+
   const handleSubmit = async () => {
     setError('');
     if (!amount || !category || !description) {
       setError('Preencha todos os campos.');
+      return;
+    }
+    const numericAmount = parseFloat(amount.replace(',', '.'));
+    const amountCentsSubmit = Math.round((numericAmount || 0) * 100);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      setError('Informe um valor válido.');
+      return;
+    }
+    if (typeof paymentLimitCents === 'number' && amountCentsSubmit > paymentLimitCents) {
+      setError('Valor excede o limite permitido para pagamento nesta sessão.');
       return;
     }
     setLoading(true);
@@ -61,6 +76,9 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
           value={amount}
           onChange={e => setAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
         />
+        {typeof paymentLimitCents === 'number' && (
+          <p className="text-[10px] text-slate-500 font-semibold">Limite disponível: R$ {(paymentLimitCents / 100).toFixed(2)}</p>
+        )}
         <div className="space-y-2">
           <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Alocação / Categoria</label>
           <div className="flex gap-2">
@@ -83,7 +101,7 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
           <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={onClose} disabled={loading}>Cancelar</Button>
-          <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-amber-500/10 bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20" icon={<CreditCard size={18}/>} onClick={handleSubmit} disabled={loading || !amount || !category || !description}>Efetuar Pagamento</Button>
+          <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-amber-500/10 bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20" icon={<CreditCard size={18}/>} onClick={handleSubmit} disabled={loading || !amount || !category || !description || exceedsLimit}>Efetuar Pagamento</Button>
         </div>
       </div>
     </Modal>

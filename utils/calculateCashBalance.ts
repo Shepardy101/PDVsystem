@@ -74,3 +74,26 @@ export function calculateCashBalanceCents(session: CashSession | null): number {
 
    return initialBalanceCents + totalVendasCash + totalSuprimentos - totalSangrias;
 }
+
+/**
+ * Calcula o total de vendas da sessão em centavos
+ */
+export function calculateSessionSalesTotalCents(session: CashSession | null): number {
+   if (!session || !Array.isArray(session.transactions)) return 0;
+
+   return session.transactions.reduce((acc, tx) => {
+      if ('status' in tx && Array.isArray((tx as any).items)) {
+         const sale = tx as any;
+         if (typeof sale.total === 'number') {
+            return acc + sale.total;
+         }
+         const itemsTotal = sale.items.reduce((sum: number, item: any) => {
+            if (typeof item.line_total === 'number') return sum + item.line_total;
+            if (typeof item.lineTotal === 'number') return sum + item.lineTotal;
+            return sum;
+         }, 0);
+         return acc + itemsTotal;
+      }
+      return acc;
+   }, 0);
+}
