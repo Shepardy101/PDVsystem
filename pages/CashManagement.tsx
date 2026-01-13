@@ -5,6 +5,7 @@ import { fetchSessionTransactions } from '../utils/transactions';
 import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
 import AdminPasswordModal from '../components/AdminPasswordModal';
+import { useAuth } from '../components/AuthContext';
 
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -27,7 +28,8 @@ async function fetchCashHistory() {
 const INITIAL_TX_CATEGORIES = ['Logística', 'Infraestrutura', 'Retirada Lucro', 'Despesas Gerais', 'Marketing', 'Manutenção'];
 
 const CashManagement: React.FC = () => {
-      const [historySearch, setHistorySearch] = useState<string>('');
+   const { user } = useAuth();
+   const [historySearch, setHistorySearch] = useState<string>('');
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
    const [cashHistory, setCashHistory] = useState([]);
    const [cashHistoryLoading, setCashHistoryLoading] = useState(false);
@@ -119,10 +121,19 @@ const CashManagement: React.FC = () => {
 
    // Buscar sessão de caixa aberta e suas transações
    useEffect(() => {
+      if (!user?.id) return;
       setSessionLoading(true);
-      fetch('/api/cash/open')
+      fetch(`/api/cash/open?userId=${user.id}`)
          .then(async res => {
-            if (!res.ok) throw new Error('Nenhum caixa aberto');
+            if (!res.ok) {
+               const errorBody = await res.text();
+               console.error('Erro ao buscar sessão aberta:', {
+                  status: res.status,
+                  statusText: res.statusText,
+                  body: errorBody
+               });
+               throw new Error('Nenhum caixa aberto');
+            }
             const data = await res.json();
             const sessionId = data.session?.id;
             if (sessionId) {
@@ -151,15 +162,24 @@ const CashManagement: React.FC = () => {
                   transactions: allMovements
                });
             } else {
-               setSession(null);
+               setSession({
+                  id: 'N/A',
+                  transactions: [],
+                  message: 'Nenhuma sessão ativa no momento.'
+               });
             }
          })
-         .catch(() => {
+         .catch(err => {
+            console.error('Erro ao carregar sessão:', err);
             setSessionError('Nenhum caixa aberto ou erro ao buscar vendas/suprimentos.');
-            setSession(null);
+            setSession({
+               id: 'N/A',
+               transactions: [],
+               message: 'Erro ao carregar a sessão atual.'
+            });
          })
          .finally(() => setSessionLoading(false));
-   }, [refreshFlag]);
+   }, [refreshFlag, user?.id]);
 
 
 
@@ -254,6 +274,18 @@ const CashManagement: React.FC = () => {
    const [operatorNames, setOperatorNames] = useState<{ [id: string]: string }>({});
 
    // Removido: busca de nomes dos operadores após cashHistory, pois agora é feito junto com o fetch
+
+   if (sessionError) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-dark-950">
+            <div className="flex flex-col items-center gap-4">
+               <AlertTriangle size={48} className="text-red-500" />
+               <h1 className="text-2xl font-bold text-white">Erro na Sessão</h1>
+               <p className="text-slate-400 text-center max-w-md">{sessionError}</p>
+            </div>
+         </div>
+      );
+   }
 
    if (error) {
       return (
