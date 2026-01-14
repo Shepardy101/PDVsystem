@@ -21,6 +21,7 @@ import telemetryRouter from './routes/telemetry.routes';
 import ipControlRouter from './routes/admin/ipControl.routes';
 import maintenanceRouter from './routes/admin/maintenance.routes';
 import { scheduleLogRetention } from './services/logRetention';
+import { startPerformanceLogger } from './services/performanceLogger';
 
 import { ipAccessControl } from './middleware/ipAccessControl';
 const app = express();
@@ -93,3 +94,5 @@ app.listen(PORT, '0.0.0.0', () => {
 
 // Agendamento diário de retenção de logs
 scheduleLogRetention();
+// Logger periódico de performance (CPU/RAM/loop)
+startPerformanceLogger();
