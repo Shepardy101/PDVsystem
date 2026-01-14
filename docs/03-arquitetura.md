@@ -18,6 +18,11 @@
 - `Tab`/`Shift+Tab` seguem a ordem natural; listeners de teclado são limpos no fechamento para evitar vazamentos.
 - Ações principais exibem rótulos visíveis de atalho quando relevante (ex.: `[ENTER]`, `[I]`).
 
+### Navegação e mobilidade (SPA)
+- Sidebar (menu lateral) abre por gesto/botão apenas em dispositivos mobile (`pointer: coarse` ou <1024px) e fecha automaticamente ao escolher um item de menu no mobile; desktop permanece aberto.
+- Animação da sidebar parte visualmente do botão/hotzone (escala/translate) para dar sensação de emergir do comando; overlay escurecido fecha com toque.
+- Tela de loading do POS cobre todo o viewport, com grid/gradiente e glow para evitar “buraco” no centro no mobile.
+
 ### Mapa rápido de atalhos (modais principais)
 | Modal | Atalhos | Fluxo resumido |
 | --- | --- | --- |

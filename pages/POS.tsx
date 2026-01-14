@@ -62,6 +62,10 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const [lastSaleData, setLastSaleData] = useState<any>(null);
    const [selectedIndex, setSelectedIndex] = useState(0);
    const [tempDiscount, setTempDiscount] = useState('0');
+   const [showConfirmClear, setShowConfirmClear] = useState(false);
+   const [showConfirmCloseCash, setShowConfirmCloseCash] = useState(false);
+   const confirmClearRef = useRef<HTMLDivElement>(null);
+   const confirmCloseRef = useRef<HTMLDivElement>(null);
 
    // Cash session state
    const [cashSessionId, setCashSessionId] = useState<string | null>(null);
@@ -132,6 +136,26 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       setIsSubtotalModalOpen(false);
    };
 
+   const handleDiscountAction = (trigger: string) => {
+      if (!cart.length) return;
+      if (isOperator(user)) {
+         setShowAdminPasswordModal('discount');
+         sendTelemetry('discount', 'require-admin', { trigger });
+      } else {
+         openDiscountModal(trigger);
+      }
+   };
+
+   const handleSubtotalAction = (trigger: string) => {
+      if (!cart.length) return;
+      if (isOperator(user)) {
+         setShowAdminPasswordModal('subtotal');
+         sendTelemetry('subtotal', 'require-admin', { trigger });
+      } else {
+         openSubtotalModal(trigger);
+      }
+   };
+
    const openClientModal = (trigger: string) => {
       sendTelemetry('client', 'open-modal', { trigger });
       setIsClientModalOpen(true);
@@ -192,6 +216,19 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    useEffect(() => {
       sendTelemetry('page', 'view');
    }, [sendTelemetry]);
+
+   // Garante que modais críticos apareçam no viewport no mobile
+   useEffect(() => {
+      if (showConfirmClear && confirmClearRef.current) {
+         confirmClearRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+   }, [showConfirmClear]);
+
+   useEffect(() => {
+      if (showConfirmCloseCash && confirmCloseRef.current) {
+         confirmCloseRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+   }, [showConfirmCloseCash]);
 
    if (ipBlocked) {
       return <IpBlocked ip={ipBlocked.ip} hostname={ipBlocked.hostname} />;
@@ -928,12 +965,14 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    // Mostra loading enquanto está carregando status do caixa
    if (isLoadingSession) {
       return (
-         <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse" />
-            <div className="relative z-10 flex flex-col items-center text-center space-y-8 max-w-lg">
+         <div className="flex-1 min-h-screen w-full flex flex-col items-center justify-center bg-dark-950 p-0 sm:p-6 relative overflow-hidden assemble-view">
+            <div className="absolute inset-0 bg-cyber-grid opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-b from-dark-900/60 via-dark-950 to-dark-900/70" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-accent/8 rounded-full blur-[120px] animate-pulse" />
+            <div className="relative z-10 flex flex-col items-center text-center space-y-8 max-w-lg px-6">
                <div className="flex flex-col items-center gap-6">
                   <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-accent border-solid" style={{ borderLeft: '4px solid #222', borderRight: '4px solid #222' }} />
-                  <span className="text-slate-500 text-xs font-bold tracking-widest uppercase">Aguardando status do terminal...</span>
+                  <span className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase">Aguardando status do terminal...</span>
                </div>
             </div>
          </div>
@@ -1112,18 +1151,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                    <ShoppingCart size={16} className="text-accent" /> Buffer de Venda.
                  </h2>
                  <div className="flex items-center gap-3">
-                   <button
-                               onClick={() => openCashClosingModal('button-fechar-caixa')}
-                     className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
-                   >
-                     Fechar Caixa
-                   </button>
-
                    <div className="flex items-center gap-2">
                      <Badge variant="info">{cart.length} Ativos</Badge>
                      <button
                         title="Limpar carrinho"
-                        onClick={handleClearCart}
+                        onClick={() => setShowConfirmClear(true)}
                         className="ml-1 p-1  rounded hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors text-slate-400 hover:text-red-400"
                         style={{ display: cart.length > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
                      >
@@ -1134,8 +1166,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                </div>
 
                {/* Cart Items List */}
-               <div className="flex-1 glass-panel rounded-3xl overflow-hidden flex flex-col border-white/5 shadow-2xl">
-                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                      <div className="flex-1 glass-panel rounded-3xl overflow-hidden flex flex-col border-white/5 shadow-2xl">
+                         <div className="flex-1 overflow-y-auto p-3 sm:p-6 custom-scrollbar max-h-[65vh] sm:max-h-none min-h-0">
                    {cart.length === 0 ? (
                      <div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-20">
                         <div className="p-12 border-2 border-dashed border-white/5 rounded-full mb-6">
@@ -1144,56 +1176,69 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                         <p className="text-xl font-bold tracking-widest uppercase">Sistema em Standby</p>
                      </div>
                    ) : (
-                     <div className="space-y-3">
+                     <div className="space-y-1 sm:space-y-2">
+                        <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[auto,1fr,auto,auto,auto] gap-2 items-center px-2 py-1 text-[10px] text-slate-500 uppercase tracking-[0.15em]">
+                           <span className="truncate">Item</span>
+                           <span className="text-right">Qtd</span>
+                           <span className="text-right">Total</span>
+                           <span className="text-right">&nbsp;</span>
+                        </div>
                         {cart.map(item => (
-                          <div key={item.product.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 bg-dark-900/40 p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all group animate-in slide-in-from-left-4 duration-300">
-                             <div className="w-12 h-12 rounded-xl bg-dark-950 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
-                              {item.product.imageUrl ? (
-                                 <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
-                              ) : (
-                                 <Cpu size={28} className="text-slate-700 opacity-60" />
-                              )}
+                          <div
+                            key={item.product.id}
+                            className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[auto,1fr,auto,auto,auto] items-center gap-2 sm:gap-3 bg-dark-900/70 p-2.5 sm:p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all animate-in slide-in-from-left-4 duration-300"
+                          >
+                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                               <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg bg-dark-950 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
+                                 {item.product.imageUrl ? (
+                                    <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
+                                 ) : (
+                                    <Cpu size={18} className="text-slate-700 opacity-60" />
+                                 )}
+                               </div>
+                               <div className="min-w-0 space-y-0.5">
+                                 <h4 className="text-xs sm:text-sm font-bold text-slate-100 truncate uppercase tracking-tight leading-tight">{item.product.name}</h4>
+                                 <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-400 flex-wrap">
+                                    <span className="font-pdv text-accent">R$ {item.product.salePrice.toFixed(2)}</span>
+                                    {item.appliedDiscount > 0 && <Badge variant="success">-R$ {item.appliedDiscount.toFixed(2)}</Badge>}
+                                 </div>
+                               </div>
                              </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-bold text-slate-100 truncate uppercase tracking-tight">{item.product.name}</h4>
-                              <div className="flex items-center gap-3">
-                                 <span className="text-[10px] font-pdv text-accent">R$ {item.product.salePrice.toFixed(2)}</span>
-                                 {item.appliedDiscount > 0 && <Badge variant="success">-R$ {item.appliedDiscount.toFixed(2)}</Badge>}
-                              </div>
-                            </div>
-                                          <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10 flex-wrap sm:flex-nowrap">
-                              <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
-                              <input
-                                 ref={el => { qtyInputRefs.current[item.product.id] = el; }}
-                                 data-role="qty-input"
-                                 type="number"
-                                 min={1}
-                                 max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
-                                 className="w-12 text-center text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
-                                 value={item.quantity}
-                                 onChange={e => {
-                                    const next = parseInt(e.target.value, 10);
-                                    setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
-                                 }}
-                                 onKeyDown={e => {
-                                    // Não deixa o Enter vazar para o atalho global de pagamento
-                                    e.stopPropagation();
-                                    if (e.key === 'Enter') {
-                                       e.preventDefault();
-                                       inputRef.current?.focus();
-                                       inputRef.current?.select();
-                                    }
-                                 }}
-                                 onFocus={e => e.stopPropagation()}
-                              />
-                              <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
-                            </div>
-                                          <div className="w-full sm:w-24 text-left sm:text-right whitespace-nowrap mt-2 sm:mt-0">
-                                             <p className="text-sm font-pdv font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
-                            </div>
-                                          <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity self-end sm:self-auto">
-                              <Trash2 size={16} />
-                            </button>
+
+                             <div className="flex items-center gap-1.5 sm:gap-2 bg-dark-950/80 rounded-lg px-2 py-1 border border-white/10">
+                               <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={12} /></button>
+                               <input
+                                  ref={el => { qtyInputRefs.current[item.product.id] = el; }}
+                                  data-role="qty-input"
+                                  type="number"
+                                   min={1}
+                                   max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
+                                  className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
+                                  value={item.quantity}
+                                  onChange={e => {
+                                     const next = parseInt(e.target.value, 10);
+                                     setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
+                                  }}
+                                  onKeyDown={e => {
+                                     e.stopPropagation();
+                                     if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        inputRef.current?.focus();
+                                        inputRef.current?.select();
+                                     }
+                                  }}
+                                  onFocus={e => e.stopPropagation()}
+                               />
+                               <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={12} /></button>
+                             </div>
+
+                             <div className="text-right whitespace-nowrap text-sm sm:text-base font-pdv font-bold text-white leading-tight">
+                               R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}
+                             </div>
+
+                             <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity justify-self-end">
+                               <Trash2 size={14} />
+                             </button>
                           </div>
                         ))}
                      </div>
@@ -1255,20 +1300,103 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                             </Button>
 
 
-                               <>
-                            <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.25em]">
-                               Ctrl + D = Aplicar Desconto
-                            </p>
-                            <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.25em]">
-                               Ctrl + S = Ajustar Subtotal
-                            </p>
-                               </>
+                                <div className="sm:hidden grid grid-cols-1 gap-3">
+                                  <Button
+                                    className="w-full py-3 text-[11px] sm:text-[11px] font-bold tracking-[0.2em] uppercase bg-dark-800/60 border border-accent/30 hover:border-accent/60 hover:bg-accent/5"
+                                    disabled={cart.length === 0}
+                                    onClick={() => handleDiscountAction('button-discount')}
+                                  >
+                                    Aplicar Desconto
+                                  </Button>
+                                  <Button
+                                    className="w-full py-3 text-[11px] sm:text-[11px] font-bold tracking-[0.2em] uppercase bg-dark-800/60 border border-accent/30 hover:border-accent/60 hover:bg-accent/5"
+                                    disabled={cart.length === 0}
+                                    onClick={() => handleSubtotalAction('button-subtotal')}
+                                  >
+                                    Ajustar Subtotal
+                                  </Button>
+                                </div>
+
+                                                <Button
+                                                   className="w-full py-3 text-[11px] sm:text-[11px] font-bold tracking-[0.2em] uppercase bg-red-500/5 border border-red-400/20 text-red-100 hover:border-red-300/60 hover:bg-red-500/10 transition-all"
+                                                   onClick={() => setShowConfirmCloseCash(true)}
+                                                >
+                                                   Fechar Caixa
+                                                </Button>
+
+
+                                 <div className="hidden sm:block space-y-1">
+                                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.25em]">
+                                     Ctrl + D = Aplicar Desconto
+                                   </p>
+                                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.25em]">
+                                     Ctrl + S = Ajustar Subtotal
+                                   </p>
+                                 </div>
                  </div>
                </div>
             </div>
           </div>
 
          {/* PAYMENT MODAL */}
+            {showConfirmClear && (
+               <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowConfirmClear(false)} />
+                  <div ref={confirmClearRef} className="relative w-full max-w-sm bg-dark-900/95 border border-accent/15 rounded-2xl shadow-[0_10px_40px_rgba(0,224,255,0.12)] cyber-modal-container overflow-hidden">
+                     <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/60">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-[0.25em]">Limpar Carrinho</h3>
+                        <button onClick={() => setShowConfirmClear(false)} className="text-slate-500 hover:text-accent p-2"><X size={18} /></button>
+                     </div>
+                     <div className="p-6 space-y-4">
+                        <p className="text-slate-300 text-sm">Deseja remover todos os itens do carrinho? Esta ação não pode ser desfeita.</p>
+                        <div className="grid grid-cols-2 gap-3">
+                           <Button
+                              className="w-full py-3 text-[11px] font-bold tracking-[0.2em] uppercase bg-dark-800/60 border border-white/10 hover:border-white/30"
+                              onClick={() => setShowConfirmClear(false)}
+                           >
+                              Cancelar
+                           </Button>
+                           <Button
+                              className="w-full py-3 text-[11px] font-bold tracking-[0.2em] uppercase bg-red-500/5 border border-red-400/25 text-red-200 hover:border-red-300/70 hover:bg-red-500/10"
+                              onClick={() => { handleClearCart(); setShowConfirmClear(false); }}
+                           >
+                              Limpar
+                           </Button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {showConfirmCloseCash && (
+               <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowConfirmCloseCash(false)} />
+                  <div ref={confirmCloseRef} className="relative w-full max-w-sm bg-dark-900/95 border border-accent/15 rounded-2xl shadow-[0_10px_40px_rgba(0,224,255,0.12)] cyber-modal-container overflow-hidden">
+                     <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/60">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-[0.25em]">Fechar Caixa</h3>
+                        <button onClick={() => setShowConfirmCloseCash(false)} className="text-slate-500 hover:text-accent p-2"><X size={18} /></button>
+                     </div>
+                     <div className="p-6 space-y-4">
+                        <p className="text-slate-300 text-sm">Confirma o encerramento do caixa atual?</p>
+                        <div className="grid grid-cols-2 gap-3">
+                           <Button
+                              className="w-full py-3 text-[11px] font-bold tracking-[0.2em] uppercase bg-dark-800/60   hover:border-white/30"
+                              onClick={() => setShowConfirmCloseCash(false)}
+                           >
+                              Cancelar
+                           </Button>
+                           <Button
+                              className="w-full py-3 text-[11px] font-bold tracking-[0.2em] uppercase bg-red-500/5 border border-red-400/25 text-red-200 hover:border-red-300/70 hover:bg-red-500/10"
+                              onClick={() => { setShowConfirmCloseCash(false); openCashClosingModal('confirm-fechar-caixa'); }}
+                           >
+                              Confirmar
+                           </Button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}
+
          <PaymentModal
             isOpen={isPaymentModalOpen}
             total={effectiveTotal}

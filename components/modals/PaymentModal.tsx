@@ -66,6 +66,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
     const [partialPayments, setPartialPayments] = useState<{ method: string, amount: number }[]>([]);
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [shouldRender, setShouldRender] = useState(false);
+    const [isExiting, setIsExiting] = useState(false);
     // refs para ciclo de foco
     const inputRef = useRef<HTMLInputElement>(null);
     const selectRef = useRef<HTMLSelectElement>(null);
@@ -113,6 +115,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
     }, [isOpen, multiMode, showCashChangeModal, onClose]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            requestAnimationFrame(() => setIsExiting(false));
+        } else if (shouldRender) {
+            setIsExiting(true);
+            const timeout = setTimeout(() => setShouldRender(false), 220);
+            return () => clearTimeout(timeout);
+        }
+    }, [isOpen, shouldRender]);
 
 
 
@@ -236,16 +249,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         }
     }, [multiMode, focusStep]);
 
-    if (!isOpen) return null;
+    if (!shouldRender) return null;
 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={onClose} />
+            <div
+                className={`absolute inset-0 bg-dark-950/80 backdrop-blur-xl transition-opacity duration-200 ${isExiting ? 'opacity-0' : 'opacity-100'}`}
+                onClick={onClose}
+            />
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden"
+                className={`relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-out transform ${isExiting ? 'opacity-0 translate-y-6 scale-[0.97]' : 'opacity-100 translate-y-0 scale-100'}`}
             >
                 <div className="p-6 sm:p-7 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">
                     <div className="flex items-center gap-4">
@@ -268,32 +284,41 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                 <div className="p-6 sm:p-8 space-y-8">
                     <div className="text-center space-y-2">
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Crédito Exigido</p>
-                        <h3 className="text-5xl font-mono font-bold text-accent ">R$ {total.toFixed(2)}</h3>
+                        <h3 className="text-5xl font-mono font-bold text-accent whitespace-nowrap inline-flex items-baseline justify-center gap-2">R$ <span>{total.toFixed(2)}</span></h3>
                         {multiMode && (
                             <p className="text-xs text-slate-400 mt-2">Valor restante: <span className="font-bold text-accent">R$ {(remaining / 100).toFixed(2)}</span></p>
                         )}
                     </div>
                     {!multiMode ? (
                         <>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 auto-rows-fr">
                             {paymentOptions.map(m => (
-                                <div key={m.id} className="space-y-3 assemble-text">
+                                <div key={m.id} className={`space-y-3 assemble-text h-full ${m.id === 'cash' ? 'col-span-2 sm:col-span-1' : ''}`}>
                                     <button
                                         ref={el => { optionRefs.current[m.key] = el; }}
                                         onFocus={() => setSelectedOptionKey(m.key)}
                                         onClick={() => m.id === 'cash' ? openCashChangeModal() : onFinalize([{ method: m.id, amount: Math.round(total * 100) }])}
-                                        className={`w-full flex flex-col items-center gap-4 p-8 border rounded-2xl transition-all group relative overflow-hidden ${selectedOptionKey === m.key ? 'border-accent/60 bg-accent/10 ring-2 ring-accent/30 scale-[1.01]' : 'border-white/5 bg-dark-950/50 hover:border-accent/40 hover:bg-accent/5'}`}
+                                        className={`w-full h-full ${m.id === 'cash' ? 'min-h-[110px]' : 'min-h-[130px]'} sm:min-h-[160px] flex flex-col items-center justify-center gap-4 p-7 sm:p-8 border rounded-2xl transition-all group relative overflow-hidden ${selectedOptionKey === m.key ? 'border-accent/60 bg-accent/10 ring-2 ring-accent/30 scale-[1.01]' : 'border-white/5 bg-dark-950/50 hover:border-accent/40 hover:bg-accent/5'}`}
                                     >
                                         <m.icon size={28} className={`${m.color} group-hover:scale-110 transition-transform relative z-10`} />
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-200 relative z-10">{m.label}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-200 relative z-10 whitespace-nowrap">{m.label}</span>
                                         <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/2 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </button>
                                     <p className="text-center text-[8px] font-bold text-slate-600 tracking-widest uppercase">[{m.key}]</p>
                                 </div>
                             ))}
-                            <div className="col-span-3 text-center mt-4 flex flex-col items-center gap-2">
-                                <span className="text-xs text-slate-400">Pressione <b>/</b> para adicionar múltiplos pagamentos</span>
-                                <span className="text-xs text-slate-400">Pressione <b>C</b> para adicionar cliente</span>
+                            <div className="col-span-2 sm:col-span-3 mt-3 flex flex-col sm:flex-row justify-center items-center gap-2">
+                                <button
+                                    className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] rounded-lg border border-white/10 bg-white/5 text-slate-300 hover:border-accent/50 hover:text-accent transition-colors w-full sm:w-auto"
+                                    onClick={() => setMultiMode(true)}
+                                >Multiplo pagamento (/)</button>
+                                <button
+                                    className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] rounded-lg border border-white/10 bg-white/5 text-slate-300 hover:border-accent/50 hover:text-accent transition-colors w-full sm:w-auto"
+                                    onClick={() => {
+                                        // dispara o atalho já usado no POS para vincular cliente
+                                        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c' }));
+                                    }}
+                                >Adicionar cliente (C)</button>
                             </div>
                         </div>
                         
@@ -348,7 +373,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                         </>
                     ) : (
                         <div className="space-y-4">
-                            <div className="flex gap-4 items-end">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
                                 <Input
                                     ref={inputRef}
                                     type="number"
@@ -357,7 +382,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                     value={paymentAmount}
                                     onChange={e => setPaymentAmount(e.target.value)}
                                     placeholder="Valor"
-                                    className="text-center text-xl font-mono text-accent"
+                                    className="w-full text-center text-xl font-mono text-accent"
                                     onFocus={() => setFocusStep('input')}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') setFocusStep('select');
@@ -377,7 +402,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                     ref={selectRef}
                                     value={paymentMethod}
                                     onChange={e => setPaymentMethod(e.target.value)}
-                                    className="p-3 rounded-xl border border-white/10 bg-dark-950/50 text-xs font-bold text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/40 custom-select"
+                                    className="w-full sm:w-auto p-3 rounded-xl border border-white/10 bg-dark-950/50 text-xs font-bold text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/40 custom-select"
                                     onFocus={() => setFocusStep('select')}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') setFocusStep('add');
@@ -410,7 +435,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                 `}</style>
                                 <Button
                                     ref={addBtnRef}
-                                    className="py-3 px-6"
+                                    className="w-full sm:w-auto py-3 px-6"
                                     disabled={(() => {
                                         const amt = parseFloat(paymentAmount.replace(',', '.'));
                                         return !amt || amt <= 0 || (amt * 100) > remaining;
@@ -486,7 +511,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                             {selectedClient.cpf && <span className="text-xs font-mono text-slate-400">CPF: {selectedClient.cpf}</span>}
                         </div>
                     ) : (
-                        <p className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">Protocolo de Segurança Ativo // ESC para cancelar</p>
+                        <div className="flex flex-col items-center gap-3">
+                            <p className="hidden sm:block text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">Protocolo de Segurança Ativo // ESC para cancelar</p>
+                            <Button
+                                className="sm:hidden w-full py-3 text-xs uppercase tracking-[0.2em]"
+                                variant="secondary"
+                                onClick={onClose}
+                            >Voltar</Button>
+                        </div>
                     )}
                 </div>
                 <div className="border-animation absolute bottom-0 left-0 w-full"></div>

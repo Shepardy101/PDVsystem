@@ -157,3 +157,7 @@ Respeite Tab/Shift+Tab para navegação natural; evite prender o foco.
 Defina focos iniciais (autoFocus) e gerencie refs para mover foco entre campos/botões conforme o fluxo.
 Limpe listeners de teclado ao desmontar/fechar para evitar vazamentos e conflitos.
 Documente hotkeys visivelmente (ex.: rótulos “[ENTER]”, “[ESC]”, “[I]”) quando houver ações principais.
+
+Sempre que fizer alterações nos arquivos que tiver algum impacto na interface do usuário, verifique se essas diretrizes de UX keyboard-first/hotkeys foram aplicadas corretamente.
+
+sempre que fizer alterações nos arquivos que tiver algum impacto na interface do usuário, verifique se ira afetar a documentação, se sim sempre mantenha a documetanção atualizada.
