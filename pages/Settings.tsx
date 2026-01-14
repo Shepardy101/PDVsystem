@@ -12,12 +12,13 @@ import {
 } from 'lucide-react';
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
-import SystemMonitorCards from '../components/SystemMonitorCards';
+import PerformanceMetricsModal from '../components/modals/PerformanceMetricsModal';
 
 // --- Painel de Controle de IPs ---
 type IpEntry = { id: number; ip: string; hostname?: string|null; tentado_em?: string; autorizado_em?: string; autorizado_por?: string|null };
+type IPControlPanelProps = { canManage: boolean };
 
-const IPControlPanel: React.FC = () => {
+const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
    const [pending, setPending] = useState<IpEntry[]>([]);
    const [allowed, setAllowed] = useState<IpEntry[]>([]);
    const [loading, setLoading] = useState(false);
@@ -54,6 +55,7 @@ const IPControlPanel: React.FC = () => {
    }, [refresh]);
 
    const handleAllow = async (ip: string, hostname?: string|null) => {
+      if (!canManage) return;
       setLoading(true);
       try {
          const res = await fetch('/api/admin/ip-control/allow', {
@@ -70,6 +72,7 @@ const IPControlPanel: React.FC = () => {
       }
    };
    const handleDeny = async (ip: string) => {
+      if (!canManage) return;
       setLoading(true);
       try {
          const res = await fetch('/api/admin/ip-control/deny', {
@@ -86,6 +89,7 @@ const IPControlPanel: React.FC = () => {
       }
    };
    const handleRemove = async (ip: string) => {
+      if (!canManage) return;
       setLoading(true);
       try {
          const res = await fetch('/api/admin/ip-control/remove', {
@@ -154,8 +158,8 @@ const IPControlPanel: React.FC = () => {
                         <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
                            <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
                            <div className="flex gap-2">
-                              <Button size="xs" variant="success" disabled={loading} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
-                              <Button size="xs" variant="danger" disabled={loading} onClick={() => handleDeny(ip.ip)}>deny</Button>
+                              <Button size="xs" variant="success" disabled={loading || !canManage} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
+                              <Button size="xs" variant="danger" disabled={loading || !canManage} onClick={() => handleDeny(ip.ip)}>deny</Button>
                            </div>
                         </div>
                      </div>
@@ -187,7 +191,7 @@ const IPControlPanel: React.FC = () => {
                         <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
                            <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
                            <div className="flex gap-2">
-                              <Button size="xs" variant="danger" disabled={loading} onClick={() => handleRemove(ip.ip)}>remove</Button>
+                              <Button size="xs" variant="danger" disabled={loading || !canManage} onClick={() => handleRemove(ip.ip)}>remove</Button>
                            </div>
                         </div>
                      </div>
@@ -219,8 +223,8 @@ const IPControlPanel: React.FC = () => {
                         <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
                            <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
                            <div className="flex gap-2">
-                              <Button size="xs" variant="success" disabled={loading} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
-                              <Button size="xs" variant="danger" disabled={loading} onClick={() => handleRemove(ip.ip)}>remove</Button>
+                              <Button size="xs" variant="success" disabled={loading || !canManage} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
+                              <Button size="xs" variant="danger" disabled={loading || !canManage} onClick={() => handleRemove(ip.ip)}>remove</Button>
                            </div>
                         </div>
                      </div>
@@ -234,15 +238,17 @@ const IPControlPanel: React.FC = () => {
 
 const Settings: React.FC = () => {
    const { user } = useAuth();
-   if (!user || !isAdmin(user)) {
+   if (!user || (!isAdmin(user) && user.role !== 'manager')) {
       return (
          <AccessDenied />
       );
-   }
+      }
    const [logs, setLogs] = useState<{id?: string; time: string; event: string; level: 'info' | 'warn' | 'error'}[]>([]);
    const [showDbManager, setShowDbManager] = useState(false);
+   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
    const [settingsLoading, setSettingsLoading] = useState(false);
+   const isManagerUser = user?.role === 'manager';
   
    // Polling simples do audit log real
    useEffect(() => {
@@ -285,6 +291,28 @@ const Settings: React.FC = () => {
          } catch (err) {
             console.error('[Settings] Falha ao purgar cache:', err);
             toast.error('Falha ao limpar cache');
+         }
+      };
+
+      const handleWipeLocal = async () => {
+         if (!isManagerUser) {
+            toast.error('Apenas usuários manager podem limpar a base.');
+            return;
+         }
+         const confirmPrompt = window.prompt('Digite "wipe" para confirmar a limpeza total e recriar o usuário root.');
+         if ((confirmPrompt || '').toLowerCase().trim() !== 'wipe') {
+            toast('Limpeza cancelada');
+            return;
+         }
+         try {
+            const res = await fetch('/api/admin/maintenance/wipe-local', { method: 'POST' });
+            if (!res.ok) throw new Error('Erro HTTP');
+            await res.json();
+            toast.success('Base limpa e usuário root recriado');
+            setLogs([]);
+         } catch (err) {
+            console.error('[Settings] Falha ao limpar base:', err);
+            toast.error('Falha ao limpar base');
          }
       };
 
@@ -353,6 +381,9 @@ const Settings: React.FC = () => {
                </div>
             </div>
          )}
+         {showPerformanceModal && (
+            <PerformanceMetricsModal open={showPerformanceModal} onClose={() => setShowPerformanceModal(false)} />
+         )}
       {/* Header Estilo Mission Control */}
       <div className="flex items-center justify-between shrink-0 mb-8 relative z-10">
         <div>
@@ -364,14 +395,14 @@ const Settings: React.FC = () => {
           </p>
         </div>
             <div className="flex items-center gap-4">
-               <Button variant="secondary" icon={<Database size={18} />} onClick={() => setShowDbManager(true)}>
+               <Button variant="secondary" icon={<Database size={18} />} disabled={!isManagerUser} onClick={() => isManagerUser && setShowDbManager(true)}>
                   DB Manager
                </Button>
            <div className="flex items-center gap-2 px-4 py-2 bg-dark-900/60 border border-white/5 rounded-full backdrop-blur-md">
               <Server size={14} className="text-accent" />
               <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Instance: US-EAST-01</span>
            </div>
-           <Button icon={<RefreshCcw size={18} />}>Reiniciar Kernel</Button>
+           <Button icon={<RefreshCcw size={18} />} disabled={!isManagerUser}>Reiniciar Kernel</Button>
         </div>
       </div>
 
@@ -412,7 +443,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
            {/* Seção de Controle de IPs */}
-           <IPControlPanel />
+           <IPControlPanel canManage={isManagerUser} />
 
            {/* Seção de Segurança */}
            {/* <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
@@ -484,7 +515,6 @@ const Settings: React.FC = () => {
                <span className="flex items-center gap-2">
                   <Wifi size={10} className="text-accent" /> Listening to stream...
                </span>
-               <button className="hover:text-accent transition-colors" onClick={handleClearLogs}>Clear Buffer</button>
             </div>
          </div>
 
@@ -515,14 +545,17 @@ const Settings: React.FC = () => {
                <Button
                   variant="secondary"
                   className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
-                  icon={<Database size={12} className="text-emerald-300" />}
+                  icon={<Activity size={12} className="text-emerald-300" />}
+                  onClick={() => setShowPerformanceModal(true)}
                >
-                  Rebuild Indexes
+                  Monitorar Performance
                </Button>
                <Button
                   variant="danger"
                   className="text-[9px] py-3 col-span-2 w-full bg-[#1f0b12]/70 border border-rose-400/40 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
                   icon={<Trash2 size={12} className="text-rose-300" />}
+                  disabled={!isManagerUser}
+                  onClick={handleWipeLocal}
                >
                   Wipe Local Storage
                </Button>

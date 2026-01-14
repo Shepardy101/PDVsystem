@@ -67,7 +67,7 @@ const palette = {
 
 const CashPerformanceTrends: React.FC = () => {
   // Troque para false para usar a API real
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const [periodType, setPeriodType] = useState<PeriodType>('day');
   // Estado para saber qual botão de dias está ativo
