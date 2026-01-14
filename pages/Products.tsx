@@ -844,7 +844,11 @@ const Products: React.FC = () => {
                            </div>
 
                            <div className="relative h-40 w-full rounded-2xl bg-dark-950 border border-white/5 overflow-hidden flex items-center justify-center">
-                              <img src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`} className="w-full h-full object-cover opacity-40 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
+                              {product.imageUrl ? (
+                                 <img src={product.imageUrl?.startsWith('/uploads/') ? product.imageUrl : `/uploads/${product.imageUrl}`} className="w-full h-full object-cover opacity-40 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
+                              ) : (
+                                 <Cpu className="text-accent opacity-40" size={40} />
+                              )}
                               <div className="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent opacity-60" />
                            </div>
 

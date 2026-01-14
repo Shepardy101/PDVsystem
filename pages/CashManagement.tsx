@@ -575,7 +575,7 @@ const CashManagement: React.FC = () => {
 
                               {/* Tabela de Movimentações */}
                               <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-2xl backdrop-blur-md">
-                                 <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                 <div className="overflow-y-auto flex-1 custom-scrollbar max-h-[40vh]">
                                     <table className="w-full text-left border-collapse">
                                        <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
                                           <tr className="text-slate-600 text-[9px] uppercase font-bold tracking-[0.2em]">
@@ -1117,7 +1117,6 @@ const CashManagement: React.FC = () => {
 
                   <div className="flex flex-col sm:flex-row gap-4 pt-4 shrink-0">
                      <Button variant="secondary" className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest" onClick={() => handleHistoryModalClose('button')}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => handlePrintWithTelemetry('cash-history')}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
@@ -1244,7 +1243,6 @@ const CashManagement: React.FC = () => {
                   {/* Rodapé do Modal */}
                   <div className="flex gap-4 pt-4 border-t border-white/5">
                      <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => closeTxDetail('close-button')}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => handlePrintWithTelemetry('tx-detail')}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
@@ -1371,7 +1369,6 @@ const CashManagement: React.FC = () => {
                   {/* Rodapé do Modal */}
                   <div className="flex gap-4 pt-4 border-t border-white/5">
                      <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => closeTxDetail('close-button')}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => handlePrintWithTelemetry('tx-detail')}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
