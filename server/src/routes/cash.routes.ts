@@ -28,7 +28,7 @@ cashRouter.get('/movements/:cashSessionId', (req: Request, res: Response) => {
 
 
 
-cashRouter.get('/sessions-movements', async (req, res) => {
+cashRouter.get('/sessions-movements', async (_req, res) => {
   try {
     // Buscar todas as sessões de caixa
     const sessions = db.prepare('SELECT * FROM cash_sessions ORDER BY opened_at DESC').all();
@@ -93,7 +93,7 @@ cashRouter.post('/pagamento', (req: Request, res: Response) => {
   }
 });
 // Adicionar movimentação de sangria
-cashRouter.post('/sangria', async (req: Request, res: Response) => {
+cashRouter.post('/sangria', (req: Request, res: Response) => {
   try {
     const { amount, category, description, operatorId, cashSessionId } = req.body;
     if (!amount || !category || !description) {
@@ -109,7 +109,7 @@ cashRouter.post('/sangria', async (req: Request, res: Response) => {
       if (!opId) opId = session.operator_id;
     }
     // Chamar repo para registrar sangria
-    const tx = await addSangriaMovement({
+    const tx = addSangriaMovement({
       amount,
       category,
       description,
@@ -158,7 +158,7 @@ cashRouter.get('/movements', (req: Request, res: Response) => {
 });
 
 // Adicionar movimentação de suprimento
-cashRouter.post('/suprimento', async (req, res) => {
+cashRouter.post('/suprimento', (req, res) => {
   try {
     const { amount, category, description, operatorId, cashSessionId } = req.body;
     if (!amount || !category || !description) {
@@ -174,7 +174,7 @@ cashRouter.post('/suprimento', async (req, res) => {
       if (!opId) opId = session.operator_id;
     }
     // Chamar repo para registrar suprimento
-    const tx = await addSuprimentoMovement({
+    const tx = addSuprimentoMovement({
       amount,
       category,
       description,
@@ -204,8 +204,12 @@ cashRouter.post('/suprimento', async (req, res) => {
 
 // Fechar sessão de caixa (encerrar turno)
 cashRouter.post('/close', (req, res) => {
+  let sessionId: string | undefined;
+  let physicalCount: number | undefined;
   try {
-    const { sessionId, physicalCount } = req.body;
+    const body = req.body as { sessionId?: string; physicalCount?: number };
+    sessionId = body.sessionId;
+    physicalCount = body.physicalCount;
     if (!sessionId || typeof physicalCount !== 'number') {
       return res.status(400).json({ error: 'sessionId e physicalCount obrigatórios' });
     }

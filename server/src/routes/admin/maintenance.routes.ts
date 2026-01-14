@@ -16,7 +16,10 @@ router.post('/purge-cache', (_req, res) => {
     logEvent('Purge cache executado', 'warn', { logsDeleted, pendingDeleted });
     res.json({ ok: true, logsDeleted, pendingDeleted });
   } catch (err: any) {
-    console.error('[ADMIN][PURGE] Falha ao limpar cache:', err);
+    logEvent('Erro ao purgar cache', 'error', {
+      message: err?.message || String(err),
+      stack: err?.stack
+    });
     res.status(500).json({ error: 'Erro ao limpar cache', details: err?.message || String(err) });
   }
 });
@@ -47,7 +50,10 @@ router.post('/wipe-local', async (_req, res) => {
     res.json({ ok: true, cleared });
   } catch (err: any) {
     db.exec('PRAGMA foreign_keys = ON');
-    console.error('[ADMIN][WIPE] Falha ao limpar dados:', err);
+    logEvent('Erro ao executar wipe-local', 'error', {
+      message: err?.message || String(err),
+      stack: err?.stack
+    });
     res.status(500).json({ error: 'Erro ao limpar dados', details: err?.message || String(err) });
   }
 });

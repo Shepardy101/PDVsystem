@@ -73,7 +73,11 @@ userRouter.put('/:id', async (req, res) => {
       res.status(404).json({ error: 'Usuário não encontrado' });
     }
   } catch (e: any) {
-    console.error('[PUT /api/users/:id] Erro ao atualizar usuário:', e);
+    logEvent('Erro ao atualizar usuário', 'error', {
+      userId: req.params?.id,
+      message: e?.message || String(e),
+      stack: e?.stack
+    });
     res.status(500).json({ error: 'Erro ao atualizar usuário', details: e && e.message ? e.message : e });
   }
 });
@@ -100,7 +104,11 @@ userRouter.post('/', async (req, res) => {
     logEvent('Usuário criado', 'info', { userId: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
     res.status(201).json(user);
   } catch (e: any) {
-    console.error('[POST /api/users] Erro ao criar usuário:', e);
+    logEvent('Erro ao criar usuário', 'error', {
+      payload: req.body,
+      message: e?.message || String(e),
+      stack: e?.stack
+    });
     res.status(500).json({ error: 'Erro ao criar usuário', details: e && e.message ? e.message : e });
   }
 });
@@ -116,7 +124,11 @@ userRouter.delete('/:id', async (req, res) => {
       res.status(404).json({ error: 'Usuário não encontrado' });
     }
   } catch (e: any) {
-    console.error('[DELETE /api/users/:id] Erro ao deletar usuário:', e);
+    logEvent('Erro ao deletar usuário', 'error', {
+      userId: req.params?.id,
+      message: e?.message || String(e),
+      stack: e?.stack
+    });
     res.status(500).json({ error: 'Erro ao deletar usuário', details: e && e.message ? e.message : e });
   }
 });
@@ -176,7 +188,11 @@ clientRouter.delete('/:id', async (req, res) => {
       res.status(404).json({ error: 'Cliente não encontrado' });
     }
   } catch (e: any) {
-    console.error('[DELETE /api/clients/:id] Erro ao deletar cliente:', e);
+    logEvent('Erro ao deletar cliente', 'error', {
+      clientId: req.params?.id,
+      message: e?.message || String(e),
+      stack: e?.stack
+    });
     res.status(500).json({ error: 'Erro ao deletar cliente', details: e && e.message ? e.message : e });
   }
 });

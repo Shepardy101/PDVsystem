@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/database';
+import { logEvent } from '../utils/audit';
 
 type SupplierPayload = {
     name?: string;
@@ -97,7 +98,11 @@ router.delete('/:id', (req, res) => {
         console.log('[DELETE] Lista depois:', allAfter);
         res.json({ changes: result.changes, lastInsertRowid: result.lastInsertRowid });
     } catch (err) {
-        console.error('[DELETE] Erro ao remover fornecedor:', err);
+        logEvent('Erro ao remover fornecedor', 'error', {
+            supplierId: req.params?.id,
+            message: (err as any)?.message || String(err),
+            stack: (err as any)?.stack
+        });
         res.status(500).json({ error: 'Erro ao remover fornecedor', details: String(err) });
     }
 });

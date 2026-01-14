@@ -142,7 +142,11 @@ productRouter.get('/search', (req, res) => {
     console.log(`[API] /api/products/search resultado: ${items.length} itens encontrados.`);
     res.json({ items });
   } catch (err) {
-    console.error(`[API] /api/products/search erro:`, err);
+    logEvent('Erro na busca de produtos', 'error', {
+      message: (err as any)?.message || String(err),
+      stack: (err as any)?.stack,
+      query: q
+    });
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro na busca.' } });
   }
 });
@@ -159,7 +163,11 @@ productRouter.post('/', (req, res) => {
     emitProductEvent('created', product);
     res.status(201).json({ product });
   } catch (err) {
-    console.error('[POST /api/products] Erro ao criar produto:', err);
+    logEvent('Erro ao criar produto', 'error', {
+      message: (err as any)?.message || String(err),
+      stack: (err as any)?.stack,
+      payload: req.body
+    });
     if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
       const code = (err as { code: string; message: string }).code;
       const message = (err as { code: string; message: string }).message;

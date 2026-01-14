@@ -49,7 +49,11 @@ posRouter.post('/finalizeSale', (req, res) => {
     });
     res.status(201).json({ saleId });
   } catch (err: any) {
-    console.error('[POST /api/pos/finalizeSale] Erro ao registrar venda:', err);
+    logEvent('Erro ao finalizar venda', 'error', {
+      message: err?.message || String(err),
+      stack: err?.stack,
+      payload: req.body
+    });
     res.status(400).json({ error: { code: 'SALE_ERROR', message: err.message || 'Erro ao finalizar venda.' } });
   }
 });
