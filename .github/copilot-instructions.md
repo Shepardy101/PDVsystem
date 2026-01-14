@@ -15,6 +15,7 @@
 - Valores monetários em centavos (inteiros); timestamps em epoch ms; IDs são TEXT/UUID.
 - Produtos: unidade `cx|unit|kg|serv`, `min_stock` padrão 20, `status` active/inactive.
 - Rotas principais em `/api/*`: POS (`/api/pos`), Caixa (`/api/cash` + `/api/cash/history`), Produtos/Categorias, Entidades (users/clients/suppliers), Relatórios (`/api/report`, `/api/reports`), Settings, Admin DB, IP Control.
+- Auditoria: tabela `logs` em `data/novabev.sqlite`; helper `logEvent` grava eventos com `message/level/context_json`; rota `GET /api/logs?limit=&level=` lista logs (ordenado por `created_at DESC`).
 
 **Segurança e guardrails**
 - Middleware `ipAccessControl` com whitelist; exceções: `/api/health`, `/api/admin-db`, `/api/admin/ip-control`, `/uploads`. IPs desconhecidos vão para `pending_ips` e são bloqueados.
@@ -23,6 +24,7 @@
 
 **Fluxo UI → API → DB**
 - UI (pages/components + services) chama `/api/*`; middlewares (CORS, json, ipAccessControl) → rotas em `server/src/routes/*` → repositórios em `server/src/repositories/*` → SQLite.
+- Audit Trail (Settings > Live Packet Stream) consome `/api/logs` com polling e exibe mensagens reais do backend.
 
 **Automação Windows/pm2**
 - Scripts `.bat` (`instalar-app.bat`, `iniciar-app.bat`, `package-app.bat` e variantes em `build/`) para instalar, iniciar e empacotar; uso típico do processo pm2 `PDVsystem`.
@@ -48,3 +50,4 @@
 - Para frontend: pages em `pages/*.tsx`, componentes em `components/`, serviços HTTP em `services/*.ts`; respeitar padrões de dados (centavos, epoch) e unidades de produto.
 - Segurança: não relaxar `ipAccessControl`; admin-db só com flag + localhost; reset de DB é destrutivo.
 - Checklist por mudança: (1) apontar arquivos tocados, (2) sugerir testes manuais HTTP (curl/fetch) e UI, (3) rodar/lembrar `npm run docs:check`, (4) se buildar, usar scripts oficiais.
+- Logging: preferir `logEvent` para registrar operações críticas (caixa, vendas, CRUD de produto/categoria/usuário/cliente/fornecedor, settings); mensagens curtas, contexto no `context_json`.

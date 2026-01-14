@@ -18,6 +18,7 @@ import reportsRouter from './routes/reports.routes';
 import settingsRouter from './routes/settings.routes';
 import sysRouter from './routes/sys';
 import ipControlRouter from './routes/admin/ipControl.routes';
+import maintenanceRouter from './routes/admin/maintenance.routes';
 
 import { ipAccessControl } from './middleware/ipAccessControl';
 const app = express();
@@ -27,6 +28,7 @@ app.use(express.json());
 
 // Controle de IPs admin
 app.use('/api/admin/ip-control', ipControlRouter);
+app.use('/api/admin/maintenance', maintenanceRouter);
 
 
 // Servir arquivos da pasta public/uploads

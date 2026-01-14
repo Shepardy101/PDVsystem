@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { isAdmin } from '../types';
 import DbManager from '../src/renderer/components/adminDb/DbManager';
+import { toast } from 'react-hot-toast';
 import { 
   Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe, 
   Lock, RefreshCcw, Bell, HardDrive, Wifi, Terminal, Zap, 
@@ -11,9 +12,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
-
 import SystemMonitorCards from '../components/SystemMonitorCards';
-import { toast } from 'react-hot-toast';
 
 // --- Painel de Controle de IPs ---
 type IpEntry = { id: number; ip: string; hostname?: string|null; tentado_em?: string; autorizado_em?: string; autorizado_por?: string|null };
@@ -275,6 +274,19 @@ const Settings: React.FC = () => {
    }, []);
 
    const handleClearLogs = () => setLogs([]);
+   
+      const handlePurgeCache = async () => {
+         try {
+            const res = await fetch('/api/admin/maintenance/purge-cache', { method: 'POST' });
+            if (!res.ok) throw new Error('Erro HTTP');
+            const data = await res.json();
+            toast.success(`Cache limpo (${data.logsDeleted ?? 0} logs, ${data.pendingDeleted ?? 0} pendentes)`);
+            setLogs([]);
+         } catch (err) {
+            console.error('[Settings] Falha ao purgar cache:', err);
+            toast.error('Falha ao limpar cache');
+         }
+      };
 
    // Carrega configuração Enable_Negative_Casher
    useEffect(() => {
@@ -496,6 +508,7 @@ const Settings: React.FC = () => {
                   variant="secondary"
                   className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
                   icon={<RefreshCcw size={12} className="text-accent" />}
+                  onClick={handlePurgeCache}
                >
                   Purge Cache
                </Button>
