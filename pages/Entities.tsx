@@ -51,23 +51,39 @@ const Entities: React.FC = () => {
   }, [user?.id]);
 
   React.useEffect(() => {
-    sendTelemetry('tab', 'change', { tab: activeTab });
-  }, [activeTab, sendTelemetry]);
+    sendTelemetry('page', 'view');
+  }, [sendTelemetry]);
+
+  // tab change é logado no TabButton; mantemos apenas efeito de carregamento inicial
 
   // Carregar usuários/clientes reais ao abrir aba
   React.useEffect(() => {
         if (activeTab === 'suppliers') {
           setLoadingSuppliers(true);
-          listSuppliers().then(setSuppliers).catch(() => setSuppliers([])).finally(() => setLoadingSuppliers(false));
-          listCategories().then(data => setCategories(data.items || [])).catch(() => setCategories([]));
+          sendTelemetry('list', 'fetch-start', { entity: 'suppliers' });
+          listSuppliers()
+            .then(data => { setSuppliers(data); sendTelemetry('list', 'fetch-success', { entity: 'suppliers', count: data?.length || 0 }); })
+            .catch(() => { setSuppliers([]); sendTelemetry('list', 'fetch-error', { entity: 'suppliers' }); })
+            .finally(() => setLoadingSuppliers(false));
+          listCategories()
+            .then(data => { setCategories(data.items || []); sendTelemetry('list', 'fetch-success', { entity: 'categories', count: (data.items || []).length }); })
+            .catch(() => { setCategories([]); sendTelemetry('list', 'fetch-error', { entity: 'categories' }); });
         }
     if (activeTab === 'users') {
       setLoadingUsers(true);
-      listUsers().then(setUsers).catch(() => setUsers([])).finally(() => setLoadingUsers(false));
+      sendTelemetry('list', 'fetch-start', { entity: 'users' });
+      listUsers()
+        .then(data => { setUsers(data); sendTelemetry('list', 'fetch-success', { entity: 'users', count: data?.length || 0 }); })
+        .catch(() => { setUsers([]); sendTelemetry('list', 'fetch-error', { entity: 'users' }); })
+        .finally(() => setLoadingUsers(false));
     }
     if (activeTab === 'clients') {
       setLoadingClients(true);
-      listClients().then(setClients).catch(() => setClients([])).finally(() => setLoadingClients(false));
+      sendTelemetry('list', 'fetch-start', { entity: 'clients' });
+      listClients()
+        .then(data => { setClients(data.items || data || []); sendTelemetry('list', 'fetch-success', { entity: 'clients', count: (data.items || data || []).length }); })
+        .catch(() => { setClients([]); sendTelemetry('list', 'fetch-error', { entity: 'clients' }); })
+        .finally(() => setLoadingClients(false));
     }
   }, [activeTab, isUserModalOpen, isClientModalOpen]);
 
@@ -163,7 +179,7 @@ const Entities: React.FC = () => {
            <Input 
             placeholder={`Filtrar ${activeTab}...`} 
             value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { const v = e.target.value; setSearchTerm(v); sendTelemetry('search', 'type', { tab: activeTab, length: v.length }); }}
             icon={<Search size={16} />}
             className="bg-transparent border-none py-2"
            />
@@ -294,30 +310,37 @@ const Entities: React.FC = () => {
                     onClick={async (e) => {
                       e.stopPropagation();
                       if (activeTab === 'users') {
+                        sendTelemetry('user', 'delete-start', { userId: item.id });
                         try {
                           await deleteUser(item.id);
                           setPopup({open: true, type: 'success', title: 'Usuário excluído', message: 'Usuário removido com sucesso!'});
                           setLoadingUsers(true);
                           const updated = await listUsers();
                           setUsers(updated);
+                          sendTelemetry('user', 'delete-success', { userId: item.id });
                         } catch {
                           setPopup({open: true, type: 'error', title: 'Erro ao excluir usuário', message: 'Tente novamente.'});
+                          sendTelemetry('user', 'delete-error', { userId: item.id });
                         }
                       }
                       if (activeTab === 'clients') {
+                        sendTelemetry('client', 'delete-start', { clientId: item.id });
                         try {
                           await deleteClient(item.id);
                           setPopup({open: true, type: 'success', title: 'Cliente excluído', message: 'Cliente removido com sucesso!'});
                           setLoadingClients(true);
                           const updated = await listClients();
                           setClients(updated);
+                          sendTelemetry('client', 'delete-success', { clientId: item.id });
                         } catch {
                           setPopup({open: true, type: 'error', title: 'Erro ao excluir cliente', message: 'Tente novamente.'});
+                          sendTelemetry('client', 'delete-error', { clientId: item.id });
                         }
                       }
                       if (activeTab === 'suppliers') {
                         try {
                           console.log('[UI] Tentando excluir fornecedor id:', item.id);
+                          sendTelemetry('supplier', 'delete-start', { supplierId: item.id });
                           const result = await deleteSupplier(item.id);
                           console.log('[UI] Resultado da exclusão:', result);
                           if (result && result.changes > 0) {
@@ -326,13 +349,16 @@ const Entities: React.FC = () => {
                             const updated = await listSuppliers();
                             console.log('[UI] Lista de fornecedores após exclusão:', updated);
                             setSuppliers(updated);
+                            sendTelemetry('supplier', 'delete-success', { supplierId: item.id });
                           } else {
                             console.error('[UI] Erro: Exclusão não retornou changes > 0', result);
                             setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                            sendTelemetry('supplier', 'delete-error', { supplierId: item.id, reason: 'no-changes' });
                           }
                         } catch (e) {
                           console.error('[UI] Catch erro ao excluir fornecedor:', e);
                           setPopup({open: true, type: 'error', title: 'Erro ao excluir fornecedor', message: 'Tente novamente.'});
+                          sendTelemetry('supplier', 'delete-error', { supplierId: item.id, reason: 'exception' });
                         }
                       }
                     }}
@@ -352,14 +378,14 @@ const Entities: React.FC = () => {
       {/* MODALS SECTION */}
 
       {/* User Modal */}
-      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title={editingItem ? "Sincronizar Operador" : "Vincular Novo Operador"}>
+      <Modal isOpen={isUserModalOpen} onClose={() => { setIsUserModalOpen(false); sendTelemetry('modal', 'close', { entity: 'users', reason: 'overlay' }); }} title={editingItem ? "Sincronizar Operador" : "Vincular Novo Operador"}>
          <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
                <div className="col-span-2">
                  <Input 
                    label="Identificação Completa" 
                    value={userForm.name}
-                   onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))}
+                   onChange={e => { const val = e.target.value; setUserForm(f => ({ ...f, name: val })); sendTelemetry('user', 'edit-field', { field: 'name', hasValue: !!val }); }}
                    className="bg-dark-950/50" 
                  />
                </div>
@@ -368,7 +394,7 @@ const Entities: React.FC = () => {
                    label="E-mail de Acesso" 
                    type="email" 
                    value={userForm.email}
-                   onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))}
+                   onChange={e => { const val = e.target.value; setUserForm(f => ({ ...f, email: val })); sendTelemetry('user', 'edit-field', { field: 'email', hasValue: !!val }); }}
                    icon={<Mail size={14} />} 
                    className="bg-dark-950/50" 
                  />
@@ -378,7 +404,7 @@ const Entities: React.FC = () => {
                   <select 
                     className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent transition-all" 
                     value={userForm.role}
-                    onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}
+                    onChange={e => { const role = e.target.value; setUserForm(f => ({ ...f, role })); sendTelemetry('user', 'change-role', { role }); }}
                   >
                     <option value="operator">Operador</option>
                     <option value="manager">Gerente</option>
@@ -389,28 +415,28 @@ const Entities: React.FC = () => {
                   <Switch 
                     label="Credencial Ativa" 
                     enabled={userForm.status}
-                    onChange={val => setUserForm(f => ({ ...f, status: val }))} 
+                    onChange={val => { setUserForm(f => ({ ...f, status: val })); sendTelemetry('user', 'toggle-status', { value: val }); }} 
                   />
                </div>
                {!editingItem && (
                  <>
-                   <Input 
-                     label="Código de Acesso" 
-                     type="password" 
-                     value={userForm.password}
-                     onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))}
-                   />
+                     <Input 
+                       label="Código de Acesso" 
+                       type="password" 
+                       value={userForm.password}
+                       onChange={e => { const val = e.target.value; setUserForm(f => ({ ...f, password: val })); sendTelemetry('user', 'edit-field', { field: 'password', hasValue: !!val }); }}
+                     />
                    <Input 
                      label="Confirmar Código" 
                      type="password" 
-                     value={userForm.confirmPassword}
-                     onChange={e => setUserForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                       value={userForm.confirmPassword}
+                       onChange={e => { const val = e.target.value; setUserForm(f => ({ ...f, confirmPassword: val })); sendTelemetry('user', 'edit-field', { field: 'confirmPassword', hasValue: !!val }); }}
                    />
                  </>
                )}
             </div>
             <div className="flex gap-4 pt-4">
-               <Button variant="secondary" className="flex-1" onClick={() => setIsUserModalOpen(false)}>Abortar</Button>
+               <Button variant="secondary" className="flex-1" onClick={() => { setIsUserModalOpen(false); sendTelemetry('modal', 'close', { entity: 'users', reason: 'cancel' }); }}>Abortar</Button>
                <Button className="flex-1 shadow-accent-glow" onClick={async () => {
                  // Validação básica
                  if (!userForm.name || !userForm.email || !userForm.role || (!editingItem && (!userForm.password || userForm.password !== userForm.confirmPassword))) {
@@ -418,6 +444,7 @@ const Entities: React.FC = () => {
                    return;
                  }
                  try {
+                   sendTelemetry('user', 'submit-start', { mode: editingItem ? 'update' : 'create', userId: editingItem?.id || null });
                    if (editingItem) {
                      await updateUser(editingItem.id, {
                        name: userForm.name,
@@ -426,6 +453,7 @@ const Entities: React.FC = () => {
                        status: userForm.status
                      });
                      setPopup({open: true, type: 'success', title: 'Usuário atualizado', message: 'Dados do operador atualizados!'});
+                     sendTelemetry('user', 'submit-success', { mode: 'update', userId: editingItem.id, role: userForm.role, status: userForm.status });
                    } else {
                      await createUser({
                        name: userForm.name,
@@ -435,6 +463,7 @@ const Entities: React.FC = () => {
                        password: userForm.password
                      });
                      setPopup({open: true, type: 'success', title: 'Usuário criado', message: 'Novo operador vinculado com sucesso!'});
+                     sendTelemetry('user', 'submit-success', { mode: 'create', email: userForm.email, role: userForm.role, status: userForm.status });
                    }
                    setIsUserModalOpen(false);
                    // Atualiza lista
@@ -443,6 +472,7 @@ const Entities: React.FC = () => {
                    setUsers(updated);
                  } catch (e) {
                    setPopup({open: true, type: 'error', title: editingItem ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário', message: 'Tente novamente.'});
+                   sendTelemetry('user', 'submit-error', { mode: editingItem ? 'update' : 'create', userId: editingItem?.id || null });
                  }
                }}>Confirmar Vínculo</Button>
             </div>
@@ -459,29 +489,32 @@ const Entities: React.FC = () => {
       />
 
       {/* Client Modal */}
-      <Modal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} title={editingItem ? "Ficha do Consumidor" : "Indexar Novo Consumidor"}>
+      <Modal isOpen={isClientModalOpen} onClose={() => { setIsClientModalOpen(false); setEditingItem(null); sendTelemetry('modal', 'close', { entity: 'clients', reason: 'overlay' }); }} title={editingItem ? "Ficha do Consumidor" : "Indexar Novo Consumidor"}>
         <div className="space-y-6">
-          <Input label="Nome Completo / Social" value={editingItem?.name ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, name: e.target.value }))} className="bg-dark-950/50" />
+          <Input label="Nome Completo / Social" value={editingItem?.name ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, name: val })); sendTelemetry('client', 'edit-field', { field: 'name', hasValue: !!val }); }} className="bg-dark-950/50" />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="CPF / CNPJ" value={editingItem?.cpf ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, cpf: e.target.value }))} className="bg-dark-950/50" />
-            <Input label="Linha Direta" value={editingItem?.phone ?? ''} icon={<Phone size={14} />} onChange={e => setEditingItem((prev: any) => ({ ...prev, phone: e.target.value }))} className="bg-dark-950/50" />
+            <Input label="CPF / CNPJ" value={editingItem?.cpf ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, cpf: val })); sendTelemetry('client', 'edit-field', { field: 'cpf', hasValue: !!val }); }} className="bg-dark-950/50" />
+            <Input label="Linha Direta" value={editingItem?.phone ?? ''} icon={<Phone size={14} />} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, phone: val })); sendTelemetry('client', 'edit-field', { field: 'phone', hasValue: !!val }); }} className="bg-dark-950/50" />
           </div>
-          <Input label="Canal Digital" type="email" value={editingItem?.email ?? ''} icon={<Mail size={14} />} onChange={e => setEditingItem((prev: any) => ({ ...prev, email: e.target.value }))} className="bg-dark-950/50" />
-          <Input label="Coordenadas de Entrega" value={editingItem?.address ?? ''} icon={<MapPin size={14} />} onChange={e => setEditingItem((prev: any) => ({ ...prev, address: e.target.value }))} className="bg-dark-950/50" />
+          <Input label="Canal Digital" type="email" value={editingItem?.email ?? ''} icon={<Mail size={14} />} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, email: val })); sendTelemetry('client', 'edit-field', { field: 'email', hasValue: !!val }); }} className="bg-dark-950/50" />
+          <Input label="Coordenadas de Entrega" value={editingItem?.address ?? ''} icon={<MapPin size={14} />} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, address: val })); sendTelemetry('client', 'edit-field', { field: 'address', hasValue: !!val }); }} className="bg-dark-950/50" />
           <div className="flex gap-4 pt-4">
-            <Button variant="secondary" className="flex-1" onClick={() => { setIsClientModalOpen(false); setEditingItem(null); }}>Retornar</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => { setIsClientModalOpen(false); setEditingItem(null); sendTelemetry('modal', 'close', { entity: 'clients', reason: 'cancel' }); }}>Retornar</Button>
             <Button className="flex-1 shadow-accent-glow" onClick={async () => {
               if (!editingItem?.name || !editingItem?.cpf) {
                setPopup({open: true, type: 'error', title: 'Preencha todos os campos obrigatórios', message: 'Nome e CPF/CNPJ são obrigatórios.'});
                return;
               }
               try {
+               sendTelemetry('client', 'submit-start', { mode: editingItem?.id ? 'update' : 'create', clientId: editingItem?.id || null });
                if (editingItem?.id) {
                 await updateClient(editingItem.id, editingItem);
                 setPopup({open: true, type: 'success', title: 'Cliente atualizado', message: 'Dados do cliente atualizados!'});
+                sendTelemetry('client', 'submit-success', { mode: 'update', clientId: editingItem.id });
                } else {
                 await createClient(editingItem);
                 setPopup({open: true, type: 'success', title: 'Cliente criado', message: 'Novo cliente cadastrado!'});
+                sendTelemetry('client', 'submit-success', { mode: 'create', name: editingItem?.name || '' });
                }
                setIsClientModalOpen(false);
                setEditingItem(null);
@@ -490,6 +523,7 @@ const Entities: React.FC = () => {
                setClients(updated);
               } catch (e) {
                setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar cliente' : 'Erro ao criar cliente', message: 'Tente novamente.'});
+               sendTelemetry('client', 'submit-error', { mode: editingItem?.id ? 'update' : 'create', clientId: editingItem?.id || null });
               }
             }}>Efetuar Registro</Button>
           </div>
@@ -497,25 +531,25 @@ const Entities: React.FC = () => {
       </Modal>
 
       {/* Supplier Modal */}
-      <Modal isOpen={isSupplierModalOpen} onClose={() => { setIsSupplierModalOpen(false); setEditingItem(null); }} title={editingItem ? "Ativo Logístico" : "Homologar Fornecedor"}>
+      <Modal isOpen={isSupplierModalOpen} onClose={() => { setIsSupplierModalOpen(false); setEditingItem(null); sendTelemetry('modal', 'close', { entity: 'suppliers', reason: 'overlay' }); }} title={editingItem ? "Ativo Logístico" : "Homologar Fornecedor"}>
         <div className="space-y-6">
-          <Input label="Corporação (Fantasia)" value={editingItem?.name ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, name: e.target.value }))} className="bg-dark-950/50" />
+          <Input label="Corporação (Fantasia)" value={editingItem?.name ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, name: val })); sendTelemetry('supplier', 'edit-field', { field: 'name', hasValue: !!val }); }} className="bg-dark-950/50" />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Registro CNPJ" value={editingItem?.cnpj ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, cnpj: e.target.value }))} className="bg-dark-950/50" />
+            <Input label="Registro CNPJ" value={editingItem?.cnpj ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, cnpj: val })); sendTelemetry('supplier', 'edit-field', { field: 'cnpj', hasValue: !!val }); }} className="bg-dark-950/50" />
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Especialidade</label>
-              <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent" value={editingItem?.category ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, category: e.target.value }))}>
+              <select className="w-full bg-dark-950/50 border border-white/5 rounded-lg py-2.5 px-4 text-slate-100 outline-none text-sm focus:border-accent" value={editingItem?.category ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, category: val })); sendTelemetry('supplier', 'change-category', { category: val }); }}>
                 {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="E-mail Corporativo" value={editingItem?.email ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, email: e.target.value }))} className="bg-dark-950/50" />
-            <Input label="Suporte Vendas" value={editingItem?.phone ?? ''} onChange={e => setEditingItem((prev: any) => ({ ...prev, phone: e.target.value }))} className="bg-dark-950/50" />
+            <Input label="E-mail Corporativo" value={editingItem?.email ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, email: val })); sendTelemetry('supplier', 'edit-field', { field: 'email', hasValue: !!val }); }} className="bg-dark-950/50" />
+            <Input label="Suporte Vendas" value={editingItem?.phone ?? ''} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, phone: val })); sendTelemetry('supplier', 'edit-field', { field: 'phone', hasValue: !!val }); }} className="bg-dark-950/50" />
           </div>
-          <Input label="Centro de Distribuição" value={editingItem?.address ?? ''} icon={<MapPin size={14} />} onChange={e => setEditingItem((prev: any) => ({ ...prev, address: e.target.value }))} className="bg-dark-950/50" />
+          <Input label="Centro de Distribuição" value={editingItem?.address ?? ''} icon={<MapPin size={14} />} onChange={e => { const val = e.target.value; setEditingItem((prev: any) => ({ ...prev, address: val })); sendTelemetry('supplier', 'edit-field', { field: 'address', hasValue: !!val }); }} className="bg-dark-950/50" />
           <div className="flex gap-4 pt-4">
-            <Button variant="secondary" className="flex-1" onClick={() => { setIsSupplierModalOpen(false); setEditingItem(null); }}>Descartar</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => { setIsSupplierModalOpen(false); setEditingItem(null); sendTelemetry('modal', 'close', { entity: 'suppliers', reason: 'cancel' }); }}>Descartar</Button>
             <Button className="flex-1 shadow-accent-glow" onClick={async () => {
               // Nome é o único campo obrigatório segundo o schema; demais são opcionais
               if (!editingItem?.name) {
@@ -523,12 +557,15 @@ const Entities: React.FC = () => {
                return;
               }
               try {
+               sendTelemetry('supplier', 'submit-start', { mode: editingItem?.id ? 'update' : 'create', supplierId: editingItem?.id || null });
                if (editingItem?.id) {
                 await updateSupplier(editingItem.id, editingItem);
                 setPopup({open: true, type: 'success', title: 'Fornecedor atualizado', message: 'Dados do fornecedor atualizados!'});
+                sendTelemetry('supplier', 'submit-success', { mode: 'update', supplierId: editingItem.id });
                } else {
                 await createSupplier(editingItem);
                 setPopup({open: true, type: 'success', title: 'Fornecedor criado', message: 'Novo fornecedor cadastrado!'});
+                sendTelemetry('supplier', 'submit-success', { mode: 'create', name: editingItem?.name || '' });
                }
                setIsSupplierModalOpen(false);
                setEditingItem(null);
@@ -537,6 +574,7 @@ const Entities: React.FC = () => {
                setSuppliers(updated);
               } catch (e) {
                setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar fornecedor' : 'Erro ao criar fornecedor', message: 'Tente novamente.'});
+               sendTelemetry('supplier', 'submit-error', { mode: editingItem?.id ? 'update' : 'create', supplierId: editingItem?.id || null });
               }
             }}>Salvar Cadastro</Button>
           </div>

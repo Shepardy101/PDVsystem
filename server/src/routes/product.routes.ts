@@ -117,6 +117,7 @@ productRouter.get('/:id', (req, res) => {
     if (!product) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Produto não encontrado.' } });
     }
+    logEvent('Produto consultado', 'info', { productId: id });
     res.json(product);
   } catch (err) {
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao buscar produto.' } });
@@ -128,6 +129,7 @@ productRouter.get('/', (req, res) => {
   const offset = parseInt(req.query.offset as string) || 0;
   try {
     const { items, total } = listProducts(limit, offset);
+    logEvent('Produtos listados', 'info', { limit, offset, total });
     res.json({ items, total });
   } catch (err) {
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao listar produtos.' } });
@@ -140,6 +142,7 @@ productRouter.get('/search', (req, res) => {
   try {
     const { items } = searchProducts(q);
     console.log(`[API] /api/products/search resultado: ${items.length} itens encontrados.`);
+    logEvent('Produtos buscados', 'info', { query: q, count: items.length });
     res.json({ items });
   } catch (err) {
     logEvent('Erro na busca de produtos', 'error', {

@@ -44,6 +44,10 @@ const Products: React.FC = () => {
       logUiEvent({ userId: user?.id ?? null, page: 'products', area, action, meta });
    }, [user?.id]);
 
+   React.useEffect(() => {
+      sendTelemetry('page', 'view');
+   }, [sendTelemetry]);
+
    const [searchTerm, setSearchTerm] = useState('');
    const [showImages, setShowImages] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
@@ -72,7 +76,11 @@ const Products: React.FC = () => {
    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
 
    const toggleSort = (key: SortKey) => {
-      setSortConfig(prev => prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' });
+      setSortConfig(prev => {
+         const next = prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' };
+         sendTelemetry('sort', 'toggle', { key, direction: next.direction });
+         return next;
+      });
    };
 
    const renderSortIcon = (key: SortKey) => {
@@ -217,13 +225,16 @@ const Products: React.FC = () => {
    async function handleDeleteProduct(productId: string) {
       if (!window.confirm('Tem certeza que deseja remover este produto?')) return;
       try {
+         sendTelemetry('product', 'delete-start', { productId });
          const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
          if (!res.ok && res.status !== 204) throw new Error('Erro ao remover produto');
          setProducts(prev => prev.filter(p => p.id !== productId));
          setSelectedProduct(null);
          showPopup('success', 'Produto removido', 'O produto foi removido com sucesso.');
+         sendTelemetry('product', 'delete-success', { productId });
       } catch (err) {
          showPopup('error', 'Erro ao remover produto', 'Tente novamente.');
+         sendTelemetry('product', 'delete-error', { productId, message: err instanceof Error ? err.message : 'unknown' });
       }
    }
 
@@ -254,6 +265,7 @@ const Products: React.FC = () => {
          type,
       };
       try {
+         sendTelemetry('product', 'submit-start', { mode: selectedProduct ? 'update' : 'create', type, status: payload.status });
          let res;
          let product;
          if (selectedProduct) {
@@ -331,8 +343,17 @@ const Products: React.FC = () => {
             })
             .finally(() => setLoading(false));
          showPopup('success', selectedProduct ? 'Produto/Serviço atualizado' : 'Produto/Serviço criado', selectedProduct ? 'O item foi atualizado com sucesso.' : 'O item foi criado com sucesso.');
+         sendTelemetry('product', 'submit-success', {
+            mode: selectedProduct ? 'update' : 'create',
+            productId: mappedProduct.id,
+            type: mappedProduct.type,
+            status: mappedProduct.status,
+            salePriceCents: Math.round((payload.salePrice || 0) * 100),
+            stock: mappedProduct.stock
+         });
       } catch (err) {
          showPopup('error', 'Erro ao salvar produto/serviço', 'Verifique os campos e tente novamente.');
+         sendTelemetry('product', 'submit-error', { mode: selectedProduct ? 'update' : 'create', message: err instanceof Error ? err.message : 'unknown' });
       }
    }
 
@@ -345,6 +366,7 @@ const Products: React.FC = () => {
       if (!file) return;
       setIsUploading(true);
       const ext = file.name.split('.').pop()?.toLowerCase();
+      sendTelemetry('import', 'file-select', { name: file.name, size: file.size, ext });
       if (ext === 'csv' || ext === 'txt') {
          Papa.parse(file, {
             header: true,
@@ -353,6 +375,7 @@ const Products: React.FC = () => {
             error: () => {
                setIsUploading(false);
                alert('Erro ao ler arquivo.');
+               sendTelemetry('import', 'file-parse-error', { ext, reason: 'papa-parse' });
             }
          });
       } else if (ext === 'xlsx') {
@@ -367,11 +390,13 @@ const Products: React.FC = () => {
          reader.onerror = () => {
             setIsUploading(false);
             alert('Erro ao ler arquivo XLSX.');
+            sendTelemetry('import', 'file-parse-error', { ext, reason: 'xlsx-read' });
          };
          reader.readAsArrayBuffer(file);
       } else {
          setIsUploading(false);
          alert('Formato de arquivo não suportado. Use .csv, .txt ou .xlsx');
+         sendTelemetry('import', 'file-unsupported', { ext });
       }
    };
 
@@ -414,12 +439,16 @@ const Products: React.FC = () => {
       setIsUploading(false);
       setIsImportModalOpen(false);
       setIsPreviewModalOpen(true);
+      const valid = rows.filter(r => r.status === 'valid').length;
+      const invalid = rows.length - valid;
       sendTelemetry('modal', 'open', { entity: 'product-import-preview', total: rows.length });
+      sendTelemetry('import', 'parse', { rows: rows.length, valid, invalid });
    }
 
    const handleDrop = (e: React.DragEvent) => {
       e.preventDefault();
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+         sendTelemetry('import', 'drop', { files: e.dataTransfer.files.length });
          // Cria um evento fake para reutilizar handleImportFile
          const fakeEvent = {
             target: { files: e.dataTransfer.files }
@@ -447,8 +476,10 @@ const Products: React.FC = () => {
          // Atualizar lista de categorias do backend
          const cats = await fetch('/api/categories').then(r => r.json());
          setCategories(cats.items || []);
+         sendTelemetry('category', 'create-success', { name: newCategoryName.trim() });
       } catch (e) {
          alert('Erro ao criar categoria');
+         sendTelemetry('category', 'create-error', { name: newCategoryName.trim() });
       }
    };
 
@@ -485,16 +516,20 @@ const Products: React.FC = () => {
                      className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
                      onClick={async () => {
                         if (!window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) return;
+                        sendTelemetry('product', 'delete-all-start');
                         try {
                            const res = await fetch('/api/products', { method: 'DELETE' });
                            if (res.ok) {
                               setProducts([]);
                               showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
+                              sendTelemetry('product', 'delete-all-success');
                            } else {
                               showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
+                              sendTelemetry('product', 'delete-all-error', { reason: 'response' });
                            }
                         } catch {
                            showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
+                           sendTelemetry('product', 'delete-all-error', { reason: 'exception' });
                         }
                      }}
                   >
@@ -539,7 +574,7 @@ const Products: React.FC = () => {
          {showFilters && (
             <div className="mb-8 p-6 bg-dark-900/40 border border-accent/10 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-6 animate-in slide-in-from-top-4 duration-300 relative z-10 items-end">
                <div className="md:col-span-4">
-                  <Input label="Pesquisa Global" placeholder="Busca por nome ou GTIN..." icon={<Search size={18} />} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <Input label="Pesquisa Global" placeholder="Busca por nome ou GTIN..." icon={<Search size={18} />} value={searchTerm} onChange={e => { const value = e.target.value; setSearchTerm(value); sendTelemetry('search', 'type', { length: value.length, hasDigits: /\d/.test(value) }); }} />
                </div>
                   <div className="md:col-span-3 space-y-2">
                     <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Filtro por Categoria</label>
@@ -579,16 +614,20 @@ const Products: React.FC = () => {
                                     onClick={async (e) => {
                                       e.stopPropagation();
                                       if (!window.confirm(`Excluir categoria \"${c.name}\"?`)) return;
+                                                         sendTelemetry('category', 'delete-start', { categoryId: c.id });
                                       try {
                                         const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
                                         if (res.ok) {
                                           setCategories(prev => prev.filter(cat => cat.id !== c.id));
                                           if (selectedCategory === c.id) setSelectedCategory('all');
+                                                               sendTelemetry('category', 'delete-success', { categoryId: c.id });
                                         } else {
                                           alert('Erro ao excluir categoria.');
+                                                               sendTelemetry('category', 'delete-error', { categoryId: c.id, reason: 'response' });
                                         }
                                       } catch {
                                         alert('Erro ao excluir categoria.');
+                                                            sendTelemetry('category', 'delete-error', { categoryId: c.id, reason: 'exception' });
                                       }
                                     }}
                                  >
@@ -898,7 +937,7 @@ const Products: React.FC = () => {
                                  <select
                                     name="type"
                                     value={modalType}
-                                    onChange={e => setModalType(e.target.value as 'product' | 'service')}
+                                       onChange={e => { const nextType = e.target.value as 'product' | 'service'; setModalType(nextType); sendTelemetry('product', 'change-type', { type: nextType }); }}
                                     className="w-full bg-dark-950/50 border border-accent/20 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
                                  >
                                     <option value="product">Produto</option>
@@ -943,6 +982,7 @@ const Products: React.FC = () => {
                                  <select
                                     name="categoryId"
                                     defaultValue={selectedProduct?.category}
+                                    onChange={e => sendTelemetry('product', 'change-category', { categoryId: e.target.value || null })}
                                     className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
                                  >
                                     <option value="">Selecione...</option>
@@ -961,6 +1001,7 @@ const Products: React.FC = () => {
                                        <select
                                           name="supplier"
                                           defaultValue={selectedProduct?.supplier || ''}
+                                          onChange={e => sendTelemetry('product', 'change-supplier', { supplierId: e.target.value || null })}
                                           className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
                                        >
                                           <option value="">Selecione...</option>
@@ -976,6 +1017,7 @@ const Products: React.FC = () => {
                                        <select
                                           name="unit"
                                           defaultValue={selectedProduct?.unit || 'unit'}
+                                          onChange={e => sendTelemetry('product', 'change-unit', { unit: e.target.value })}
                                           className="w-full bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
                                        >
                                           <option value="unit">UN</option>
@@ -1087,7 +1129,7 @@ const Products: React.FC = () => {
                                  {!isOperatorUser && (
                                     <>
                                        <input type="checkbox" name="status" checked={autoActive} onChange={e => setAutoActive(e.target.checked)} style={{ display: 'none' }} readOnly />
-                                       <Switch enabled={autoActive} onChange={setAutoActive} />
+                                       <Switch enabled={autoActive} onChange={(val) => { setAutoActive(val); sendTelemetry('status', 'toggle-auto-active', { value: val }); }} />
                                     </>
                                  )}
                                  {isOperatorUser && (
@@ -1121,6 +1163,7 @@ const Products: React.FC = () => {
                                        onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                                          const file = e.target.files?.[0];
                                          if (!file) return;
+                                                             sendTelemetry('image', 'upload-start', { productId: selectedProduct?.id || null, name: file.name, size: file.size, type: file.type });
                                          const ean = selectedProduct?.gtin || selectedProduct?.ean ||
                                           (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
                                           (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
@@ -1195,14 +1238,17 @@ const Products: React.FC = () => {
                                               if (typeof setProducts === 'function') {
                                                 setProducts((prev: Product[]) => prev.map((prod: Product) => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
                                               }
+                                              sendTelemetry('image', 'upload-success', { productId: p.id, imageUrl: data.imageUrl });
                                               showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
                                              }
                                           } else {
                                              showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
+                                             sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: 'no-imageUrl' });
                                           }
                                          } catch (err) {
                                           console.error('[UPLOAD] Erro ao enviar imagem:', err);
                                           showPopup('error', 'Erro', 'Erro ao enviar imagem.');
+                                          sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: err instanceof Error ? err.message : 'unknown' });
                                          }
                                        }}
                                       />
@@ -1238,8 +1284,10 @@ const Products: React.FC = () => {
                                                });
                                                setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
                                                showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
+                                                                      sendTelemetry('image', 'remove-success', { productId: selectedProduct.id });
                                              } catch {
                                                showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
+                                                                      sendTelemetry('image', 'remove-error', { productId: selectedProduct.id });
                                              }
                                           }}
                                         >
@@ -1369,8 +1417,10 @@ const Products: React.FC = () => {
                         const validProducts = importResults.filter((item: any) => item.status === 'valid');
                         if (validProducts.length === 0) {
                            showPopup('error', 'Importação inválida', 'Nenhum produto válido para importar.');
+                           sendTelemetry('import', 'preview-empty');
                            return;
                         }
+                        sendTelemetry('import', 'preview-confirm', { validCount: validProducts.length, invalidCount: importResults.length - validProducts.length });
                         let importedCount = 0;
                         const normalize = (val: string) => (val || '').trim().toLowerCase();
 
@@ -1500,6 +1550,7 @@ const Products: React.FC = () => {
                               if (res.ok) importedCount++;
                            } catch { }
                         }
+                                    sendTelemetry('import', 'run', { importedCount, total: validProducts.length });
                         showPopup('success', 'Importação concluída!', `${importedCount} produtos importados com sucesso!`);
                         setIsPreviewModalOpen(false);
                         // Atualiza lista de produtos
