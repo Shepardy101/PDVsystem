@@ -498,7 +498,7 @@ const Products: React.FC = () => {
    return (
 
 
-      <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid">
+      <div className="p-4 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid">
          {/* Header Section */}
          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 shrink-0 mb-8 relative z-10">
             <div>
@@ -507,36 +507,6 @@ const Products: React.FC = () => {
                </h1>
                <p className="text-slate-500 text-sm font-medium">Controle granular do inventário e precificação dinâmica.</p>
             </div>
-
-            {/* Botão temporário para deletar todos os produtos */}
-            {!isOperatorUser && (
-               <div className="mt-6 flex justify-end">
-                  <Button
-                     variant="danger"
-                     className="py-3 px-6 text-xs font-bold uppercase tracking-widest"
-                     onClick={async () => {
-                        if (!window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) return;
-                        sendTelemetry('product', 'delete-all-start');
-                        try {
-                           const res = await fetch('/api/products', { method: 'DELETE' });
-                           if (res.ok) {
-                              setProducts([]);
-                              showPopup('success', 'Todos os produtos excluídos', 'Todos os produtos foram excluídos com sucesso.');
-                              sendTelemetry('product', 'delete-all-success');
-                           } else {
-                              showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
-                              sendTelemetry('product', 'delete-all-error', { reason: 'response' });
-                           }
-                        } catch {
-                           showPopup('error', 'Erro ao excluir todos os produtos', 'Tente novamente.');
-                           sendTelemetry('product', 'delete-all-error', { reason: 'exception' });
-                        }
-                     }}
-                  >
-                     Excluir TODOS os produtos (TESTE)
-                  </Button>
-               </div>
-            )}
 
 
 
@@ -564,10 +534,14 @@ const Products: React.FC = () => {
                     <Button variant="secondary" onClick={() => { setIsImportModalOpen(true); sendTelemetry('modal', 'open', { entity: 'product-import' }); }} icon={<UploadCloud size={18} />}>
                         Importar
                      </Button>
-                     <Button onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }} icon={<Plus size={18} />}>Novo Produto</Button>
-
+                    <Button
+                      className="hidden sm:inline-flex"
+                      onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
+                      icon={<Plus size={18} />}
+                    >Novo Produto</Button>
                   </>
                )}
+                     
             </div>
          </div>
 
@@ -713,7 +687,7 @@ const Products: React.FC = () => {
                               <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
                                  <tr>
                                     <th
-                                       className="group py-4 px-5 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[320px] max-w-[420px] cursor-pointer hover:text-accent transition-all"
+                                       className="group py-4 px-5 border-b border-white/10 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 min-w-[220px] max-w-[420px] cursor-pointer hover:text-accent transition-all"
                                        onClick={() => toggleSort('name')}
                                     >
                                        <span className="flex items-center gap-2">
@@ -721,8 +695,9 @@ const Products: React.FC = () => {
                                           {renderSortIcon('name')}
                                        </span>
                                     </th>
+                                    {/* Desktop only columns */}
                                     <th
-                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all"
+                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all hidden md:table-cell"
                                        onClick={() => toggleSort('costPrice')}
                                     >
                                        <span className="flex items-center gap-2">
@@ -731,7 +706,7 @@ const Products: React.FC = () => {
                                        </span>
                                     </th>
                                     <th
-                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all"
+                                       className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all hidden md:table-cell"
                                        onClick={() => toggleSort('salePrice')}
                                     >
                                        <span className="flex items-center gap-2">
@@ -739,6 +714,7 @@ const Products: React.FC = () => {
                                           {renderSortIcon('salePrice')}
                                        </span>
                                     </th>
+                                    {/* Estoque column always visible */}
                                     <th
                                        className="group py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer hover:text-accent transition-all"
                                        onClick={() => toggleSort('stock')}
@@ -748,15 +724,20 @@ const Products: React.FC = () => {
                                           {renderSortIcon('stock')}
                                        </span>
                                     </th>
+                                    {/* Desktop only actions */}
                                     {!isOperatorUser && (
-                                       <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right">Ações</th>
+                                       <th className="py-4 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 text-right hidden md:table-cell">
+                                          Ações
+                                       </th>
                                     )}
                                  </tr>
                               </thead>
                               <tbody>
                                  {filtered.length === 0 ? (
                                     <tr>
-                                       <td colSpan={isOperatorUser ? 4 : 5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto encontrado.</td>
+                                       <td colSpan={isOperatorUser ? 2 : 3} className="py-8 px-4 text-slate-400 text-center">
+                                          Nenhum produto encontrado.
+                                       </td>
                                     </tr>
                                  ) : (
                                     filtered.map((product, i) => {
@@ -765,11 +746,22 @@ const Products: React.FC = () => {
                                        return (
                                           <tr
                                              key={product.id}
-                                             className={["group transition-colors", isOdd ? "bg-white/[0.02]" : "bg-transparent", "hover:bg-cyan-500/5", "border-b border-white/5"].join(" ")}
-                                             onClick={() => { setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }}
+                                             className={[
+                                                "group transition-colors",
+                                                isOdd ? "bg-white/[0.02]" : "bg-transparent",
+                                                "hover:bg-cyan-500/5",
+                                                "border-b border-white/5"
+                                             ].join(" ")}
+                                             onClick={() => {
+                                                setSelectedProduct(product);
+                                                sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id });
+                                             }}
                                              style={{ cursor: 'pointer' }}
                                           >
-                                             <td className={["py-4 px-5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 min-w-[320px] max-w-[420px] overflow-hidden text-ellipsis flex items-center gap-4"].join(" ")}>
+                                             {/* Identificação */}
+                                             <td className={[
+                                                "py-4 px-5 whitespace-nowrap bg-inherit border-r border-white/5 text-slate-100 min-w-[220px] max-w-[420px] overflow-hidden text-ellipsis flex items-center gap-4"
+                                             ].join(" ")}>
                                                 <div className="w-8 h-8 rounded bg-dark-800 border border-white/5 flex items-center justify-center overflow-hidden">
                                                    {product.imageUrl ? (
                                                       <img
@@ -786,13 +778,45 @@ const Products: React.FC = () => {
                                                    <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{product.gtin}</div>
                                                 </div>
                                              </td>
-                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
-                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100">{product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</td>
-                                             <td className={["py-4 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}</td>
+                                             {/* Preço Custo - desktop only */}
+                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100 hidden md:table-cell">
+                                                {product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
+                                             </td>
+                                             {/* Preço Venda - desktop only */}
+                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100 hidden md:table-cell">
+                                                {product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
+                                             </td>
+                                             {/* Estoque - always visible */}
+                                             <td className={[
+                                                "py-4 px-3 whitespace-nowrap font-mono",
+                                                isLowStock ? "text-rose-300" : "text-emerald-300"
+                                             ].join(" ")}>
+                                                {product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}
+                                             </td>
+                                             {/* Ações - desktop only */}
                                              {!isOperatorUser && (
-                                                <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
-                                                   <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }} title="Editar"><Edit2 size={14} /></button>
-                                                   <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
+                                                <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end hidden md:table-cell">
+                                                   <button
+                                                      className="p-2 text-slate-500 hover:text-accent transition-colors"
+                                                      onClick={e => {
+                                                         e.stopPropagation();
+                                                         setSelectedProduct(product);
+                                                         sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id });
+                                                      }}
+                                                      title="Editar"
+                                                   >
+                                                      <Edit2 size={14} />
+                                                   </button>
+                                                   <button
+                                                      className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                                                      onClick={e => {
+                                                         e.stopPropagation();
+                                                         handleDeleteProduct(product.id);
+                                                      }}
+                                                      title="Remover"
+                                                   >
+                                                      <Trash2 size={14} />
+                                                   </button>
                                                 </td>
                                              )}
                                           </tr>
@@ -1596,6 +1620,17 @@ const Products: React.FC = () => {
             message={popup.message}
             onClose={() => setPopup(p => ({ ...p, open: false }))}
          />
+
+         {/* Botão flutuante de novo produto (mobile) */}
+                     {!isOperatorUser && (
+                        <button
+                           className="fixed bottom-4 right-4 sm:hidden bg-accent text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all border-2 border-white/10 z-[100]"
+                           title="Novo Produto"
+                           onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
+                        >
+                           <Plus size={28} />
+                        </button>
+                     )}
       </div>
    );
 };
