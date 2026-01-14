@@ -16,6 +16,11 @@ cashRouter.get('/movements/:cashSessionId', (req: Request, res: Response) => {
     res.json({ movements });
   } catch (err) {
     const error = err as Error;
+    logEvent('Erro ao buscar movimentações da sessão', 'error', {
+      message: error.message,
+      stack: (error as any)?.stack,
+      cashSessionId: req.params?.cashSessionId
+    });
     res.status(400).json({ error: error.message || 'Erro ao buscar movimentações da sessão.' });
   }
 });
@@ -44,6 +49,10 @@ cashRouter.get('/sessions-movements', async (req, res) => {
     res.json({ sessions, movements, sales });
   } catch (err) {
     const error = err as Error;
+    logEvent('Erro ao buscar sessões/movimentações', 'error', {
+      message: error.message,
+      stack: (error as any)?.stack
+    });
     res.status(500).json({ error: 'Erro ao buscar dados do banco de dados', details: error.message });
   }
 });
@@ -75,6 +84,11 @@ cashRouter.post('/pagamento', (req: Request, res: Response) => {
     res.status(201).json(movement);
   } catch (err) {
     const error = err as Error;
+    logEvent('Erro ao registrar pagamento', 'error', {
+      message: error.message,
+      stack: (error as any)?.stack,
+      payload: req.body
+    });
     res.status(500).json({ error: error.message || 'Erro ao registrar pagamento.' });
   }
 });
@@ -113,7 +127,11 @@ cashRouter.post('/sangria', async (req: Request, res: Response) => {
     res.status(201).json({ transaction: tx });
   } catch (err) {
     const error = err as Error;
-    console.error('[CASH] Erro ao registrar sangria:', error);
+    logEvent('Erro ao registrar sangria', 'error', {
+      message: error.message,
+      stack: (error as any)?.stack,
+      payload: req.body
+    });
     res.status(400).json({ error: error.message || 'Erro ao registrar sangria.' });
   }
 });
@@ -130,6 +148,11 @@ cashRouter.get('/movements', (req: Request, res: Response) => {
     res.json({ movements });
   } catch (err) {
     const error = err as Error;
+    logEvent('Erro ao buscar movimentações (sessão atual)', 'error', {
+      message: error.message,
+      stack: (error as any)?.stack,
+      operatorId: req.query?.operatorId
+    });
     res.status(400).json({ error: error.message || 'Erro ao buscar movimentações.' });
   }
 });
@@ -169,7 +192,11 @@ cashRouter.post('/suprimento', async (req, res) => {
     res.status(201).json({ transaction: tx });
   } catch (err) {
     const error = err as Error;
-    console.error('[CASH] Erro ao registrar suprimento:', error);
+    logEvent('Erro ao registrar suprimento', 'error', {
+      message: error.message,
+      stack: (error as any)?.stack,
+      payload: req.body
+    });
     res.status(400).json({ error: error.message || 'Erro ao registrar suprimento.' });
   }
 });
@@ -197,7 +224,12 @@ cashRouter.post('/close', (req, res) => {
     });
     res.status(200).json({ closeResult: result });
   } catch (err: any) {
-    console.error('[CASH] Erro ao fechar caixa:', err);
+    logEvent('Erro ao fechar caixa', 'error', {
+      message: err.message,
+      stack: err?.stack,
+      sessionId,
+      physicalCount
+    });
     res.status(400).json({ error: { code: 'CASH_CLOSE_ERROR', message: err.message || 'Erro ao fechar caixa.' } });
   }
 });
@@ -219,7 +251,11 @@ cashRouter.post('/open', (req, res) => {
     console.log('[CASH] Sessão criada:', session);
     res.status(201).json({ session });
   } catch (err: any) {
-    console.error('[CASH] Erro ao abrir caixa:', err);
+    logEvent('Erro ao abrir caixa', 'error', {
+      message: err.message,
+      stack: err?.stack,
+      payload: req.body
+    });
     res.status(400).json({ error: { code: 'CASH_ERROR', message: err.message || 'Erro ao abrir caixa.' } });
   }
 });
@@ -233,6 +269,11 @@ cashRouter.get('/open', (req, res) => {
     if (!session) return res.status(404).json({ error: { code: 'NO_SESSION', message: 'Nenhuma sessão aberta.' } });
     res.json({ session });
   } catch (err: any) {
+    logEvent('Erro ao consultar sessão aberta', 'error', {
+      message: err.message,
+      stack: err?.stack,
+      userId: req.query?.userId
+    });
     res.status(400).json({ error: { code: 'CASH_ERROR', message: err.message || 'Erro ao consultar caixa.' } });
   }
 });

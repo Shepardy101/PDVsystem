@@ -120,7 +120,7 @@ export function closeCashSession(sessionId: string, physicalCount: number) {
     SELECT amount FROM cash_movements WHERE cash_session_id = ? AND type = 'supply_in'
   `).all(sessionId) as Array<{ amount: number }>;
   const totalSuprimentos = suprimentos.reduce((acc, s) => acc + (s.amount || 0), 0);
-  console.log('SANGRIAS:', sangrias, 'TOTAL SANGRIAS:', totalSangrias, 'SUPRIMENTOS:', suprimentos, 'TOTAL SUPRIMENTOS:', totalSuprimentos);
+ // console.log('SANGRIAS:', sangrias, 'TOTAL SANGRIAS:', totalSangrias, 'SUPRIMENTOS:', suprimentos, 'TOTAL SUPRIMENTOS:', totalSuprimentos);
   // Atualiza sessão de caixa como fechada
   const session = db.prepare('SELECT * FROM cash_sessions WHERE id = ?').get(sessionId) as { operator_id: string; opened_at: number; initial_balance: number };
   const difference = physicalCount - (session.initial_balance + totalVendasCash + totalSuprimentos - totalSangrias);
@@ -162,7 +162,7 @@ export function openCashSession(operatorId: string, initialBalance: number, user
   try {
     const result = db.prepare(`INSERT INTO cash_sessions (id, operator_id, user_id, opened_at, closed_at, initial_balance, is_open, physical_count_at_close, difference_at_close, created_at, updated_at)
       VALUES (@id, @operator_id, @user_id, @opened_at, @closed_at, @initial_balance, @is_open, @physical_count_at_close, @difference_at_close, @created_at, @updated_at)`).run(session);
-    console.log('[CASH] INSERT cash_sessions result:', result);
+   // console.log('[CASH] INSERT cash_sessions result:', result);
   } catch (err) {
     console.error('[CASH] Falha ao inserir cash_sessions:', err);
     throw err;

@@ -266,7 +266,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          return;
       }
       setIsLoadingSession(true);
-      console.log('[PDV] Verificando se existe caixa aberto para usuário:', operatorId);
+     // console.log('[PDV] Verificando se existe caixa aberto para usuário:', operatorId);
       fetch(`/api/cash/open?userId=${operatorId}`)
          .then(async res => {
             if (res.ok) {
@@ -283,7 +283,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             } else {
                setCashSessionId(null);
                // NÃO abrir modal automaticamente!
-               console.log('[PDV] Erro ao consultar caixa aberto.');
+               //console.log('[PDV] Erro ao consultar caixa aberto.');
             }
          })
          .catch((err) => {

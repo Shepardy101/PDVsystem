@@ -22,12 +22,12 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
   const forwardedForRaw = (req.headers['x-forwarded-for'] as string) || null;
   const remotePort = (req.socket as any)?.remotePort || null;
   const httpVersion = req.httpVersion || null;
-  console.log(`[IPAccess] Requisição recebida de IP: ${ip} | Hostname: ${hostname} | Path: ${req.path}`);
+  //console.log(`[IPAccess] Requisição recebida de IP: ${ip} | Hostname: ${hostname} | Path: ${req.path}`);
 
 
   // Permitir sempre localhost
   if (ip === '::1' || ip === '127.0.0.1' || ip === 'localhost') {
-    console.log(`[IPAccess] Acesso LOCAL liberado: ${ip} (${hostname})`);
+    //console.log(`[IPAccess] Acesso LOCAL liberado: ${ip} (${hostname})`);
     return next();
   }
 
@@ -35,7 +35,7 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
   const allowed = db.prepare('SELECT 1 FROM allowed_ips WHERE ip = ?').get(ip);
 
   if (allowed) {
-    console.log(`[IPAccess] IP autorizado: ${ip} (${hostname})`);
+    //console.log(`[IPAccess] IP autorizado: ${ip} (${hostname})`);
     return next();
   }
 
@@ -64,7 +64,7 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
         remotePort,
         httpVersion
       );
-      console.log(`[IPAccess] IP PENDENTE registrado no banco: ${ip} (${hostname})`);
+      //console.log(`[IPAccess] IP PENDENTE registrado no banco: ${ip} (${hostname})`);
     } catch (err) {
       console.error(`[IPAccess] ERRO ao registrar IP pendente: ${ip} (${hostname})`, err);
     }
@@ -99,14 +99,14 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
         httpVersion,
         ip
       );
-      console.log(`[IPAccess] IP PENDENTE atualizado: ${ip} (${hostname})`);
+      //console.log(`[IPAccess] IP PENDENTE atualizado: ${ip} (${hostname})`);
     } catch (err) {
       console.error(`[IPAccess] ERRO ao atualizar IP pendente: ${ip} (${hostname})`, err);
     }
   }
 
   // Bloqueia acesso
-  console.log(`[IPAccess] BLOQUEADO: ${ip} (${hostname}) tentou acessar ${req.path}`);
+  //console.log(`[IPAccess] BLOQUEADO: ${ip} (${hostname}) tentou acessar ${req.path}`);
   // Se for requisição de navegador (aceita html), retorna página amigável
   if (req.headers.accept && req.headers.accept.includes('text/html')) {
     return res.status(403).send(`
