@@ -761,19 +761,22 @@ const Settings: React.FC = () => {
                               </p>
                               <span className="text-[10px] text-slate-400">Total tipos: {interactionCounts.length}</span>
                            </div>
-                           <div className="flex items-end gap-3 h-48 overflow-x-auto custom-scrollbar-thin pr-2 relative z-10">
+                           <div className="flex items-end gap-4 h-48 overflow-x-auto custom-scrollbar-thin pr-2 relative z-10">
                               {interactionCounts.map(item => {
                                  const max = interactionCounts[0]?.count || 1;
-                                 const heightPct = Math.max(10, Math.round((item.count / max) * 100));
+                                 const barMax = 180; // px
+                                 const barMin = 16; // px for visibility
+                                 const heightPx = Math.max(barMin, Math.round((item.count / max) * barMax));
                                  return (
-                                    <div key={item.key} className="flex flex-col items-center min-w-[86px]">
+                                    <div key={item.key} className="flex flex-col items-center min-w-[110px]">
                                        <div className="flex-1 flex items-end w-full">
                                           <div
-                                             className="w-full rounded-t-xl bg-[linear-gradient(180deg,rgba(34,211,238,0.9)_0%,rgba(34,211,238,0.45)_60%,rgba(12,34,51,0)_100%)] border border-accent/60 shadow-[0_15px_40px_-18px_rgba(34,211,238,0.9)]"
-                                             style={{ height: `${heightPct}%` }}
+                                             className="w-full rounded-t-xl bg-[linear-gradient(180deg,rgba(34,211,238,0.9)_0%,rgba(34,211,238,0.45)_55%,rgba(12,34,51,0)_100%)] border border-accent/60 shadow-[0_12px_32px_-18px_rgba(34,211,238,0.9)]"
+                                             style={{ height: `${heightPx}px` }}
+                                             title={`${item.key}: ${item.count}`}
                                           />
                                        </div>
-                                       <div className="mt-2 text-center text-[10px] text-slate-200 font-mono break-words leading-tight">{item.key}</div>
+                                       <div className="mt-2 text-center text-[10px] text-slate-200 font-mono leading-tight w-28 line-clamp-2" title={item.key}>{item.key}</div>
                                        <div className="text-[11px] font-bold text-accent">{item.count}</div>
                                     </div>
                                  );
