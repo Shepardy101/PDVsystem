@@ -30,6 +30,7 @@ interface POSProps {
 
 
 const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
+   const CART_STORAGE_KEY = 'pdv-pos-cart-v1';
    // Estado para bloqueio de IP
    const [ipBlocked, setIpBlocked] = useState<{ip?: string, hostname?: string}|null>(null);
 
@@ -92,11 +93,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const inputRef = useAutoFocus<HTMLInputElement>();
    const searchRef = useRef<HTMLDivElement>(null);
    const suppressEnterShortcutRef = useRef(false); // evita acionar pagamento quando Enter adiciona produto
-   // Ref para o input de quantidade do último produto do carrinho
-   const lastQtyInputRef = useRef<HTMLInputElement>(null);
-   // Estado para edição de quantidade
-   const [editingQty, setEditingQty] = useState(false);
-   const [tempQty, setTempQty] = useState('');
+   // Guarda refs dos inputs de quantidade para focar via atalho
+   const qtyInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
    // Guarda o último produto adicionado ao carrinho
    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
    // Configuração: permitir estoque negativo
@@ -223,6 +221,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    const handleClearCart = () => {
       sendTelemetry('cart', 'clear');
       setCart([]);
+      localStorage.removeItem(CART_STORAGE_KEY);
       setSelectedClient(null);
       setTimeout(() => {
          if (inputRef.current) inputRef.current.focus();
@@ -420,6 +419,35 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          .catch(() => setAllowNegativeStock(true));
    }, []);
 
+   // Restaura carrinho persistido ao carregar a página
+   useEffect(() => {
+      try {
+         const raw = localStorage.getItem(CART_STORAGE_KEY);
+         if (!raw) return;
+         const parsed = JSON.parse(raw);
+         if (parsed?.cart && Array.isArray(parsed.cart)) {
+            setCart(parsed.cart);
+            setLastAddedProductId(parsed.lastAddedProductId ?? null);
+         }
+      } catch (err) {
+         console.warn('[POS] Falha ao restaurar carrinho:', err);
+      }
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
+   // Persiste carrinho sempre que mudar
+   useEffect(() => {
+      try {
+         if (cart.length === 0) {
+            localStorage.removeItem(CART_STORAGE_KEY);
+            return;
+         }
+         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ cart, lastAddedProductId }));
+      } catch (err) {
+         console.warn('[POS] Falha ao salvar carrinho:', err);
+      }
+   }, [cart, lastAddedProductId]);
+
 
 
 
@@ -469,31 +497,29 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       sendTelemetry
    ]);
 
-   // Handler para TAB no input de pesquisa
+   // Handler para TAB no input de pesquisa: foca o input de quantidade do último item adicionado (ou último do carrinho)
    useEffect(() => {
       const handleTab = (e: KeyboardEvent) => {
          if (
             document.activeElement === inputRef.current &&
             !searchTerm &&
             cart.length > 0 &&
-            !editingQty &&
             e.key === 'Tab'
          ) {
             e.preventDefault();
             const fallbackLast = cart[cart.length - 1];
             const targetItem = cart.find(i => i.product.id === lastAddedProductId) || fallbackLast;
-            setEditingQty(true);
-            setTempQty(targetItem.quantity.toString());
             sendTelemetry('shortcut', 'edit-quantity-tab', { productId: targetItem.product.id });
-            setTimeout(() => {
-               lastQtyInputRef.current?.focus();
-               lastQtyInputRef.current?.select();
-            }, 10);
+            const targetRef = qtyInputRefs.current[targetItem.product.id];
+            if (targetRef) {
+               targetRef.focus();
+               targetRef.select();
+            }
          }
       };
       window.addEventListener('keydown', handleTab);
       return () => window.removeEventListener('keydown', handleTab);
-   }, [cart, searchTerm, editingQty, lastAddedProductId, sendTelemetry]);
+   }, [cart, searchTerm, lastAddedProductId, sendTelemetry]);
 
 
 
@@ -686,8 +712,10 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             return;
          }
 
-         // Focar input principal se apertar qualquer número (exceto se editando quantidade)
-         if (!isPaymentModalOpen && !editingQty && /^[0-9]$/.test(e.key)) {
+         // Focar input principal se apertar qualquer número (exceto quando já está em um input de quantidade)
+         if (!isPaymentModalOpen && /^[0-9]$/.test(e.key)) {
+            const activeEl = document.activeElement as HTMLElement | null;
+            if (activeEl?.dataset?.role === 'qty-input') return;
             inputRef.current?.focus();
          }
       };
@@ -1135,41 +1163,29 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                             </div>
                             <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10">
                               <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
-                              {lastAddedProductId === item.product.id && editingQty ? (
-                                 <input
-                                    ref={lastQtyInputRef}
-                                    type="number"
-                                    min={1}
-                                    max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
-                                    className="w-12 text-center text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
-                                    value={tempQty}
-                                    onChange={e => setTempQty(e.target.value.replace(/\D/g, ''))}
-                                    onKeyDown={e => {
-                                       if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          const qty = parseInt(tempQty) || 1;
-                                          setQuantity(item.product.id, qty);
-                                          setEditingQty(false);
-                                          setTimeout(() => {
-                                             inputRef.current?.focus();
-                                             inputRef.current?.select();
-                                          }, 10);
-                                       } else if (e.key === 'Escape') {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setEditingQty(false);
-                                          setTimeout(() => {
-                                             inputRef.current?.focus();
-                                             inputRef.current?.select();
-                                          }, 10);
-                                       }
-                                    }}
-                                    onFocus={e => e.stopPropagation()}
-                                 />
-                              ) : (
-                                 <span className="w-8 text-center text-xs font-pdv font-bold text-slate-200">{item.quantity}</span>
-                              )}
+                              <input
+                                 ref={el => { qtyInputRefs.current[item.product.id] = el; }}
+                                 data-role="qty-input"
+                                 type="number"
+                                 min={1}
+                                 max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
+                                 className="w-12 text-center text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
+                                 value={item.quantity}
+                                 onChange={e => {
+                                    const next = parseInt(e.target.value, 10);
+                                    setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
+                                 }}
+                                 onKeyDown={e => {
+                                    // Não deixa o Enter vazar para o atalho global de pagamento
+                                    e.stopPropagation();
+                                    if (e.key === 'Enter') {
+                                       e.preventDefault();
+                                       inputRef.current?.focus();
+                                       inputRef.current?.select();
+                                    }
+                                 }}
+                                 onFocus={e => e.stopPropagation()}
+                              />
                               <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
                             </div>
                             <div className="w-24 text-right">
@@ -1294,6 +1310,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                sendTelemetry('receipt', 'close');
                setIsReceiptModalOpen(false);
                setCart([]);
+                localStorage.removeItem(CART_STORAGE_KEY);
                setLastSaleData(null);
                setSearchTerm('');
                setManualDiscount(0);

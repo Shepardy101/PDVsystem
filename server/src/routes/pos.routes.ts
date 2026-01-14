@@ -8,8 +8,9 @@ export const posRouter = Router();
 
 // Buscar vendas do turno por cashSessionId
 posRouter.get('/sales', (req, res) => {
+  let cashSessionId: any;
   try {
-    const { cashSessionId } = req.query;
+    ({ cashSessionId } = req.query);
     if (!cashSessionId) return res.status(400).json({ error: 'cashSessionId é obrigatório' });
     // Busca vendas do turno
     const sales = db.prepare('SELECT * FROM sales WHERE cash_session_id = ? ORDER BY timestamp DESC').all(cashSessionId);
