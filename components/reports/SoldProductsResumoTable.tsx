@@ -5,6 +5,12 @@ const USE_MOCK = false;
 import React, { useEffect, useState, useMemo } from "react";
 import { soldProductsMock, SoldProductMock } from "./SoldProductsDetailedTable.mock";
 
+type TelemetryFn = (area: string, action: string, meta?: Record<string, any>) => void;
+
+interface SoldProductsResumoTableProps {
+  onTelemetry?: TelemetryFn;
+}
+
 interface ProductResumo {
   product_id: string;
   product_name: string;
@@ -15,7 +21,7 @@ interface ProductResumo {
 }
 
 
-const SoldProductsResumoTable: React.FC = () => {
+const SoldProductsResumoTable: React.FC<SoldProductsResumoTableProps> = ({ onTelemetry }) => {
   const [products, setProducts] = useState<ProductResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +36,7 @@ const SoldProductsResumoTable: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
+    onTelemetry?.('soldProductsResumo', 'fetch:start', { source: USE_MOCK ? 'mock' : 'api', dateFilter, customStart, customEnd });
     let startDate: number | null = null;
     let endDate: number | null = null;
     const now = Date.now();
@@ -70,6 +77,7 @@ const SoldProductsResumoTable: React.FC = () => {
       setProducts(Object.values(resumoMap));
       setLoading(false);
       setError(null);
+      onTelemetry?.('soldProductsResumo', 'fetch:success', { source: 'mock', items: Object.keys(resumoMap).length });
       return;
     }
 
@@ -108,18 +116,25 @@ const SoldProductsResumoTable: React.FC = () => {
         });
         setProducts(Object.values(resumoMap));
         setError(null);
+        onTelemetry?.('soldProductsResumo', 'fetch:success', { source: 'api', items: Object.keys(resumoMap).length });
       })
-      .catch(e => setError(e.message))
+      .catch(e => {
+        setError(e.message);
+        onTelemetry?.('soldProductsResumo', 'fetch:error', { message: e.message });
+      })
       .finally(() => setLoading(false));
-  }, [dateFilter, customStart, customEnd]);
+  }, [dateFilter, customStart, customEnd, onTelemetry]);
 
   // Ordenação dos cabeçalhos
     const [sort, setSort] = useState<{ key: keyof ProductResumo, direction: 'asc' | 'desc' }>({ key: 'total_value', direction: 'desc' });
     const handleSort = (key: keyof ProductResumo) => {
       setSort((prev: { key: keyof ProductResumo; direction: 'asc' | 'desc' }) => {
         if (prev.key === key) {
-          return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+          const nextDirection = prev.direction === 'asc' ? 'desc' : 'asc';
+          onTelemetry?.('soldProductsResumo', 'sort:change', { key, direction: nextDirection });
+          return { key, direction: nextDirection };
         }
+        onTelemetry?.('soldProductsResumo', 'sort:change', { key, direction: 'desc' });
         return { key, direction: 'desc' };
       });
     };
@@ -158,7 +173,10 @@ const SoldProductsResumoTable: React.FC = () => {
                 'px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all',
                 dateFilter === key ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent',
               ].join(' ')}
-              onClick={() => setDateFilter(key as any)}
+              onClick={() => {
+                setDateFilter(key as any);
+                onTelemetry?.('soldProductsResumo', 'filter:date', { value: key });
+              }}
             >
               {key === '30' && '30d'}
               {key === '60' && '60d'}
@@ -189,6 +207,7 @@ const SoldProductsResumoTable: React.FC = () => {
             onClick={() => {
               setCustomStart(pendingCustomStart);
               setCustomEnd(pendingCustomEnd);
+              onTelemetry?.('soldProductsResumo', 'filter:custom-apply', { start: pendingCustomStart, end: pendingCustomEnd });
             }}
             disabled={!pendingCustomStart || !pendingCustomEnd}
           >

@@ -4,6 +4,12 @@ import ProductMixQuadrantsChart from './ProductMixQuadrantsChart';
 import ProductMixQuadrantsTables from './ProductMixQuadrantsTables';
 import FuturisticSpinner from '../FuturisticSpinner';
 
+type TelemetryFn = (area: string, action: string, meta?: Record<string, any>) => void;
+
+interface ProductMixQuadrantsTabProps {
+  onTelemetry?: TelemetryFn;
+}
+
 const PRESETS = [
   { label: 'Hoje', getRange: () => {
     const now = new Date();
@@ -23,7 +29,7 @@ const PRESETS = [
   { label: 'Custom', getRange: () => null }
 ];
 
-const ProductMixQuadrantsTab: React.FC = () => {
+const ProductMixQuadrantsTab: React.FC<ProductMixQuadrantsTabProps> = ({ onTelemetry }) => {
   const [preset, setPreset] = useState(2); // 30 dias
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -41,13 +47,21 @@ const ProductMixQuadrantsTab: React.FC = () => {
   useEffect(() => {
     const range = getRange();
     if (!range) return;
+    onTelemetry?.('productMix', 'fetch:start', { preset: PRESETS[preset].label, range });
     setLoading(true);
     setError(null);
     fetchProductMix(range.from, range.to)
-      .then(setData)
-      .catch(e => setError(e.message || 'Erro ao buscar dados'))
+      .then((resp) => {
+        setData(resp);
+        onTelemetry?.('productMix', 'fetch:success', { preset: PRESETS[preset].label, range, items: resp?.length ?? 0 });
+      })
+      .catch(e => {
+        const message = e.message || 'Erro ao buscar dados';
+        setError(message);
+        onTelemetry?.('productMix', 'fetch:error', { preset: PRESETS[preset].label, range, message });
+      })
       .finally(() => setLoading(false));
-  }, [preset, customFrom, customTo]);
+  }, [preset, customFrom, customTo, onTelemetry]);
 
   // Calcular limites e médios para passar para as tabelas
   let midX = 0, midY = 0;
@@ -71,7 +85,10 @@ const ProductMixQuadrantsTab: React.FC = () => {
             <button
               key={p.label}
               className={`px-4 py-2 rounded-lg font-bold text-xs transition-all border ${preset === i ? 'bg-cyan-700/30 text-cyan-200 border-cyan-400 shadow-cyan-500/20 shadow-lg' : 'bg-dark-950/60 text-slate-400 border-cyan-900 hover:bg-cyan-900/20'}`}
-              onClick={() => setPreset(i)}
+              onClick={() => {
+                setPreset(i);
+                onTelemetry?.('productMix', 'filter:preset', { preset: p.label });
+              }}
             >
               {p.label}
             </button>
@@ -80,14 +97,18 @@ const ProductMixQuadrantsTab: React.FC = () => {
         <div className="flex gap-2 items-center ml-auto">
           {PRESETS[preset].label === 'Custom' && (
             <>
-              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
+              <input type="date" value={customFrom} onChange={e => { setCustomFrom(e.target.value); onTelemetry?.('productMix', 'filter:custom-from', { value: e.target.value }); }} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
               <span className="text-cyan-400">até</span>
-              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
+              <input type="date" value={customTo} onChange={e => { setCustomTo(e.target.value); onTelemetry?.('productMix', 'filter:custom-to', { value: e.target.value }); }} className="bg-dark-950/80 border border-cyan-700 rounded px-2 py-1 text-cyan-200" />
             </>
           )}
           <button
             className={`ml-4 px-4 py-2 rounded-lg font-bold text-xs border transition-all ${showTable ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-dark-950/60 text-cyan-300 border-cyan-900 hover:bg-cyan-900/20'}`}
-            onClick={() => setShowTable((v) => !v)}
+            onClick={() => setShowTable((v) => {
+              const next = !v;
+              onTelemetry?.('productMix', 'toggle:table', { showTable: next });
+              return next;
+            })}
           >
             {showTable ? 'Ocultar Tabela' : 'Exibir Tabela'}
           </button>

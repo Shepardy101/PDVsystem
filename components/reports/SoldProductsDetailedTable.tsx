@@ -1,9 +1,14 @@
 
-
 import React, { useEffect, useMemo, useState } from "react";
 // Troque para true para usar mock, false para API real
 const USE_MOCK = false;
 import { soldProductsMock } from "./SoldProductsDetailedTable.mock";
+
+type TelemetryFn = (area: string, action: string, meta?: Record<string, any>) => void;
+
+interface SoldProductsDetailedTableProps {
+    onTelemetry?: TelemetryFn;
+}
 
 interface SoldProduct {
     product_id: string;
@@ -28,7 +33,7 @@ function formatBRLFromCents(cents: number) {
 }
 
 
-const SoldProductsDetailedTable: React.FC = () => {
+const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ onTelemetry }) => {
     const [products, setProducts] = useState<SoldProduct[]>([]);
     const [allProducts, setAllProducts] = useState<SoldProduct[]>([]);
     const [productInfo, setProductInfo] = useState<
@@ -56,6 +61,8 @@ const SoldProductsDetailedTable: React.FC = () => {
     useEffect(() => {
         setLoading(true);
         setError(null);
+
+        onTelemetry?.('soldProductsDetailed', 'fetch:start', { source: USE_MOCK ? 'mock' : 'api' });
 
         if (USE_MOCK) {
             // Usar dados de mock
@@ -98,8 +105,15 @@ const SoldProductsDetailedTable: React.FC = () => {
                     };
                 });
                 setProductInfo(infoMap);
+                onTelemetry?.('soldProductsDetailed', 'fetch:success', {
+                    source: 'api',
+                    items: raw.length,
+                });
             })
-            .catch((e) => setError(e.message))
+            .catch((e) => {
+                setError(e.message);
+                onTelemetry?.('soldProductsDetailed', 'fetch:error', { message: e.message });
+            })
             .finally(() => setLoading(false));
     }, []);
 
@@ -108,6 +122,22 @@ const SoldProductsDetailedTable: React.FC = () => {
     type SortKey = 'sale_date' | 'product_name' | 'cost_price' | 'total_quantity' | 'total_value' | 'stock_on_hand';
     const [sortKey, setSortKey] = useState<SortKey>('sale_date');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+    const handleSort = (key: SortKey) => {
+        setSortKey((current) => {
+            if (current === key) {
+                setSortDir((dir) => {
+                    const nextDir = dir === 'asc' ? 'desc' : 'asc';
+                    onTelemetry?.('soldProductsDetailed', 'sort:change', { key, direction: nextDir });
+                    return nextDir;
+                });
+                return current;
+            }
+            onTelemetry?.('soldProductsDetailed', 'sort:change', { key, direction: 'desc' });
+            setSortDir('desc');
+            return key;
+        });
+    };
 
     const sortedProducts = useMemo(() => {
         const arr = products.map(p => ({
@@ -165,8 +195,13 @@ const SoldProductsDetailedTable: React.FC = () => {
             }
         }
         setProducts(filtered);
-        console.log("Filtrados produtos vendidos:", filtered);
-    }, [allProducts, dateRange, customStart, customEnd]);
+        onTelemetry?.('soldProductsDetailed', 'filter:applied', {
+            dateRange,
+            customStart,
+            customEnd,
+            resultCount: filtered.length,
+        });
+    }, [allProducts, dateRange, customStart, customEnd, onTelemetry]);
 
     if (loading) {
         return (
@@ -217,14 +252,20 @@ const SoldProductsDetailedTable: React.FC = () => {
                             <button
                                 key={label}
                                 className={`px-2 py-1 rounded text-[10px] font-bold uppercase border border-white/10 transition-all ${dateRange === label ? 'bg-cyan-600 text-white' : 'bg-dark-900/60 text-slate-300 hover:bg-cyan-900/40'}`}
-                                onClick={() => setDateRange(label as any)}
+                                onClick={() => {
+                                    setDateRange(label as any);
+                                    onTelemetry?.('soldProductsDetailed', 'filter:date-range', { value: label });
+                                }}
                             >
                                 {label === 'all' ? 'Todos' : label}
                             </button>
                         ))}
                         <button
                             className={`px-2 py-1 rounded text-[10px] font-bold uppercase border border-white/10 transition-all ${dateRange === 'custom' ? 'bg-cyan-600 text-white' : 'bg-dark-900/60 text-slate-300 hover:bg-cyan-900/40'}`}
-                            onClick={() => setDateRange('custom')}
+                            onClick={() => {
+                                setDateRange('custom');
+                                onTelemetry?.('soldProductsDetailed', 'filter:date-range', { value: 'custom' });
+                            }}
                         >
                             Personalizado
                         </button>
@@ -234,14 +275,20 @@ const SoldProductsDetailedTable: React.FC = () => {
                             <input
                                 type="date"
                                 value={customStart}
-                                onChange={e => setCustomStart(e.target.value)}
+                                onChange={e => {
+                                    setCustomStart(e.target.value);
+                                    onTelemetry?.('soldProductsDetailed', 'filter:custom-start', { value: e.target.value });
+                                }}
                                 className="px-2 py-1 rounded border border-white/10 bg-dark-900/60 text-xs text-slate-100"
                             />
                             <span className="text-xs text-slate-400">até</span>
                             <input
                                 type="date"
                                 value={customEnd}
-                                onChange={e => setCustomEnd(e.target.value)}
+                                onChange={e => {
+                                    setCustomEnd(e.target.value);
+                                    onTelemetry?.('soldProductsDetailed', 'filter:custom-end', { value: e.target.value });
+                                }}
                                 className="px-2 py-1 rounded border border-white/10 bg-dark-900/60 text-xs text-slate-100"
                             />
                         </div>
@@ -269,7 +316,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                             <tr>
                                 <th
                                     className={`py-3 px-3 border-b border-white/10 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'sale_date' ? 'text-cyan-300' : ''}`}
-                                    onClick={() => { if (sortKey === 'sale_date') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('sale_date'); }}
+                                    onClick={() => handleSort('sale_date')}
                                 >
                                     <span className="inline-flex items-center gap-1">
                                         Data da venda
@@ -278,7 +325,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                 </th>
                                 <th
                                     className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'product_name' ? 'text-cyan-300' : ''}`}
-                                    onClick={() => { if (sortKey === 'product_name') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('product_name'); }}
+                                    onClick={() => handleSort('product_name')}
                                 >
                                     <span className="inline-flex items-center gap-1">
                                         Produto
@@ -287,7 +334,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                 </th>
                                 <th
                                     className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'cost_price' ? 'text-cyan-300' : ''}`}
-                                    onClick={() => { if (sortKey === 'cost_price') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('cost_price'); }}
+                                    onClick={() => handleSort('cost_price')}
                                 >
                                     <span className="inline-flex items-center gap-1">
                                         Custo
@@ -296,7 +343,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                 </th>
                                 <th
                                     className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'total_quantity' ? 'text-cyan-300' : ''}`}
-                                    onClick={() => { if (sortKey === 'total_quantity') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_quantity'); }}
+                                    onClick={() => handleSort('total_quantity')}
                                 >
                                     <span className="inline-flex items-center gap-1">
                                         Quantidade
@@ -305,7 +352,7 @@ const SoldProductsDetailedTable: React.FC = () => {
                                 </th>
                                 <th
                                     className={`py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 cursor-pointer transition hover:bg-cyan-900/30 group text-center ${sortKey === 'total_value' ? 'text-cyan-300' : ''}`}
-                                    onClick={() => { if (sortKey === 'total_value') setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); setSortKey('total_value'); }}
+                                    onClick={() => handleSort('total_value')}
                                 >
                                     <span className="inline-flex items-center gap-1">
                                         Valor total

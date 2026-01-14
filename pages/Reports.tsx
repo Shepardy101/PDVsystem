@@ -124,6 +124,10 @@ const Reports: React.FC = () => {
   const [selectedViewer, setSelectedViewer] = useState<'mixQuadrants' | 'soldProductsDetailed' | 'soldProductsResumo'>('mixQuadrants');
 
   useEffect(() => {
+    sendTelemetry('page', 'view');
+  }, [sendTelemetry]);
+
+  useEffect(() => {
     sendTelemetry('viewer', 'switch', { viewer: selectedViewer });
   }, [selectedViewer, sendTelemetry]);
 
@@ -188,9 +192,9 @@ const Reports: React.FC = () => {
 
       {/* Renderização condicional do componente selecionado */}
       <div className=" flex-1 overflow-hidden ">
-        {selectedViewer === 'mixQuadrants' && <ProductMixQuadrantsTab />}
-        {selectedViewer === 'soldProductsDetailed' && <SoldProductsDetailedTable />}
-        {selectedViewer === 'soldProductsResumo' && <SoldProductsResumoTable />}
+        {selectedViewer === 'mixQuadrants' && <ProductMixQuadrantsTab onTelemetry={sendTelemetry} />}
+        {selectedViewer === 'soldProductsDetailed' && <SoldProductsDetailedTable onTelemetry={sendTelemetry} />}
+        {selectedViewer === 'soldProductsResumo' && <SoldProductsResumoTable onTelemetry={sendTelemetry} />}
       </div>
 
 
