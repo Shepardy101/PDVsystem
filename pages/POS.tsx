@@ -1046,7 +1046,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
    return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid p-6 gap-6 relative">
+      <div className="flex-1 flex flex-col min-h-screen h-full overflow-y-auto assemble-view bg-dark-950 bg-cyber-grid p-4 sm:p-6 pb-24 sm:pb-28 gap-4 sm:gap-6 relative">
          {/* Search Header */}
          <div className="relative z-50 max-w-3xl mx-auto w-full" ref={searchRef}>
             <div className={`gradient-border-wrapper flex items-center gap-4 transition-all duration-300 rounded-2xl p-2 bg-dark-900/60 backdrop-blur-xl border border-white/10 ${isSearchFocused ? 'border-accent/50 shadow-accent-glow' : ''
@@ -1073,7 +1073,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             </div>
 
             {isSearchFocused && searchResults.length > 0 && (
-               <div className="absolute top-full left-0 right-0 mt-2 bg-dark-900/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+               <div className="absolute top-full left-0 right-0 mt-2 bg-dark-900/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-72 sm:max-h-96 overflow-y-auto">
                   {searchResults.map((product, index) => (
                      <button
                         key={product.id}
@@ -1104,12 +1104,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             )}
          </div>
 
-          <div className="flex-1 grid grid-cols-12 gap-8 min-h-0 relative z-10">
+               <div className="flex-1 grid grid-cols-12 gap-4 sm:gap-6 lg:gap-8 min-h-0 relative z-10">
             {/* Cart Area */}
-            <div className="col-span-12 xl:col-span-8 flex flex-col min-h-0">
+                  <div className="col-span-12 xl:col-span-8 flex flex-col min-h-0 gap-4 sm:gap-6">
                <div className="flex items-center justify-between mb-4 px-2">
                  <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                   <ShoppingCart size={16} className="text-accent" /> Buffer de Venda
+                   <ShoppingCart size={16} className="text-accent" /> Buffer de Venda.
                  </h2>
                  <div className="flex items-center gap-3">
                    <button
@@ -1146,7 +1146,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                    ) : (
                      <div className="space-y-3">
                         {cart.map(item => (
-                          <div key={item.product.id} className="flex items-center gap-6 bg-dark-900/40 p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all group animate-in slide-in-from-left-4 duration-300">
+                          <div key={item.product.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 bg-dark-900/40 p-4 rounded-2xl border border-white/5 hover:border-accent/20 transition-all group animate-in slide-in-from-left-4 duration-300">
                              <div className="w-12 h-12 rounded-xl bg-dark-950 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
                               {item.product.imageUrl ? (
                                  <img src={item.product.imageUrl} className="w-full h-full object-cover opacity-50" />
@@ -1161,7 +1161,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                  {item.appliedDiscount > 0 && <Badge variant="success">-R$ {item.appliedDiscount.toFixed(2)}</Badge>}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10">
+                                          <div className="flex items-center gap-3 bg-dark-950/80 rounded-xl p-1.5 border border-white/10 flex-wrap sm:flex-nowrap">
                               <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={14} /></button>
                               <input
                                  ref={el => { qtyInputRefs.current[item.product.id] = el; }}
@@ -1188,10 +1188,10 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                               />
                               <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={14} /></button>
                             </div>
-                            <div className="w-24 text-right">
-                              <p className="text-sm font-pdv font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
+                                          <div className="w-full sm:w-24 text-left sm:text-right whitespace-nowrap mt-2 sm:mt-0">
+                                             <p className="text-sm font-pdv font-bold text-white">R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}</p>
                             </div>
-                            <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity self-end sm:self-auto">
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -1204,8 +1204,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
             {/* Totals Section */}
             <div className="col-span-12 xl:col-span-4 flex flex-col gap-6 h-full min-h-0">
-               <div className="flex-1 glass-panel rounded-3xl p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-hidden">
-                 <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-600 mb-10">Consolidação Fiscal</h3>
+                      <div className="flex-1 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-hidden">
+                         <h3 className="text-[10px] font-bold uppercase tracking-[0.25em] sm:tracking-[0.35em] text-slate-600 mb-6 sm:mb-10">Consolidação Fiscal</h3>
 
                  <div className="flex-1 space-y-6">
                    <div className="flex justify-between items-center text-slate-500">
@@ -1233,33 +1233,36 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                  </div>
 
                  <div className="pt-8 border-t border-white/5 space-y-8 shrink-0 relative z-10">
-                   <div className="flex justify-between items-end">
-                     <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-600 mb-2">Montante Líquido</p>
-                        <h2 className="text-5xl font-pdv font-bold text-accent ">R$ {effectiveTotal.toFixed(2)}</h2>
-                     </div>
-                     <div className="w-12 h-12 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-center animate-pulse">
-                        <ArrowRight className="text-accent" />
-                     </div>
-                   </div>
+                            <div className="flex justify-between items-end gap-3 flex-wrap sm:flex-nowrap">
+                               <div>
+                                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.25em] text-slate-600 mb-2">Montante Líquido</p>
+                                    <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
+                                       <span className="text-sm text-slate-400">R$</span>
+                                       <h2 className="text-3xl sm:text-4xl lg:text-5xl font-pdv font-bold text-accent whitespace-nowrap">{effectiveTotal.toFixed(2)}</h2>
+                                    </div>
+                               </div>
+                               <div className="w-12 h-12 rounded-2xl bg-accent/5 border border-accent/20 flex items-center justify-center animate-pulse shrink-0">
+                                    <ArrowRight className="text-accent" />
+                               </div>
+                            </div>
 
-                   <Button
-                     className="w-full py-6 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow transition-all active:scale-95"
-                     disabled={cart.length === 0}
-                                              onClick={() => openPaymentModal('button-processar')}
-                   >
-                     PROCESSAR [ENTER]
-                   </Button>
+                            <Button
+                               className="w-full py-4 sm:py-6 text-[11px] sm:text-xs font-bold tracking-[0.2em] sm:tracking-[0.3em] uppercase shadow-accent-glow transition-all active:scale-95"
+                               disabled={cart.length === 0}
+                                                                     onClick={() => openPaymentModal('button-processar')}
+                            >
+                               PROCESSAR [ENTER]
+                            </Button>
 
 
-                     <>
-                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.4em]">
-                     Ctrl + D = Aplicar Desconto
-                   </p>
-                   <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.4em]">
-                     Ctrl + S = Ajustar Subtotal
-                   </p>
-                     </>
+                               <>
+                            <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.25em]">
+                               Ctrl + D = Aplicar Desconto
+                            </p>
+                            <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-[0.25em]">
+                               Ctrl + S = Ajustar Subtotal
+                            </p>
+                               </>
                  </div>
                </div>
             </div>

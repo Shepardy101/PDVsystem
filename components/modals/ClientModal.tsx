@@ -47,7 +47,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, clientSearch, clientR
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
         </div>
-        <div className="p-8 space-y-4">
+        <div className="p-6 sm:p-8 space-y-4 max-h-[70vh] overflow-y-auto">
           <input
   ref={clientInputRef}
   type="text"

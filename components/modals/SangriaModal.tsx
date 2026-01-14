@@ -152,7 +152,7 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
           }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4 border-t border-white/5">
           <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Abortar</Button>
           <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-red-500/10 bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20" icon={<Check size={18}/>} onClick={handleSubmit} disabled={isSubmitDisabled}>Executar Sangria</Button>
         </div>

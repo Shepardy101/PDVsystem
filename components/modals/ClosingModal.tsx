@@ -98,7 +98,7 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
         </div>
         <div className="px-8 py-6">
           {!closeResult ? (
-            <div className="flex flex-col gap-8 items-center">
+            <div className="flex flex-col gap-6 sm:gap-8 items-center">
               <Input
                 label="Valor físico contado (R$)"
                 value={physicalCashInput}
@@ -110,7 +110,7 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
               {closeError && <div className="text-red-500 text-base text-center font-bold animate-pulse">{closeError}</div>}
               <Button
                 onClick={onConfirm}
-                className="w-full py-6 text-lg font-bold tracking-[0.2em] uppercase shadow-accent-glow rounded-xl"
+                className="w-full py-5 sm:py-6 text-base sm:text-lg font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase shadow-accent-glow rounded-xl"
                 disabled={closeLoading}
               >
                 {closeLoading ? 'Processando...' : 'Confirmar Fechamento'}

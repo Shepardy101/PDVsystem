@@ -247,7 +247,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                 tabIndex={-1}
                 className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden"
             >
-                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">
+                <div className="p-6 sm:p-7 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
                             <Wallet className="text-accent animate-pulse" size={20} />
@@ -265,7 +265,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                         <X size={20} />
                     </button>
                 </div>
-                <div className="p-8 space-y-8">
+                <div className="p-6 sm:p-8 space-y-8">
                     <div className="text-center space-y-2">
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Crédito Exigido</p>
                         <h3 className="text-5xl font-mono font-bold text-accent ">R$ {total.toFixed(2)}</h3>
@@ -275,7 +275,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                     </div>
                     {!multiMode ? (
                         <>
-                        <div className="grid grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                             {paymentOptions.map(m => (
                                 <div key={m.id} className="space-y-3 assemble-text">
                                     <button
@@ -301,7 +301,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                         {showCashChangeModal && (
                             <div className="fixed inset-0 z-[200] flex items-center justify-center">
                                 <div className="absolute inset-0 bg-black/60" onClick={closeCashChangeModal} />
-                                <div className="relative bg-dark-900 rounded-xl border border-accent/30 shadow-2xl p-8 min-w-[320px] flex flex-col items-center">
+                                <div className="relative bg-dark-900 rounded-xl border border-accent/30 shadow-2xl p-6 sm:p-8 min-w-[280px] sm:min-w-[320px] flex flex-col items-center">
                                     <h3 className="text-lg font-bold text-accent mb-4">Pagamento em Dinheiro</h3>
                                     <label className="w-full mb-2 text-xs text-slate-400">Valor recebido</label>
                                     <input
@@ -330,14 +330,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                         )}
                                     </div>
                                     {cashError && <div className="text-red-400 text-xs mt-2">{cashError}</div>}
-                                    <div className="flex gap-4 mt-6">
+                                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 w-full">
                                         <Button
-                                            className="px-6 py-2 font-bold"
+                                            className="flex-1 px-6 py-3 font-bold"
                                             disabled={cashReceivedCents < totalCents || hasInsufficientChange}
                                             onClick={confirmCashPayment}
                                         >Confirmar</Button>
                                         <Button
-                                            className="px-6 py-2"
+                                            className="flex-1 px-6 py-3"
                                             variant="secondary"
                                             onClick={closeCashChangeModal}
                                         >Cancelar</Button>

@@ -61,7 +61,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
             </div>
           )}
         </div>
-        <div className="w-full flex gap-4 no-print">
+        <div className="w-full flex flex-col sm:flex-row gap-3 sm:gap-4 no-print">
           <Button variant="secondary" className="flex-1 py-4" icon={<Printer size={18} />} onClick={onPrint}>Imprimir [I]</Button>
           <Button autoFocus className="flex-1 py-4 shadow-accent-glow" icon={<CheckCircle2 size={18} />} onClick={onClose}>Finalizar [ENTER]</Button>
         </div>

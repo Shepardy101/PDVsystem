@@ -92,7 +92,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-dark-950 text-slate-100 overflow-hidden font-sans selection:bg-accent/30">
+    <div className="flex min-h-screen w-screen bg-dark-950 text-slate-100 overflow-x-hidden font-sans selection:bg-accent/30">
       {/* Overlay para mobile */}
       {/* Overlay para mobile */}
       <div
@@ -154,7 +154,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-hidden h-full">
+      <main className="flex-1 flex flex-col relative overflow-x-hidden h-full min-h-screen">
         {/* Minimalist Top Nav */}
         <header className="h-20 bg-dark-950/20 backdrop-blur-md border-b border-white/5 px-4 sm:px-10 flex items-center justify-between shrink-0 z-20">
           <div className="flex items-center gap-6">
@@ -191,8 +191,8 @@ const App: React.FC = () => {
         </header>
 
         {/* View Layout Container */}
-        <div className="flex-1 relative overflow-hidden bg-dark-950">
-          <div className="h-full relative z-10 flex flex-col">
+        <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-dark-950 min-h-0">
+          <div className="h-full relative z-10 flex flex-col min-h-0">
             {view === 'pos' && (
               <POS 
                 cashOpen={cashOpen}

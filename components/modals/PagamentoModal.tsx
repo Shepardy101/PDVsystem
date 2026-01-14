@@ -164,7 +164,7 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
           }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4 border-t border-white/5">
           <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Cancelar</Button>
           <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-amber-500/10 bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20" icon={<CreditCard size={18}/>} onClick={handleSubmit} disabled={isSubmitDisabled}>Efetuar Pagamento</Button>
         </div>

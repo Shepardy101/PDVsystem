@@ -154,7 +154,7 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
           }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4 border-t border-white/5">
           <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Cancelar</Button>
           <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-blue-500/10 bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20" icon={<Check size={18}/>} onClick={handleSubmit} disabled={isSubmitDisabled}>Confirmar Entrada</Button>
         </div>

@@ -48,7 +48,7 @@ const OpeningModal: React.FC<OpeningModalProps> = ({ isOpen, initialBalance, onC
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
         </div>
-        <div className="p-8 space-y-6">
+        <div className="p-6 sm:p-8 space-y-6">
           <Input
             label="Saldo Inicial (R$)"
             value={initialBalance}
@@ -60,7 +60,7 @@ const OpeningModal: React.FC<OpeningModalProps> = ({ isOpen, initialBalance, onC
           
           <Button
             onClick={onConfirm}
-            className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
+            className="w-full py-4 sm:py-5 text-[11px] sm:text-xs font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase shadow-accent-glow"
           >
             Liberar Acesso
           </Button>

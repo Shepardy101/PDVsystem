@@ -43,7 +43,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, tempDiscount, onC
             onKeyDown={handleKeyDown}
           />
         </div>
-        <div className="flex gap-4 p-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-6">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button className="flex-1" onClick={onApply}>Injetar Desconto</Button>
         </div>

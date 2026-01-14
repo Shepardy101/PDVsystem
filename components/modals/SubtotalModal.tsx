@@ -49,7 +49,7 @@ export const SubtotalModal: React.FC<SubtotalModalProps> = ({ isOpen, initialVal
           className="text-lg font-mono border-accent/40 bg-dark-950/60"
           autoFocus
         />
-        <div className="flex gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button className="flex-1" onClick={() => {
             const parsed = parseFloat(value.replace(',', '.'));
