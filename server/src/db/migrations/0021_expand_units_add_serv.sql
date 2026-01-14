@@ -1,13 +1,12 @@
--- Allow 'serv' (service) unit for products and sale_items
+-- Rebuild products/sale_items to suport unit 'serv' e schema final (min_stock, imageUrl, type, códigos opcionais)
 BEGIN;
 PRAGMA foreign_keys = OFF;
 
--- Recreate products with expanded unit CHECK
 CREATE TABLE IF NOT EXISTS products_new (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  ean TEXT NOT NULL UNIQUE,
-  internal_code TEXT NOT NULL UNIQUE,
+  ean TEXT UNIQUE,
+  internal_code TEXT UNIQUE,
   unit TEXT NOT NULL CHECK(unit IN ('cx','unit','kg','serv')),
   cost_price INTEGER NOT NULL DEFAULT 0,
   sale_price INTEGER NOT NULL DEFAULT 0,
@@ -19,23 +18,41 @@ CREATE TABLE IF NOT EXISTS products_new (
   stock_on_hand INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  imageUrl TEXT,
+  type TEXT DEFAULT 'product',
+  min_stock INTEGER NOT NULL DEFAULT 20,
   FOREIGN KEY(category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE SET NULL,
   FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON UPDATE CASCADE ON DELETE SET NULL
 );
+
 INSERT INTO products_new (
-  id, name, ean, internal_code, unit, cost_price, sale_price,
-  auto_discount_enabled, auto_discount_value, category_id, supplier_id,
-  status, stock_on_hand, created_at, updated_at
+  id, name, ean, internal_code, unit, cost_price, sale_price, auto_discount_enabled, auto_discount_value,
+  category_id, supplier_id, status, stock_on_hand, created_at, updated_at, imageUrl, type, min_stock
 )
 SELECT
-  id, name, ean, internal_code, unit, cost_price, sale_price,
-  auto_discount_enabled, auto_discount_value, category_id, supplier_id,
-  status, stock_on_hand, created_at, updated_at
+  id,
+  name,
+  NULLIF(ean, '') AS ean,
+  NULLIF(internal_code, '') AS internal_code,
+  unit,
+  cost_price,
+  sale_price,
+  auto_discount_enabled,
+  auto_discount_value,
+  category_id,
+  supplier_id,
+  status,
+  stock_on_hand,
+  created_at,
+  updated_at,
+  imageUrl,
+  COALESCE(type, 'product'),
+  COALESCE(min_stock, 20)
 FROM products;
+
 DROP TABLE products;
 ALTER TABLE products_new RENAME TO products;
 
--- Recreate sale_items with expanded unit_snapshot CHECK
 CREATE TABLE IF NOT EXISTS sale_items_new (
   id TEXT PRIMARY KEY,
   sale_id TEXT NOT NULL,
@@ -53,6 +70,7 @@ CREATE TABLE IF NOT EXISTS sale_items_new (
   FOREIGN KEY(sale_id) REFERENCES sales(id) ON DELETE CASCADE,
   FOREIGN KEY(product_id) REFERENCES products(id)
 );
+
 INSERT INTO sale_items_new (
   id, sale_id, product_id, product_name_snapshot, product_internal_code_snapshot,
   product_ean_snapshot, unit_snapshot, quantity, unit_price_at_sale,
@@ -63,6 +81,7 @@ SELECT
   product_ean_snapshot, unit_snapshot, quantity, unit_price_at_sale,
   auto_discount_applied, manual_discount_applied, final_unit_price, line_total
 FROM sale_items;
+
 DROP TABLE sale_items;
 ALTER TABLE sale_items_new RENAME TO sale_items;
 
