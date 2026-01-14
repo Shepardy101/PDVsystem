@@ -12,6 +12,29 @@
 3. Handlers Express em `server/src/routes/*.ts` → repositórios específicos (POS, cash, reports, adminDb, etc.).
 4. Repositórios executam SQL no SQLite (`data/novabev.sqlite`) e retornam JSON.
 
+## UX keyboard-first / hotkeys
+- Modais e formulários priorizam atalhos: `Esc` fecha/cancela, `Enter` avança ou submete quando válido.
+- Campos de entrada recebem foco inicial (`autoFocus`/refs) e `Enter` move o foco para o próximo passo quando aplicável.
+- `Tab`/`Shift+Tab` seguem a ordem natural; listeners de teclado são limpos no fechamento para evitar vazamentos.
+- Ações principais exibem rótulos visíveis de atalho quando relevante (ex.: `[ENTER]`, `[I]`).
+
+### Mapa rápido de atalhos (modais principais)
+| Modal | Atalhos | Fluxo resumido |
+| --- | --- | --- |
+| POS → Pagamento (PaymentModal) | `1` cartão, `2` pix, `3` dinheiro, `Enter` confirma seleção, `/` entra multipagamento, `Esc` sai do multipagamento ou fecha modal, mini dinheiro: `Enter` confirma, `Esc` fecha | Modo simples: escolha pelo número e confirme com `Enter`; `/` ativa multipagamento (ciclo `Enter`: valor → método → adicionar → finalizar); `Esc` cancela multipagamento ou fecha o modal; mini-modal de dinheiro usa `Enter`/`Esc`. |
+| POS → Recibo | `Enter`, `I`, `Esc` | `Enter` finaliza/fecha; `I` imprime; `Esc` fecha. |
+| POS → Cliente (ClientModal) | `ArrowUp/ArrowDown`, `Enter`, `Esc` | Setas navegam; `Enter` seleciona e fecha; `Esc` fecha. |
+| Caixa → Suprimento | `Enter` sequencial, `Esc` | `Enter` avança montante → categoria → descrição → confirma; `Esc` fecha. |
+| Caixa → Pagamento (despesa) | `Enter` sequencial, `Esc` | `Enter` valor → categoria → descrição → confirma; `Esc` fecha. |
+| Caixa → Sangria | `Enter` sequencial, `Esc` | `Enter` valor → motivo → confirma; `Esc` fecha. |
+| Caixa → Fechamento (ClosingModal) | `Enter`, `Esc` | Sem resultado: `Enter` confirma fechamento; após resultado: `Enter` fecha; `Esc` fecha. |
+| Caixa → Abertura (OpeningModal) | `Enter`, `Esc` | `Enter` confirma; `Esc` fecha. |
+| Caixa → Desconto | `Enter`, `Esc` | `Enter` aplica; `Esc` fecha. |
+| Caixa → Subtotal | `Enter`, `Esc` | `Enter` confirma; `Esc` fecha. |
+| Permissão negada | `Enter`, `Esc` | Ambos fecham. |
+| Métricas | `Esc` | Fecha. |
+| Admin password | `Enter` (form padrão) | Apenas foco inicial; usa submit padrão do form. |
+
 ## Segurança e boundaries
 - IP whitelist obrigatória (ver `server/src/middleware/ipAccessControl.ts`).
 - Admin DB Manager guardado por `guardAdminDb` (em `server/src/services/adminDb.service.ts`): requer `ENABLE_DB_ADMIN=true` e IP localhost.
