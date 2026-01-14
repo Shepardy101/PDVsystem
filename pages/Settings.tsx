@@ -329,6 +329,7 @@ const Settings: React.FC = () => {
       );
       }
    const [logs, setLogs] = useState<UiLog[]>([]);
+   const [logLimit, setLogLimit] = useState<30 | 100 | 1000 | 'all'>(30);
    const [showDbManager, setShowDbManager] = useState(false);
    const [showPerformanceModal, setShowPerformanceModal] = useState(false);
    const [showLogsModal, setShowLogsModal] = useState(false);
@@ -368,7 +369,8 @@ const Settings: React.FC = () => {
       let active = true;
       const fetchLogs = async () => {
          try {
-            const res = await fetch('/api/logs?limit=30');
+            const query = logLimit === 'all' ? '' : `?limit=${logLimit}`;
+            const res = await fetch(`/api/logs${query}`);
             if (!res.ok) return;
             const data = await res.json();
             if (!active || !Array.isArray(data?.logs)) return;
@@ -403,7 +405,7 @@ const Settings: React.FC = () => {
          active = false;
          clearInterval(interval);
       };
-   }, []);
+   }, [logLimit]);
 
    const openLogsModal = () => {
       setShowLogsModal(true);
@@ -631,6 +633,17 @@ const Settings: React.FC = () => {
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   Live Packet Stream
                </span>
+               <div className="flex items-center gap-2">
+                  {[30, 100, 1000, 'all'].map(option => (
+                     <button
+                        key={option}
+                        onClick={(e) => { e.stopPropagation(); setLogLimit(option as 30 | 100 | 1000 | 'all'); sendTelemetry('logs', 'change-limit', { limit: option }); }}
+                        className={`px-2 py-1 rounded-full border text-[9px] tracking-[0.25em] ${logLimit === option ? 'border-accent text-accent bg-accent/10' : 'border-white/10 text-slate-500 hover:text-accent'}`}
+                     >
+                        {option === 'all' ? 'ALL' : option}
+                     </button>
+                  ))}
+               </div>
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10">
                {logs.map((log) => (
@@ -724,7 +737,19 @@ const Settings: React.FC = () => {
                         </p>
                         <p className="text-[11px] text-slate-400 font-mono">Clique em uma linha para expandir e ver o contexto completo</p>
                      </div>
-                     <Button size="sm" variant="secondary" onClick={closeLogsModal}>Fechar</Button>
+                     <div className="flex items-center gap-2">
+                        {[30, 100, 1000, 'all'].map(option => (
+                           <Button
+                              key={option}
+                              size="sm"
+                              variant={logLimit === option ? 'primary' : 'secondary'}
+                              onClick={() => { setLogLimit(option as 30 | 100 | 1000 | 'all'); sendTelemetry('logs', 'change-limit', { limit: option }); }}
+                           >
+                              {option === 'all' ? 'All' : `Últimas ${option}`}
+                           </Button>
+                        ))}
+                        <Button size="sm" variant="secondary" onClick={closeLogsModal}>Fechar</Button>
+                     </div>
                   </div>
                   <div className="p-4 overflow-auto max-h-[78vh] space-y-4">
                      {interactionCounts.length > 0 && (
