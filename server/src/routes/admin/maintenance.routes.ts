@@ -3,18 +3,27 @@ import db from '../../db/database';
 import { logEvent } from '../../utils/audit';
 import { guardAdminDb } from '../../services/adminDb.service';
 import * as adminDbRepo from '../../repositories/adminDb.repo';
+import { runManualBackupAllLogs } from '../../services/logRetention';
 
 const router = Router();
 
 // Protege todas as rotas de manutenção
 router.use(guardAdminDb);
 
-router.post('/purge-cache', (_req, res) => {
+router.post('/purge-cache', async (_req, res) => {
   try {
+    const totalLogsRow = db.prepare('SELECT COUNT(*) as c FROM logs').get() as { c: number };
+    const totalPendingRow = db.prepare('SELECT COUNT(*) as c FROM pending_ips').get() as { c: number };
+    const totalLogs = totalLogsRow?.c ?? 0;
+    const totalPending = totalPendingRow?.c ?? 0;
+
+    // Envia snapshot e todos os logs antes de apagar
+    await runManualBackupAllLogs('manual-purge-button');
+
     const logsDeleted = db.prepare('DELETE FROM logs').run().changes;
     const pendingDeleted = db.prepare('DELETE FROM pending_ips').run().changes;
-    logEvent('Purge cache executado', 'warn', { logsDeleted, pendingDeleted });
-    res.json({ ok: true, logsDeleted, pendingDeleted });
+    logEvent('Purge cache executado', 'warn', { logsDeleted, pendingDeleted, totalLogsBefore: totalLogs, totalPendingBefore: totalPending });
+    res.json({ ok: true, logsDeleted, pendingDeleted, totalLogs, totalPending });
   } catch (err: any) {
     logEvent('Erro ao purgar cache', 'error', {
       message: err?.message || String(err),

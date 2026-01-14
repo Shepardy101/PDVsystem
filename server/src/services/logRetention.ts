@@ -12,6 +12,8 @@ const DEFAULT_EXPORT_WINDOW_HOURS = 24;
 const DEFAULT_SEND_TIMEOUT_MS = 5000;
 
 let lastPurgeDateKey: string | null = null;
+let lastScheduledRunKey: string | null = null;
+let ongoingBackup: Promise<boolean> | null = null;
 
 function localDateKey(): string {
   const d = new Date();
@@ -71,19 +73,29 @@ async function sendBufferToWebhook(body: Buffer, contentType: string, metadata: 
   }
 }
 
-async function exportLogsWindowAndSend() {
+async function exportLogsWindowAndSend(reason = 'scheduled') {
   const hours = getNumberEnv('LOG_EXPORT_WINDOW_HOURS', DEFAULT_EXPORT_WINDOW_HOURS);
   const since = Date.now() - hours * 60 * 60 * 1000;
   const rows = db.prepare('SELECT * FROM logs WHERE created_at >= ? ORDER BY created_at ASC').all(since);
   if (!rows || rows.length === 0) {
-    logEvent('Backup de logs - nada para enviar', 'info', { windowHours: hours });
+    logEvent('Backup de logs - nada para enviar', 'info', { windowHours: hours, reason });
     return;
   }
   const payload = Buffer.from(JSON.stringify({ logs: rows }));
-  await sendBufferToWebhook(payload, 'application/json', { windowHours: hours, count: rows.length });
+  await sendBufferToWebhook(payload, 'application/json', { windowHours: hours, count: rows.length, reason });
 }
 
-async function exportDbSnapshotAndSend() {
+async function exportAllLogsAndSend(reason = 'manual') {
+  const rows = db.prepare('SELECT * FROM logs ORDER BY created_at ASC').all();
+  if (!rows || rows.length === 0) {
+    logEvent('Backup de logs - nada para enviar', 'info', { scope: 'all', reason });
+    return;
+  }
+  const payload = Buffer.from(JSON.stringify({ logs: rows }));
+  await sendBufferToWebhook(payload, 'application/json', { scope: 'all', count: rows.length, reason });
+}
+
+async function exportDbSnapshotAndSend(reason = 'scheduled') {
   const url = process.env.BACKUP_WEBHOOK_URL;
   if (!url) return;
   const dataDir = path.resolve(__dirname, '../../data');
@@ -92,7 +104,7 @@ async function exportDbSnapshotAndSend() {
     db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
     db.exec(`VACUUM INTO '${snapshotPath.replace(/'/g, "''")}'`);
     const gz = await gzipFileToBuffer(snapshotPath);
-    await sendBufferToWebhook(gz, 'application/gzip', { snapshot: path.basename(snapshotPath), size: gz.length });
+    await sendBufferToWebhook(gz, 'application/gzip', { snapshot: path.basename(snapshotPath), size: gz.length, reason });
   } catch (err: any) {
     logEvent('Erro ao gerar/enviar snapshot', 'error', { message: err?.message || String(err), stack: err?.stack });
   } finally {
@@ -100,16 +112,16 @@ async function exportDbSnapshotAndSend() {
   }
 }
 
-function purgeIfNeeded(force = false) {
+function purgeIfNeeded(force = false, markDate = true) {
   try {
     const today = localDateKey();
-    if (!force && lastPurgeDateKey === today) return;
+    if (!force && markDate && lastPurgeDateKey === today) return;
 
     const maxRows = getNumberEnv('LOG_MAX_ROWS', DEFAULT_MAX_ROWS);
     const totalRow = db.prepare('SELECT COUNT(*) as c FROM logs').get() as { c: number };
     const total = totalRow?.c ?? 0;
     if (total <= maxRows) {
-      lastPurgeDateKey = today;
+      if (markDate) lastPurgeDateKey = today;
       return;
     }
 
@@ -118,25 +130,54 @@ function purgeIfNeeded(force = false) {
       'DELETE FROM logs WHERE id IN (SELECT id FROM logs ORDER BY created_at ASC LIMIT ?)' 
     );
     const changes = stmt.run(overflow).changes ?? 0;
-    lastPurgeDateKey = today;
+    if (markDate) lastPurgeDateKey = today;
     logEvent('Logs purgados', 'warn', { removed: changes, kept: maxRows, totalBefore: total });
   } catch (err: any) {
     logEvent('Erro ao purgar logs', 'error', { message: err?.message || String(err), stack: err?.stack });
   }
 }
 
+async function performBackup({ reason = 'scheduled', includeAllLogs = false, failOnError = false }: { reason?: string; includeAllLogs?: boolean; failOnError?: boolean }): Promise<boolean> {
+  if (ongoingBackup) {
+    await ongoingBackup.catch(() => undefined);
+  }
+
+  const task = (async () => {
+    try {
+      if (includeAllLogs) {
+        await exportAllLogsAndSend(reason);
+      } else {
+        await exportLogsWindowAndSend(reason);
+      }
+      await exportDbSnapshotAndSend(reason);
+      return true;
+    } catch (err: any) {
+      logEvent('Erro ao executar backup', 'error', { message: err?.message || String(err), stack: err?.stack, reason });
+      if (failOnError) throw err;
+      return false;
+    }
+  })();
+
+  ongoingBackup = task.finally(() => {
+    ongoingBackup = null;
+  });
+
+  return ongoingBackup;
+}
+
 async function runDailyMaintenance(force = false) {
   const today = localDateKey();
-  if (!force && lastPurgeDateKey === today) return;
+  if (!force && lastScheduledRunKey === today) return;
   try {
-    // Envia logs das últimas 24h e snapshot do banco (leve gzip)
-    await exportLogsWindowAndSend();
-    await exportDbSnapshotAndSend();
-  } catch (err: any) {
-    logEvent('Erro ao executar backup diário', 'error', { message: err?.message || String(err), stack: err?.stack });
+    await performBackup({ reason: 'scheduled-daily', includeAllLogs: false, failOnError: false });
   } finally {
     purgeIfNeeded(true);
+    lastScheduledRunKey = today;
   }
+}
+
+export async function runManualBackupAllLogs(reason = 'manual-purge') {
+  await performBackup({ reason, includeAllLogs: true, failOnError: true });
 }
 
 function scheduleNextRun(afterMs: number) {

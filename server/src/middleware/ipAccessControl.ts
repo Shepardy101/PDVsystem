@@ -1,6 +1,7 @@
 // server/src/middleware/ipAccessControl.ts
 import db from '../db/database';
 import { Request, Response, NextFunction } from 'express';
+import { logEvent } from '../utils/audit';
 
 /**
  * Middleware para filtrar e registrar IPs de acesso.
@@ -41,6 +42,7 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
 
   // Registra tentativa se ainda não estiver em pending_ips
   const pending = db.prepare('SELECT 1 FROM pending_ips WHERE ip = ?').get(ip);
+  let pendingStatus: 'created' | 'updated' | 'existing' = 'existing';
 
   if (!pending) {
     try {
@@ -64,9 +66,28 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
         remotePort,
         httpVersion
       );
-      //console.log(`[IPAccess] IP PENDENTE registrado no banco: ${ip} (${hostname})`);
+      pendingStatus = 'created';
+      logEvent('IP pendente registrado', 'warn', {
+        ip,
+        hostname,
+        requestedPath,
+        requestMethod,
+        userAgent,
+        referer,
+        acceptLanguage,
+        acceptHeader,
+        acceptEncoding,
+        forwardedForRaw,
+        remotePort,
+        httpVersion
+      });
     } catch (err) {
-      console.error(`[IPAccess] ERRO ao registrar IP pendente: ${ip} (${hostname})`, err);
+      logEvent('Erro ao registrar IP pendente', 'error', {
+        ip,
+        hostname,
+        requestedPath,
+        message: (err as any)?.message || String(err)
+      });
     }
   } else {
     try {
@@ -99,14 +120,47 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
         httpVersion,
         ip
       );
-      //console.log(`[IPAccess] IP PENDENTE atualizado: ${ip} (${hostname})`);
+      pendingStatus = 'updated';
+      logEvent('IP pendente atualizado', 'warn', {
+        ip,
+        hostname,
+        requestedPath,
+        requestMethod,
+        userAgent,
+        referer,
+        acceptLanguage,
+        acceptHeader,
+        acceptEncoding,
+        forwardedForRaw,
+        remotePort,
+        httpVersion
+      });
     } catch (err) {
-      console.error(`[IPAccess] ERRO ao atualizar IP pendente: ${ip} (${hostname})`, err);
+      logEvent('Erro ao atualizar IP pendente', 'error', {
+        ip,
+        hostname,
+        requestedPath,
+        message: (err as any)?.message || String(err)
+      });
     }
   }
 
   // Bloqueia acesso
-  //console.log(`[IPAccess] BLOQUEADO: ${ip} (${hostname}) tentou acessar ${req.path}`);
+  logEvent('Acesso bloqueado por whitelist', 'warn', {
+    ip,
+    hostname,
+    requestedPath,
+    requestMethod,
+    userAgent,
+    pendingStatus,
+    referer,
+    acceptLanguage,
+    acceptHeader,
+    acceptEncoding,
+    forwardedForRaw,
+    remotePort,
+    httpVersion
+  });
   // Se for requisição de navegador (aceita html), retorna página amigável
   if (req.headers.accept && req.headers.accept.includes('text/html')) {
     return res.status(403).send(`
