@@ -402,7 +402,7 @@ const Settings: React.FC = () => {
               <Server size={14} className="text-accent" />
               <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Instance: US-EAST-01</span>
            </div>
-           <Button icon={<RefreshCcw size={18} />} disabled={!isManagerUser}>Reiniciar Kernel</Button>
+           <Button icon={<RefreshCcw size={18} />} disabled={!isManagerUser} onClick={() => window.location.reload()}>Reiniciar Kernel</Button>
         </div>
       </div>
 
