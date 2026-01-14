@@ -19,10 +19,13 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const amountRef = React.useRef<HTMLInputElement>(null);
+  const descriptionRef = React.useRef<HTMLInputElement>(null);
 
   const parsedAmount = parseFloat(amount.replace(',', '.')) || 0;
   const amountCents = Math.round(parsedAmount * 100);
   const exceedsCash = typeof availableCashCents === 'number' && amountCents > availableCashCents;
+  const isSubmitDisabled = loading || !amount || !category || !description || exceedsCash;
 
   // Reset estado ao abrir
   React.useEffect(() => {
@@ -32,6 +35,7 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
       setError('');
       setCategory(txCategories[0] || 'Sangria');
       telemetry?.('modal', 'open', { modal: 'sangria' });
+      setTimeout(() => amountRef.current?.focus(), 50);
     }
   }, [isOpen, txCategories, telemetry]);
 
@@ -89,10 +93,17 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
           icon={<DollarSign size={18} className="text-red-400" />}
           className="bg-dark-950/50 border-red-500/10 text-xl font-mono text-red-400"
           value={amount}
+          ref={amountRef}
           onChange={e => {
             const sanitized = e.target.value.replace(/[^0-9.,]/g, '');
             setAmount(sanitized);
             telemetry?.('sangria', 'change-amount', { value: sanitized });
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              descriptionRef.current?.focus();
+            }
           }}
         />
         {typeof availableCashCents === 'number' && (
@@ -114,15 +125,24 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
           icon={<MessageSquare size={16} className="text-slate-500" />}
           className="bg-dark-950/50"
           value={description}
+          ref={descriptionRef}
           onChange={e => {
             setDescription(e.target.value);
             telemetry?.('sangria', 'change-description');
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (!isSubmitDisabled) {
+                handleSubmit();
+              }
+            }
           }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
           <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Abortar</Button>
-          <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-red-500/10 bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20" icon={<Check size={18}/>} onClick={handleSubmit} disabled={loading || !amount || !category || !description || exceedsCash}>Executar Sangria</Button>
+          <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-red-500/10 bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20" icon={<Check size={18}/>} onClick={handleSubmit} disabled={isSubmitDisabled}>Executar Sangria</Button>
         </div>
       </div>
     </Modal>

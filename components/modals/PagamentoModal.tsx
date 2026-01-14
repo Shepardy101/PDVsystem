@@ -19,16 +19,21 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const amountRef = React.useRef<HTMLInputElement>(null);
+  const categoryRef = React.useRef<HTMLSelectElement>(null);
+  const descriptionRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (isOpen) {
       telemetry?.('modal', 'open', { modal: 'pagamento' });
+      setTimeout(() => amountRef.current?.focus(), 50);
     }
   }, [isOpen, telemetry]);
 
   const parsedAmount = parseFloat(amount.replace(',', '.')) || 0;
   const amountCents = Math.round(parsedAmount * 100);
   const exceedsLimit = typeof paymentLimitCents === 'number' && amountCents > paymentLimitCents;
+  const isSubmitDisabled = loading || !amount || !category || !description || exceedsLimit;
 
   const handleSubmit = async () => {
     setError('');
@@ -88,10 +93,17 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
           icon={<DollarSign size={18} className="text-amber-500" />}
           className="bg-dark-950/50 border-amber-500/10 text-xl font-mono text-amber-500"
           value={amount}
+          ref={amountRef}
           onChange={e => {
             const sanitized = e.target.value.replace(/[^0-9.,]/g, '');
             setAmount(sanitized);
             telemetry?.('pagamento', 'change-amount', { value: sanitized });
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              categoryRef.current?.focus();
+            }
           }}
         />
         {typeof paymentLimitCents === 'number' && (
@@ -100,7 +112,18 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
         <div className="space-y-2">
           <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Alocação / Categoria</label>
           <div className="flex gap-2">
-            <select className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all" value={category} onChange={e => setCategory(e.target.value)}>
+            <select
+              ref={categoryRef}
+              className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  descriptionRef.current?.focus();
+                }
+              }}
+            >
               {txCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <button type="button" onClick={() => { telemetry?.('pagamento', 'open-category-modal'); onCategoryModalOpen(); }} className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 hover:bg-amber-500/20 transition-all">
@@ -114,15 +137,24 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
           icon={<MessageSquare size={16} className="text-slate-500" />}
           className="bg-dark-950/50"
           value={description}
+          ref={descriptionRef}
           onChange={e => {
             setDescription(e.target.value);
             telemetry?.('pagamento', 'change-description');
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (!isSubmitDisabled) {
+                handleSubmit();
+              }
+            }
           }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
           <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Cancelar</Button>
-          <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-amber-500/10 bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20" icon={<CreditCard size={18}/>} onClick={handleSubmit} disabled={loading || !amount || !category || !description || exceedsLimit}>Efetuar Pagamento</Button>
+          <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-amber-500/10 bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20" icon={<CreditCard size={18}/>} onClick={handleSubmit} disabled={isSubmitDisabled}>Efetuar Pagamento</Button>
         </div>
       </div>
     </Modal>
