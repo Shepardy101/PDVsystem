@@ -2,6 +2,7 @@
 import { Router, Request, Response } from 'express';
 import { addPagamentoMovement, openCashSession, getOpenCashSession, closeCashSession, addSuprimentoMovement, addSangriaMovement } from '../repositories/cash.repo.js';
 import db from '../db/database.js';
+import { logEvent } from '../utils/audit';
 
 
 export const cashRouter = Router();
@@ -63,6 +64,14 @@ cashRouter.post('/pagamento', (req: Request, res: Response) => {
       if (!opId) opId = session.operator_id;
     }
     const movement = addPagamentoMovement({ amount, category, description, operatorId: opId, cashSessionId: sessionId });
+    logEvent('Pagamento registrado', 'info', {
+      movementId: movement.id,
+      cashSessionId: sessionId,
+      operatorId: opId,
+      amountCents: movement.amount,
+      category,
+      description,
+    });
     res.status(201).json(movement);
   } catch (err) {
     const error = err as Error;
@@ -92,6 +101,14 @@ cashRouter.post('/sangria', async (req: Request, res: Response) => {
       description,
       operatorId: opId,
       cashSessionId: sessionId
+    });
+    logEvent('Sangria registrada', 'info', {
+      movementId: tx.id,
+      cashSessionId: sessionId,
+      operatorId: opId,
+      amountCents: tx.amount,
+      category,
+      description,
     });
     res.status(201).json({ transaction: tx });
   } catch (err) {
@@ -141,6 +158,14 @@ cashRouter.post('/suprimento', async (req, res) => {
       operatorId: opId,
       cashSessionId: sessionId
     });
+    logEvent('Suprimento registrado', 'info', {
+      movementId: tx.id,
+      cashSessionId: sessionId,
+      operatorId: opId,
+      amountCents: tx.amount,
+      category,
+      description,
+    });
     res.status(201).json({ transaction: tx });
   } catch (err) {
     const error = err as Error;
@@ -158,6 +183,18 @@ cashRouter.post('/close', (req, res) => {
       return res.status(400).json({ error: 'sessionId e physicalCount obrigatórios' });
     }
     const result = closeCashSession(sessionId, physicalCount);
+    logEvent('Caixa fechado', 'info', {
+      sessionId,
+      operatorId: result.operatorId,
+      physicalCount,
+      difference: result.difference,
+      totals: {
+        vendas: result.totalVendas,
+        vendasCash: result.totalVendasCash,
+        sangrias: result.totalSangrias,
+        suprimentos: result.totalSuprimentos,
+      },
+    });
     res.status(200).json({ closeResult: result });
   } catch (err: any) {
     console.error('[CASH] Erro ao fechar caixa:', err);
@@ -173,6 +210,12 @@ cashRouter.post('/open', (req, res) => {
     const { operatorId, initialBalance, userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId obrigatório para abrir caixa.' });
     const session = openCashSession(operatorId, initialBalance, userId);
+    logEvent('Caixa aberto', 'info', {
+      sessionId: session.id,
+      operatorId,
+      userId,
+      initialBalanceCents: session.initial_balance,
+    });
     console.log('[CASH] Sessão criada:', session);
     res.status(201).json({ session });
   } catch (err: any) {

@@ -10,6 +10,7 @@ import { cashHistoryRouter } from './routes/cash.history.routes';
 import { categoryRouter } from './routes/category.routes';
 import { userRouter } from './routes/user.routes';
 import { clientRouter } from './routes/user.routes';
+import logsRouter from './routes/logs.routes';
 
 import supplierRouter from './routes/supplier.routes';
 import reportRouter from './routes/report.routes';
@@ -58,6 +59,7 @@ app.use('/api/products', productRouter);
 app.use('/api/users', userRouter);
 app.use('/api/clients', clientRouter);
 app.use('/api/suppliers', supplierRouter);
+app.use('/api/logs', logsRouter);
 
 
 

@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { finalizeSale } from '../repositories/pos.repo';
 import db from '../db/database.js';
+import { logEvent } from '../utils/audit';
 
 export const posRouter = Router();
 
@@ -35,6 +36,17 @@ posRouter.post('/finalizeSale', (req, res) => {
     console.log('[POST /api/pos/finalizeSale] Payload recebido:', req.body);
     const saleId = finalizeSale(req.body);
     console.log('[POST /api/pos/finalizeSale] Venda registrada com sucesso:', saleId);
+    logEvent('Venda finalizada', 'info', {
+      saleId,
+      cashSessionId: req.body.cashSessionId,
+      operatorId: req.body.operatorId,
+      total: req.body.total,
+      subtotal: req.body.subtotal,
+      discountTotal: req.body.discountTotal,
+      itemsCount: Array.isArray(req.body.items) ? req.body.items.length : 0,
+      paymentsCount: Array.isArray(req.body.payments) ? req.body.payments.length : 0,
+      clientId: req.body.clientId || null,
+    });
     res.status(201).json({ saleId });
   } catch (err: any) {
     console.error('[POST /api/pos/finalizeSale] Erro ao registrar venda:', err);

@@ -18,12 +18,19 @@ const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({ isOpen, onClose
     setError('');
     try {
       const res = await fetch('/api/settings/admin_password');
+      if (!res.ok) {
+        const body = await res.text();
+        console.error('[AdminPasswordModal] Erro API admin_password', res.status, body);
+        setError('Erro ao validar senha.');
+        return;
+      }
       const data = await res.json();
       if (data.value === password) {
         onSuccess();
         setPassword('');
         onClose();
       } else {
+        console.warn('[AdminPasswordModal] Senha incorreta. Valor API:', data.value);
         setError('Senha incorreta. Tente novamente.');
       }
     } catch {

@@ -11,6 +11,7 @@ import {
   deleteProduct,
   deleteAllProducts
 } from '../repositories/product.repo';
+import { logEvent } from '../utils/audit';
 
 export const productRouter = Router();
 
@@ -62,6 +63,7 @@ productRouter.post('/delete-image', async (req, res) => {
     }
     // Limpa campo imageUrl no banco
     updateProduct(productId, { imageUrl: '' });
+    logEvent('Imagem de produto removida', 'info', { productId, imageUrl });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao remover imagem.' });
@@ -100,6 +102,7 @@ productRouter.post('/upload-image', upload.single('image'), (req, res) => {
 productRouter.delete('/', (_req, res) => {
   try {
     deleteAllProducts();
+    logEvent('Todos os produtos removidos', 'warn');
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao deletar todos os produtos.' } });
@@ -152,6 +155,7 @@ productRouter.post('/', (req, res) => {
       type: req.body.type || 'product',
     });
     console.log('[POST /api/products] Produto criado com sucesso:', product);
+    logEvent('Produto criado', 'info', { productId: product.id, name: product.name, ean: product.ean, internalCode: product.internal_code });
     emitProductEvent('created', product);
     res.status(201).json({ product });
   } catch (err) {
@@ -181,6 +185,7 @@ productRouter.put('/:id', (req, res) => {
       ...req.body,
       type: req.body.type,
     });
+    logEvent('Produto atualizado', 'info', { productId: product.id, name: product.name, ean: product.ean, internalCode: product.internal_code });
     emitProductEvent('updated', product);
     res.json({ product });
   } catch (err) {
@@ -209,6 +214,7 @@ productRouter.delete('/:id', (req, res) => {
   const { id } = req.params;
   try {
     deleteProduct(id);
+    logEvent('Produto deletado', 'warn', { productId: id });
     emitProductEvent('deleted', { id });
     res.status(204).end();
   } catch (err) {

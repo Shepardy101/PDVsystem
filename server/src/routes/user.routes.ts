@@ -5,6 +5,7 @@ import { createUser, listUsers, updateUser, deleteUser, findUserByEmail } from '
 import { createClient, listClients, updateClient, deleteClient } from '../repositories/client.repo';
 import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '../repositories/supplier.repo';
 import db from '../db/database';
+import { logEvent } from '../utils/audit';
 
 export const userRouter = Router();
 export const clientRouter = Router();
@@ -40,14 +41,17 @@ userRouter.post('/login', async (req, res) => {
     }
     if (!user || user.password !== password) {
       console.log('[LOGIN] Falha na autenticação.');
+      logEvent('Login falhou', 'warn', { email, reason: 'invalid_credentials' });
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
     if (user.status && user.status.toLowerCase() === 'inactive') {
       console.warn('[LOGIN] Tentativa de login com usuário inativo:', email);
+      logEvent('Login bloqueado - usuário inativo', 'warn', { email, userId: user.id });
       return res.status(403).json({ error: 'USER_INACTIVE', message: 'Usuário inativo. Contate o administrador.' });
     }
     // Retorna dados básicos do usuário
     console.log('[LOGIN] Autenticação bem-sucedida para:', email);
+    logEvent('Login bem-sucedido', 'info', { userId: user.id, email, role: user.role, status: user.status });
     res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
   } catch (e: any) {
     res.status(500).json({ error: 'Erro ao autenticar', details: e?.message || String(e) });
@@ -63,6 +67,7 @@ userRouter.put('/:id', async (req, res) => {
     }
     const ok = await updateUser(id, { name, email, role, status });
     if (ok) {
+      logEvent('Usuário atualizado', 'info', { userId: id, name, email, role, status });
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Usuário não encontrado' });
@@ -92,6 +97,7 @@ userRouter.post('/', async (req, res) => {
     }
     const user = await createUser({ name, email, role, status, password });
     console.log('[POST /api/users] Usuário criado:', user);
+    logEvent('Usuário criado', 'info', { userId: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
     res.status(201).json(user);
   } catch (e: any) {
     console.error('[POST /api/users] Erro ao criar usuário:', e);
@@ -104,6 +110,7 @@ userRouter.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const ok = await deleteUser(id);
     if (ok) {
+      logEvent('Usuário deletado', 'warn', { userId: id });
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Usuário não encontrado' });
@@ -132,6 +139,7 @@ clientRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
     }
     const client = await createClient({ name, cpf, address, phone, email });
+    logEvent('Cliente criado', 'info', { clientId: client.id, name: client.name, cpf: client.cpf });
     res.status(201).json(client);
   } catch (e: any) {
     res.status(500).json({ error: 'Erro ao criar cliente', details: e && e.message ? e.message : e });
@@ -147,6 +155,7 @@ clientRouter.put('/:id', async (req, res) => {
     }
     const ok = await updateClient(id, { name, cpf, address, phone, email });
     if (ok) {
+      logEvent('Cliente atualizado', 'info', { clientId: id, name, cpf, email, phone });
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Cliente não encontrado' });
@@ -161,6 +170,7 @@ clientRouter.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const ok = await deleteClient(id);
     if (ok) {
+      logEvent('Cliente deletado', 'warn', { clientId: id });
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Cliente não encontrado' });
@@ -187,6 +197,7 @@ supplierRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
     }
     const supplier = await createSupplier({ name, cnpj, address, phone, email, category });
+    logEvent('Fornecedor criado', 'info', { supplierId: supplier.id, name: supplier.name, cnpj: supplier.cnpj });
     res.status(201).json(supplier);
   } catch (e: any) {
     res.status(500).json({ error: 'Erro ao criar fornecedor', details: e && e.message ? e.message : e });
@@ -202,6 +213,7 @@ supplierRouter.put('/:id', async (req, res) => {
     }
     const ok = await updateSupplier(id, { name, cnpj, address, phone, email, category });
     if (ok) {
+      logEvent('Fornecedor atualizado', 'info', { supplierId: id, name, cnpj, email, phone, category });
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Fornecedor não encontrado' });
@@ -216,6 +228,7 @@ supplierRouter.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const ok = await deleteSupplier(id);
     if (ok) {
+      logEvent('Fornecedor deletado', 'warn', { supplierId: id });
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Fornecedor não encontrado' });

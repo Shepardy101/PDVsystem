@@ -2,7 +2,8 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const dbDir = path.join(__dirname, '../../../../data');
+// Usa a raiz do projeto (cwd) para alinhar com database.ts
+const dbDir = path.join(process.cwd(), 'data');
 const dbPath = path.join(dbDir, 'novabev.sqlite');
 const migrationsDir = path.join(__dirname, 'migrations');
 

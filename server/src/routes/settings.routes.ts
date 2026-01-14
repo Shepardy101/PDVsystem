@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getSetting, setSetting, getAllSettings } from '../repositories/settings.repo';
+import { logEvent } from '../utils/audit';
 
 const settingsRouter = Router();
 
@@ -35,6 +36,7 @@ settingsRouter.put('/:key', async (req, res) => {
       }
     }
     await setSetting(req.params.key, value);
+    logEvent('Configuração atualizada', 'info', { key: req.params.key });
     res.json({ key: req.params.key, value });
   } catch (e) {
     res.status(500).json({ error: 'Erro ao atualizar configuração', details: e });

@@ -6,6 +6,7 @@ import {
   deleteCategory,
   updateCategory
 } from '../repositories/category.repo';
+import { logEvent } from '../utils/audit';
 
 export const categoryRouter = Router();
 
@@ -22,6 +23,7 @@ categoryRouter.post('/', (req, res) => {
   try {
     const { name } = req.body;
     const category = createCategory(name);
+    logEvent('Categoria criada', 'info', { categoryId: category.id, name: category.name });
     res.status(201).json({ category });
   } catch (err: any) {
     if (err.code === 'DUPLICATE') {
@@ -37,6 +39,7 @@ categoryRouter.post('/', (req, res) => {
 categoryRouter.delete('/:id', (req, res) => {
   try {
     deleteCategory(req.params.id);
+    logEvent('Categoria deletada', 'warn', { categoryId: req.params.id });
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao deletar categoria.' } });
@@ -46,6 +49,7 @@ categoryRouter.delete('/:id', (req, res) => {
 categoryRouter.put('/:id', (req, res) => {
   try {
     updateCategory(req.params.id, req.body.name);
+    logEvent('Categoria atualizada', 'info', { categoryId: req.params.id, name: req.body.name });
     res.status(200).end();
   } catch (err) {
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao atualizar categoria.' } });
