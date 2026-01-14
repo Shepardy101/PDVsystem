@@ -29,6 +29,11 @@
 - `PORT` (default 8787).
 - `DB_PATH` (default `data/novabev.sqlite`).
 - `ENABLE_DB_ADMIN` (habilita `/api/admin-db`; requer localhost).
+- `PERF_LOG_ENABLED` (default `true`; desliga logger periódico de performance se `false`).
+- `PERF_LOG_INTERVAL_MS` (intervalo do logger de performance; default 60000 ms, mínimo 5000 ms).
+- `BACKUP_WEBHOOK_URL` / `BACKUP_WEBHOOK_TOKEN` (webhook opcional para envio de backups de logs/DB; token é Bearer opcional).
+- `LOG_EXPORT_WINDOW_HOURS` (janela de exportação de logs para webhook; default 24h).
+- `BACKUP_SEND_TIMEOUT_MS` (timeout para POST do webhook; default 5000 ms).
 
 ## Banco de Dados
 - Local: `data/novabev.sqlite`; WAL/SHM gerados automaticamente.
