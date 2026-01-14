@@ -17,6 +17,7 @@ import reportRouter from './routes/report.routes';
 import reportsRouter from './routes/reports.routes';
 import settingsRouter from './routes/settings.routes';
 import sysRouter from './routes/sys';
+import telemetryRouter from './routes/telemetry.routes';
 import ipControlRouter from './routes/admin/ipControl.routes';
 import maintenanceRouter from './routes/admin/maintenance.routes';
 import { scheduleLogRetention } from './services/logRetention';
@@ -63,6 +64,7 @@ app.use('/api/users', userRouter);
 app.use('/api/clients', clientRouter);
 app.use('/api/suppliers', supplierRouter);
 app.use('/api/logs', logsRouter);
+app.use('/api/telemetry', telemetryRouter);
 
 
 

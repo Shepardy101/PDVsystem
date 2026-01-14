@@ -15,6 +15,7 @@ import OpeningModal from '../components/modals/OpeningModal';
 import SubtotalModal from '../components/modals/SubtotalModal';
 import AdminPasswordModal from '../components/AdminPasswordModal';
 import { calculateCashBalanceCents } from '../utils/calculateCashBalance';
+import { logUiEvent } from '../services/telemetry';
 
 import IpBlocked from '../components/IpBlocked';
 import { isOperator } from '../types';
@@ -64,6 +65,9 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    // Cash session state
    const [cashSessionId, setCashSessionId] = useState<string | null>(null);
    const { user } = useAuth();
+   const sendTelemetry = useCallback((area: string, action: string, meta?: Record<string, any>) => {
+      logUiEvent({ userId: user?.id ?? null, page: 'pos', area, action, meta });
+   }, [user?.id]);
    const [operatorId, setOperatorId] = useState<string>('');
    const [isLoadingSession, setIsLoadingSession] = useState(true);
    const [availableCashCents, setAvailableCashCents] = useState<number | null>(null);
@@ -83,14 +87,6 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    // Admin password modal state
    const [showAdminPasswordModal, setShowAdminPasswordModal] = useState<string | false>("");
-   const handleAdminPasswordSuccess = useCallback(() => {
-      if (showAdminPasswordModal === 'discount') {
-         setIsDiscountModalOpen(true);
-      } else if (showAdminPasswordModal === 'subtotal') {
-         setIsSubtotalModalOpen(true);
-      }
-      setShowAdminPasswordModal(false);
-   }, [showAdminPasswordModal]);
 
    const inputRef = useAutoFocus<HTMLInputElement>();
    const searchRef = useRef<HTMLDivElement>(null);
@@ -105,6 +101,57 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    // Configuração: permitir estoque negativo
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
    const isFinalizingRef = useRef(false);
+
+   // Helpers para abrir/fechar modais com telemetria
+   const openCashOpeningModal = (trigger?: string) => {
+      sendTelemetry('cash', 'open-modal', trigger ? { trigger } : undefined);
+      setIsOpeningModalOpen(true);
+   };
+
+   const openCashClosingModal = (trigger?: string) => {
+      sendTelemetry('cash', 'open-close-modal', trigger ? { trigger } : undefined);
+      setIsClosingModalOpen(true);
+   };
+
+   const openDiscountModal = (trigger: string) => {
+      sendTelemetry('discount', 'open', { trigger });
+      setIsDiscountModalOpen(true);
+   };
+
+   const closeDiscountModal = () => {
+      sendTelemetry('discount', 'close');
+      setIsDiscountModalOpen(false);
+   };
+
+   const openSubtotalModal = (trigger: string) => {
+      sendTelemetry('subtotal', 'open', { trigger });
+      setIsSubtotalModalOpen(true);
+   };
+
+   const closeSubtotalModal = () => {
+      sendTelemetry('subtotal', 'close');
+      setIsSubtotalModalOpen(false);
+   };
+
+   const openClientModal = (trigger: string) => {
+      sendTelemetry('client', 'open-modal', { trigger });
+      setIsClientModalOpen(true);
+   };
+
+   const closeClientModal = () => {
+      sendTelemetry('client', 'close-modal');
+      setIsClientModalOpen(false);
+   };
+
+   const handleAdminPasswordSuccess = useCallback(() => {
+      if (showAdminPasswordModal === 'discount') {
+         openDiscountModal('admin-approved');
+      } else if (showAdminPasswordModal === 'subtotal') {
+         openSubtotalModal('admin-approved');
+      }
+      sendTelemetry('admin-password', 'approved', { reason: showAdminPasswordModal });
+      setShowAdminPasswordModal(false);
+   }, [showAdminPasswordModal, openDiscountModal, openSubtotalModal, sendTelemetry]);
 
 
 
@@ -143,6 +190,10 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       }).catch(() => {});
    }, [user]);
 
+   useEffect(() => {
+      sendTelemetry('page', 'view');
+   }, [sendTelemetry]);
+
    if (ipBlocked) {
       return <IpBlocked ip={ipBlocked.ip} hostname={ipBlocked.hostname} />;
    }
@@ -156,7 +207,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       const handleKeyDown = (e: KeyboardEvent) => {
          if ((e.key === 'Enter' || e.key === ' ') && !cashSessionId && !isOpeningModalOpen && !isClosingModalOpen) {
             e.preventDefault();
-            setIsOpeningModalOpen(true);
+            openCashOpeningModal('shortcut-enter-space');
          }
          if (e.key === 'Escape' && isOpeningModalOpen) {
             e.preventDefault();
@@ -169,6 +220,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
    // Função para limpar o carrinho e focar no input
    const handleClearCart = () => {
+      sendTelemetry('cart', 'clear');
       setCart([]);
       setSelectedClient(null);
       setTimeout(() => {
@@ -213,17 +265,48 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       }
    }, [operatorId]);
 
+   const attemptOpenCash = async (initialValue: number, trigger?: string) => {
+      sendTelemetry('cash', 'open-attempt', { initialBalance: initialValue, trigger });
+      try {
+         const res = await fetch('/api/cash/open', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ operatorId: operatorId || 'operador-1', userId: operatorId || 'operador-1', initialBalance: initialValue })
+         });
+         if (!res.ok) throw new Error('Erro ao abrir caixa');
+         const check = await fetch(`/api/cash/open?userId=${operatorId || 'operador-1'}`);
+         const data = await check.json();
+         if (data && data.session && data.session.id) {
+            onOpenCash(initialValue);
+            setIsOpeningModalOpen(false);
+            setCashSessionId(data.session.id);
+            sendTelemetry('cash', 'open-success', { sessionId: data.session.id, initialBalance: initialValue, trigger });
+         } else {
+            throw new Error('Sessão de caixa não foi aberta.');
+         }
+      } catch (err) {
+         sendTelemetry('cash', 'open-fail', { message: err instanceof Error ? err.message : 'erro desconhecido', trigger });
+         alert('Erro ao abrir caixa. Tente novamente.');
+      }
+   };
+
    // Funções auxiliares para controle do PaymentModal
-   const openPaymentModal = () => {
+   const openPaymentModal = (trigger?: string) => {
       refreshAvailableCash();
+      sendTelemetry('payment', 'open-modal', { cartItems: cart.length, total: effectiveTotal, trigger });
       setIsPaymentModalOpen(true);
    };
    const closePaymentModal = () => {
+      sendTelemetry('payment', 'close-modal');
       setIsPaymentModalOpen(false);
       setMultiMode(false);
    };
    const toggleMultiMode = () => {
-      setMultiMode(prev => !prev);
+      setMultiMode(prev => {
+         const next = !prev;
+         sendTelemetry('payment', 'toggle-multi', { enabled: next });
+         return next;
+      });
    };
 
 
@@ -360,6 +443,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          ) return;
          if (e.key === ' ') {
             e.preventDefault();
+               sendTelemetry('shortcut', 'focus-search', { key: 'space' });
             inputRef.current?.focus();
          }
       };
@@ -371,7 +455,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       isClientModalOpen,
       isOpeningModalOpen,
       isClosingModalOpen,
-      isSubtotalModalOpen
+      isSubtotalModalOpen,
+      sendTelemetry
    ]);
 
    // Handler para TAB no input de pesquisa
@@ -389,6 +474,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             const targetItem = cart.find(i => i.product.id === lastAddedProductId) || fallbackLast;
             setEditingQty(true);
             setTempQty(targetItem.quantity.toString());
+            sendTelemetry('shortcut', 'edit-quantity-tab', { productId: targetItem.product.id });
             setTimeout(() => {
                lastQtyInputRef.current?.focus();
                lastQtyInputRef.current?.select();
@@ -397,7 +483,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       };
       window.addEventListener('keydown', handleTab);
       return () => window.removeEventListener('keydown', handleTab);
-   }, [cart, searchTerm, editingQty, lastAddedProductId]);
+   }, [cart, searchTerm, editingQty, lastAddedProductId, sendTelemetry]);
 
 
 
@@ -405,8 +491,9 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
    const handlePrint = useCallback(() => {
+      sendTelemetry('receipt', 'print');
       window.print();
-   }, []);
+   }, [sendTelemetry]);
 
 
 
@@ -440,6 +527,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          amount: p.amount,
          metadataJson: p.metadata ? JSON.stringify(p.metadata) : null
       }));
+      const totalCents = Math.round(effectiveTotal * 100);
       const payload = {
          operatorId,
          cashSessionId,
@@ -447,9 +535,10 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          payments: paymentsPayload,
          subtotal: Math.round(effectiveSubtotal * 100),
          discountTotal: Math.round((autoDiscountsTotal + manualDiscount) * 100),
-         total: Math.round(effectiveTotal * 100),
+         total: totalCents,
          clientId: selectedClient ? selectedClient.id : null
       };
+      sendTelemetry('payment', 'finalize-start', { items: items.length, totalCents, payments: paymentsPayload.map(p => p.method), clientId: payload.clientId });
       try {
          const res = await fetch('/api/pos/finalizeSale', {
             method: 'POST',
@@ -465,21 +554,25 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             clientCpf = selectedClient.cpf;
          }
          setLastSaleData({ ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf });
+         sendTelemetry('payment', 'finalize-success', { saleId, totalCents, items: items.length, payments: paymentsPayload.map(p => p.method), clientId: payload.clientId });
          console.log('-----', { ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf })
          setIsPaymentModalOpen(false);
+         sendTelemetry('receipt', 'open', { saleId });
          setIsReceiptModalOpen(true);
          setSelectedClient(null);
          refreshAvailableCash();
       } catch (err) {
+         sendTelemetry('payment', 'finalize-error', { message: err instanceof Error ? err.message : 'Erro desconhecido' });
          alert('Erro ao registrar venda. Tente novamente.');
       } finally {
          isFinalizingRef.current = false;
       }
-   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient, refreshAvailableCash]);
+   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient, refreshAvailableCash, sendTelemetry]);
 
    const applyManualDiscount = () => {
       setManualDiscount(parseFloat(tempDiscount) || 0);
-      setIsDiscountModalOpen(false);
+      sendTelemetry('discount', 'apply-manual', { value: parseFloat(tempDiscount) || 0 });
+      closeDiscountModal();
       setTimeout(() => inputRef.current?.focus(), 10);
    };
 
@@ -503,10 +596,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          if (e.ctrlKey && e.key.toLowerCase() === 'd') {
             if (cart && cart.length > 0) {
                e.preventDefault();
+               sendTelemetry('shortcut', 'discount-modal', { key: 'ctrl+d', requireAdmin: isOperator(user) });
                if (isOperator(user)) {
                   setShowAdminPasswordModal('discount');
+                  sendTelemetry('discount', 'require-admin', { trigger: 'shortcut-ctrl-d' });
                } else {
-                  setIsDiscountModalOpen(true);
+                  openDiscountModal('shortcut-ctrl-d');
                }
                return;
             }
@@ -516,10 +611,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          if (e.ctrlKey && e.key.toLowerCase() === 's') {
             if (cart && cart.length > 0) {
                e.preventDefault();
+               sendTelemetry('shortcut', 'subtotal-modal', { key: 'ctrl+s', requireAdmin: isOperator(user) });
                if (isOperator(user)) {
                   setShowAdminPasswordModal('subtotal');
+                  sendTelemetry('subtotal', 'require-admin', { trigger: 'shortcut-ctrl-s' });
                } else {
-                  setIsSubtotalModalOpen(true);
+                  openSubtotalModal('shortcut-ctrl-s');
                }
                return;
             }
@@ -536,7 +633,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          // Atalho para abrir modal de cliente
          if (isPaymentModalOpen && e.key.toLowerCase() === 'c') {
             console.log('[POS] Abrindo modal de cliente via tecla c');
-            setIsClientModalOpen(true);
+            sendTelemetry('shortcut', 'client-modal', { key: 'c' });
+            openClientModal('shortcut-c');
             return;
          }
 
@@ -557,13 +655,15 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             if (hasActiveSearch) return;
             if (cart.length === 0) return;
             e.preventDefault();
-            openPaymentModal();
+            sendTelemetry('shortcut', 'open-payment', { key: 'Enter' });
+            openPaymentModal('shortcut-enter');
             return;
          }
 
          // Alternar modo multi pagamento (caso exista)
          if (e.key === 'm' && isPaymentModalOpen) {
             e.preventDefault();
+            sendTelemetry('shortcut', 'toggle-multi', { key: 'm' });
             toggleMultiMode();
             return;
          }
@@ -571,6 +671,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          // Escape fecha modal
          if (e.key === 'Escape' && isPaymentModalOpen) {
             e.preventDefault();
+            sendTelemetry('shortcut', 'close-payment', { key: 'Escape' });
             closePaymentModal();
             return;
          }
@@ -593,7 +694,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       isClosingModalOpen,
       cart.length,
       searchResults.length,
-      searchTerm
+      searchTerm,
+      sendTelemetry,
+      openClientModal,
+      openDiscountModal,
+      openSubtotalModal,
+      user
    ]);
 
 
@@ -683,6 +789,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    }, [searchResults]);
 
    const addToCart = (product: Product) => {
+      sendTelemetry('cart', 'add-item', { productId: product.id, name: product.name, salePrice: product.salePrice });
       setCart(prev => {
          const existing = prev.find(item => item.product.id === product.id);
          const discount = product.autoDiscount || 0;
@@ -717,6 +824,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    };
 
    const updateQuantity = (productId: string, delta: number) => {
+      let nextQty: number | null = null;
       setCart(prev => prev.map(item => {
          if (item.product.id === productId) {
             let desired = Math.max(1, item.quantity + delta);
@@ -728,14 +836,19 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                }
             }
             const newQty = desired;
+            nextQty = newQty;
             return { ...item, quantity: newQty };
          }
          return item;
       }));
+      if (nextQty !== null) {
+         sendTelemetry('cart', 'update-qty', { productId, delta, quantity: nextQty });
+      }
    };
 
    // Atualiza quantidade manualmente (input)
    const setQuantity = (productId: string, qty: number) => {
+      let appliedQty: number | null = null;
       setCart(prev => prev.map(item => {
          if (item.product.id === productId) {
             let desired = Math.max(1, qty);
@@ -746,13 +859,18 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                   triggerNotification('Estoque insuficiente', 'Quantidade excede o estoque disponível');
                }
             }
+            appliedQty = desired;
             return { ...item, quantity: desired };
          }
          return item;
       }));
+      if (appliedQty !== null) {
+         sendTelemetry('cart', 'set-qty', { productId, quantity: appliedQty });
+      }
    };
 
    const removeFromCart = (productId: string) => {
+      sendTelemetry('cart', 'remove-item', { productId });
       setCart(prev => prev.filter(item => item.product.id !== productId));
    };
 
@@ -802,7 +920,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
                   <div className="flex flex-col items-center gap-2">
                     <Button
-                      onClick={() => setIsOpeningModalOpen(true)}
+                                 onClick={() => openCashOpeningModal('button-open-terminal')}
                       size="lg"
                       className="px-12 py-5 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow"
                       icon={<Unlock size={18} />}
@@ -849,26 +967,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                            onKeyDown={async (e) => {
                               if (e.key === 'Enter') {
                                     const value = parseFloat(initialBalance.replace(',', '.')) || 0;
-                                    try {
-                                       const res = await fetch('/api/cash/open', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ operatorId: operatorId || 'operador-1', userId: operatorId || 'operador-1', initialBalance: value })
-                                       });
-                                       if (!res.ok) throw new Error('Erro ao abrir caixa');
-                                       // Confirma se a sessão foi realmente aberta
-                                       const check = await fetch(`/api/cash/open?userId=${operatorId || 'operador-1'}`);
-                                       const data = await check.json();
-                                       if (data && data.session && data.session.id) {
-                                          onOpenCash(value); // Só libera o PDV se o backend confirmou
-                                          setIsOpeningModalOpen(false);
-                                          setCashSessionId(data.session.id); // Atualiza o estado para mostrar o terminal imediatamente
-                                       } else {
-                                          throw new Error('Sessão de caixa não foi aberta.');
-                                       }
-                                    } catch (err) {
-                                       alert('Erro ao abrir caixa. Tente novamente.');
-                                    }
+                                    await attemptOpenCash(value, 'enter-open-modal');
                               }
                            }}
                         />
@@ -876,26 +975,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                         <Button
                            onClick={async () => {
                               const value = parseFloat(initialBalance) || 0;
-                              try {
-                                 const res = await fetch('/api/cash/open', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ operatorId: operatorId || 'operador-1', userId: operatorId || 'operador-1', initialBalance: value })
-                                 });
-                                 if (!res.ok) throw new Error('Erro ao abrir caixa');
-                                 // Confirma se a sessão foi realmente aberta
-                                 const check = await fetch(`/api/cash/open?userId=${operatorId || 'operador-1'}`);
-                                 const data = await check.json();
-                                 if (data && data.session && data.session.id) {
-                                    onOpenCash(value); // Só libera o PDV se o backend confirmou
-                                    setIsOpeningModalOpen(false);
-                                    setCashSessionId(data.session.id); // Atualiza o estado para mostrar o terminal imediatamente
-                                 } else {
-                                    throw new Error('Sessão de caixa não foi aberta.');
-                                 }
-                              } catch (err) {
-                                 alert('Erro ao abrir caixa. Tente novamente.');
-                              }
+                              await attemptOpenCash(value, 'button-open-modal');
                            }}
                            className="w-full py-5 text-xs font-bold tracking-[0.2em] uppercase shadow-accent-glow"
                         >
@@ -995,7 +1075,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                  </h2>
                  <div className="flex items-center gap-3">
                    <button
-                     onClick={() => setIsClosingModalOpen(true)}
+                               onClick={() => openCashClosingModal('button-fechar-caixa')}
                      className="text-[9px] font-bold uppercase tracking-widest text-red-400/50 hover:text-red-400 px-3 py-1 bg-red-400/5 rounded-full border border-red-400/10 transition-all"
                    >
                      Fechar Caixa
@@ -1140,7 +1220,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                    <Button
                      className="w-full py-6 text-xs font-bold tracking-[0.4em] uppercase shadow-accent-glow transition-all active:scale-95"
                      disabled={cart.length === 0}
-                               onClick={openPaymentModal}
+                                              onClick={() => openPaymentModal('button-processar')}
                    >
                      PROCESSAR [ENTER]
                    </Button>
@@ -1166,7 +1246,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             multiMode={multiMode}
             setMultiMode={setMultiMode}
             availableCashCents={availableCashCents ?? undefined}
-            onClose={() => setIsPaymentModalOpen(false)}
+            onClose={closePaymentModal}
             onFinalize={payments => finalizeSale(payments)}
             selectedClient={selectedClient}
          />
@@ -1177,11 +1257,12 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             clientResults={clientResults}
             selectedClientIndex={selectedClientIndex}
             setSelectedClientIndex={setSelectedClientIndex}
-            onClose={() => setIsClientModalOpen(false)}
+            onClose={closeClientModal}
             onSearch={setClientSearch}
             onSelect={client => {
                setSelectedClient(client);
-               setIsClientModalOpen(false);
+               closeClientModal();
+               sendTelemetry('client', 'select', { clientId: client.id, name: client.name });
             }}
          />
 
@@ -1190,7 +1271,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <DiscountModal
             isOpen={isDiscountModalOpen}
             tempDiscount={tempDiscount}
-            onClose={() => setIsDiscountModalOpen(false)}
+            onClose={closeDiscountModal}
             onChange={setTempDiscount}
             onApply={applyManualDiscount}
          />
@@ -1200,6 +1281,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             isOpen={isReceiptModalOpen}
             lastSaleData={lastSaleData}
             onClose={() => {
+               sendTelemetry('receipt', 'close');
                setIsReceiptModalOpen(false);
                setCart([]);
                setLastSaleData(null);
@@ -1223,6 +1305,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             closeLoading={closeLoading}
             closeResult={closeResult}
             onClose={() => {
+               sendTelemetry('cash', 'close-modal');
                setIsClosingModalOpen(false);
                setPhysicalCashInput('');
                setCloseError('');
@@ -1250,9 +1333,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                   if (!res.ok) throw new Error('Erro ao fechar caixa');
                   const data = await res.json();
                   setCloseResult(data.closeResult);
+                  sendTelemetry('cash', 'close-success', { sessionId: cashSessionId, physicalCount: value, difference: data?.closeResult?.difference });
                   // NÃO setar cashSessionId(null) aqui! Só depois que fechar o modal de resumo.
                } catch (err) {
                   setCloseError('Erro ao fechar caixa. Tente novamente.');
+                  sendTelemetry('cash', 'close-fail', { sessionId: cashSessionId, message: err instanceof Error ? err.message : 'erro desconhecido' });
                } finally {
                   setCloseLoading(false);
                }
@@ -1263,10 +1348,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <SubtotalModal
             isOpen={isSubtotalModalOpen}
             initialValue={customSubtotal !== null ? customSubtotal : subtotal}
-            onClose={() => setIsSubtotalModalOpen(false)}
+            onClose={closeSubtotalModal}
             onConfirm={newSubtotal => {
                setCustomSubtotal(newSubtotal);
-               setIsSubtotalModalOpen(false);
+               sendTelemetry('subtotal', 'apply', { value: newSubtotal });
+               closeSubtotalModal();
             }}
          />
 

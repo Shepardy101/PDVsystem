@@ -8,6 +8,7 @@ import { Product, Category } from '../types';
 import { FeedbackPopup } from '@/components/FeedbackPopup';
 import { useAuth } from '../components/AuthContext';
 import { isOperator } from '../types';
+import { logUiEvent } from '../services/telemetry';
 
 const Products: React.FC = () => {
       // SSE: Atualização em tempo real dos produtos
@@ -39,6 +40,9 @@ const Products: React.FC = () => {
       }, []);
    const { user } = useAuth();
    const isOperatorUser = isOperator(user);
+   const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
+      logUiEvent({ userId: user?.id ?? null, page: 'products', area, action, meta });
+   }, [user?.id]);
 
    const [searchTerm, setSearchTerm] = useState('');
    const [showImages, setShowImages] = useState(false);
@@ -410,6 +414,7 @@ const Products: React.FC = () => {
       setIsUploading(false);
       setIsImportModalOpen(false);
       setIsPreviewModalOpen(true);
+      sendTelemetry('modal', 'open', { entity: 'product-import-preview', total: rows.length });
    }
 
    const handleDrop = (e: React.DragEvent) => {
@@ -504,27 +509,27 @@ const Products: React.FC = () => {
             <div className="flex items-center gap-3">
                <div className="flex items-center bg-dark-900/50 p-1 rounded-xl border border-white/5 mr-2">
                   <button
-                     onClick={() => setShowImages(false)}
+                     onClick={() => { setShowImages(false); sendTelemetry('view', 'switch', { mode: 'list' }); }}
                      className={`p-2 rounded-lg transition-all ${!showImages ? 'bg-accent/20 text-accent' : 'text-slate-500 hover:text-slate-300'}`}
                      title="Visualização em Lista"
                   >
                      <List size={18} />
                   </button>
                   <button
-                     onClick={() => setShowImages(true)}
+                     onClick={() => { setShowImages(true); sendTelemetry('view', 'switch', { mode: 'cards' }); }}
                      className={`p-2 rounded-lg transition-all ${showImages ? 'bg-accent/20 text-accent' : 'text-slate-500 hover:text-slate-300'}`}
                      title="Visualização em Cards"
                   >
                      <Grid2X2 size={18} />
                   </button>
                </div>
-               <Button variant="secondary" onClick={() => setShowFilters(!showFilters)} icon={<Filter size={18} />} className={showFilters ? 'border-accent text-accent' : ''}>Filtros</Button>
+               <Button variant="secondary" onClick={() => { const next = !showFilters; setShowFilters(next); sendTelemetry('filters', next ? 'open' : 'close'); }} icon={<Filter size={18} />} className={showFilters ? 'border-accent text-accent' : ''}>Filtros</Button>
                {!isOperatorUser && (
                   <>
-                     <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} icon={<UploadCloud size={18} />}>
+                    <Button variant="secondary" onClick={() => { setIsImportModalOpen(true); sendTelemetry('modal', 'open', { entity: 'product-import' }); }} icon={<UploadCloud size={18} />}>
                         Importar
                      </Button>
-                     <Button onClick={() => setIsCreateModalOpen(true)} icon={<Plus size={18} />}>Novo Produto</Button>
+                     <Button onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }} icon={<Plus size={18} />}>Novo Produto</Button>
 
                   </>
                )}
@@ -541,7 +546,7 @@ const Products: React.FC = () => {
                     <div className="relative" id="category-filter-menu">
                       <button
                         className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${selectedCategory === 'all' ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                        onClick={() => setShowCategoryList(prev => !prev)}
+                        onClick={() => { setShowCategoryList(prev => { const next = !prev; if (next) sendTelemetry('filters', 'open-category'); return next; }); }}
                         style={{ minWidth: 180 }}
                       >
                         {selectedCategory === 'all' ? 'Todas Categorias' : (categories.find(c => c.id === selectedCategory)?.name || 'Categoria')}
@@ -554,7 +559,7 @@ const Products: React.FC = () => {
                            )}
                            <button
                              className={`w-full text-left px-4 py-2 text-xs font-semibold ${selectedCategory === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                             onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); }}
+                             onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); sendTelemetry('filters', 'select-category', { category: 'all' }); }}
                            >
                              Todas Categorias
                            </button>
@@ -562,7 +567,7 @@ const Products: React.FC = () => {
                              <div key={c.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent/10">
                                <button
                                  className={`truncate text-left flex-1 ${selectedCategory === c.id ? 'text-accent' : 'text-slate-300 hover:text-accent'}`}
-                                 onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); }}
+                                 onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); sendTelemetry('filters', 'select-category', { category: c.id }); }}
                                  title={c.name}
                                >
                                  {c.name}
@@ -609,7 +614,7 @@ const Products: React.FC = () => {
                   <div className="relative" id="stock-filter-menu">
                      <button
                         className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${stockStatus === 'all' ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                        onClick={() => setShowStockList(prev => !prev)}
+                        onClick={() => { setShowStockList(prev => { const next = !prev; if (next) sendTelemetry('filters', 'open-stock'); return next; }); }}
                         style={{ minWidth: 180 }}
                      >
                         {stockStatus === 'all' ? 'Todo Estoque' : stockStatus === 'low' ? 'Estoque Crítico' : 'Estoque Normal'}
@@ -619,19 +624,19 @@ const Products: React.FC = () => {
                         <div className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50">
                            <button
                               className={`w-full text-left px-4 py-2 text-xs font-semibold ${stockStatus === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                              onClick={() => { setStockStatus('all'); setShowStockList(false); }}
+                              onClick={() => { setStockStatus('all'); setShowStockList(false); sendTelemetry('filters', 'select-stock', { stock: 'all' }); }}
                            >
                               Todo Estoque
                            </button>
                            <button
                               className={`w-full text-left px-4 py-2 text-xs font-semibold ${stockStatus === 'low' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                              onClick={() => { setStockStatus('low'); setShowStockList(false); }}
+                              onClick={() => { setStockStatus('low'); setShowStockList(false); sendTelemetry('filters', 'select-stock', { stock: 'low' }); }}
                            >
                               Estoque Crítico
                            </button>
                            <button
                               className={`w-full text-left px-4 py-2 text-xs font-semibold ${stockStatus === 'normal' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                              onClick={() => { setStockStatus('normal'); setShowStockList(false); }}
+                              onClick={() => { setStockStatus('normal'); setShowStockList(false); sendTelemetry('filters', 'select-stock', { stock: 'normal' }); }}
                            >
                               Estoque Normal
                            </button>
@@ -640,7 +645,7 @@ const Products: React.FC = () => {
                   </div>
                </div>
                <div className="md:col-span-2">
-                  <Button variant="ghost" className="w-full py-3 h-[46px] text-[10px] tracking-[0.2em]" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); setStockStatus('all'); }}>Limpar Filtros</Button>
+                  <Button variant="ghost" className="w-full py-3 h-[46px] text-[10px] tracking-[0.2em]" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); setStockStatus('all'); sendTelemetry('filters', 'clear'); }}>Limpar Filtros</Button>
                </div>
             </div>
          )}
@@ -722,7 +727,7 @@ const Products: React.FC = () => {
                                           <tr
                                              key={product.id}
                                              className={["group transition-colors", isOdd ? "bg-white/[0.02]" : "bg-transparent", "hover:bg-cyan-500/5", "border-b border-white/5"].join(" ")}
-                                             onClick={() => setSelectedProduct(product)}
+                                             onClick={() => { setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }}
                                              style={{ cursor: 'pointer' }}
                                           >
                                              <td className={["py-4 px-5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 min-w-[320px] max-w-[420px] overflow-hidden text-ellipsis flex items-center gap-4"].join(" ")}>
@@ -747,7 +752,7 @@ const Products: React.FC = () => {
                                              <td className={["py-4 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}</td>
                                              {!isOperatorUser && (
                                                 <td className="py-4 px-3 whitespace-nowrap text-right flex gap-2 justify-end">
-                                                   <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); }} title="Editar"><Edit2 size={14} /></button>
+                                                   <button className="p-2 text-slate-500 hover:text-accent transition-colors" onClick={e => { e.stopPropagation(); setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }} title="Editar"><Edit2 size={14} /></button>
                                                    <button className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors" onClick={e => { e.stopPropagation(); handleDeleteProduct(product.id); }} title="Remover"><Trash2 size={14} /></button>
                                                 </td>
                                              )}
@@ -766,7 +771,7 @@ const Products: React.FC = () => {
                      {filtered.map(product => (
                         <div
                            key={product.id}
-                           onClick={() => setSelectedProduct(product)}
+                              onClick={() => { setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }}
                            className="glass-card group relative p-5 rounded-3xl border border-white/5 hover:border-accent/40 hover:bg-accent/5 transition-all cursor-pointer overflow-hidden flex flex-col gap-4 shadow-xl"
                         >
                            <div className="absolute top-3 right-3 z-10">

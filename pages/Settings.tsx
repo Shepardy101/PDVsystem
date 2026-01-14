@@ -5,14 +5,15 @@ import { isAdmin } from '../types';
 import DbManager from '../src/renderer/components/adminDb/DbManager';
 import { toast } from 'react-hot-toast';
 import { 
-  Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe, 
-  Lock, RefreshCcw, Bell, HardDrive, Wifi, Terminal, Zap, 
-  Activity, Cloud, Save, Trash2, Key, Server, Laptop, Bluetooth,
-  CreditCard, Clock
+   Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe, 
+   Lock, RefreshCcw, Bell, HardDrive, Wifi, Terminal, Zap, 
+   Activity, Cloud, Save, Trash2, Key, Server, Laptop, Bluetooth,
+   CreditCard, Clock, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
 import PerformanceMetricsModal from '../components/modals/PerformanceMetricsModal';
+import { logUiEvent } from '../services/telemetry';
 
 // Reusable small detail row for the IP detail modal
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
@@ -41,9 +42,18 @@ type IpEntry = {
    remote_port?: number|null;
    http_version?: string|null;
 };
-type IPControlPanelProps = { canManage: boolean };
+type IPControlPanelProps = { canManage: boolean; telemetry: (area: string, action: string, meta?: Record<string, any>) => void };
 
-const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
+type UiLog = {
+   id: string;
+   message: string;
+   level: 'info' | 'warn' | 'error';
+   createdAt: number;
+   time: string;
+   context?: any;
+};
+
+const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry }) => {
    const [pending, setPending] = useState<IpEntry[]>([]);
    const [allowed, setAllowed] = useState<IpEntry[]>([]);
    const [loading, setLoading] = useState(false);
@@ -90,6 +100,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
             body: JSON.stringify({ ip, hostname, autorizado_por: 'admin' })
          });
          if (!res.ok) throw new Error('Erro ao autorizar');
+         telemetry('ip-control', 'allow-ip', { ip, hostname });
          setRefresh(r => r + 1);
       } catch (e) {
          setError('Falha ao autorizar IP');
@@ -107,6 +118,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
             body: JSON.stringify({ ip })
          });
          if (!res.ok) throw new Error('Erro ao negar');
+         telemetry('ip-control', 'deny-ip', { ip });
          setRefresh(r => r + 1);
       } catch (e) {
          setError('Falha ao negar IP');
@@ -124,6 +136,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
             body: JSON.stringify({ ip })
          });
          if (!res.ok) throw new Error('Erro ao remover');
+         telemetry('ip-control', 'remove-ip', { ip });
          setRefresh(r => r + 1);
       } catch (e) {
          setError('Falha ao remover IP');
@@ -131,9 +144,14 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
          setLoading(false);
       }
    };
-
-   const openDetails = (entry: IpEntry, list: 'pending' | 'allowed' | 'blocked') => setSelectedIp({ entry, list });
-   const closeDetails = () => setSelectedIp(null);
+   const openDetails = (entry: IpEntry, list: 'pending' | 'allowed' | 'blocked') => {
+      telemetry('ip-control', 'open-details', { ip: entry.ip, list });
+      setSelectedIp({ entry, list });
+   };
+   const closeDetails = () => {
+      if (selectedIp) telemetry('ip-control', 'close-details', { ip: selectedIp.entry.ip, list: selectedIp.list });
+      setSelectedIp(null);
+   };
 
    return (
       <div className="mt-8 rounded-3xl overflow-hidden border border-accent/20 bg-gradient-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
@@ -151,7 +169,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
                <span className="text-[10px] font-mono text-amber-200 bg-amber-500/10 border border-amber-400/40 px-3 py-1 rounded-full uppercase">Pending {pending.length}</span>
                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-400/40 px-3 py-1 rounded-full uppercase">Allowed {allowed.length}</span>
                <span className="text-[10px] font-mono text-rose-200 bg-rose-500/10 border border-rose-400/40 px-3 py-1 rounded-full uppercase">Blocked {blocked.length}</span>
-               <Button size="sm" variant="secondary" disabled={loading} onClick={() => setRefresh(r => r + 1)} icon={<RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />}>Sync</Button>
+               <Button size="sm" variant="secondary" disabled={loading} onClick={() => { telemetry('ip-control', 'sync'); setRefresh(r => r + 1); }} icon={<RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />}>Sync</Button>
             </div>
          </div>
 
@@ -302,17 +320,26 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
 
 const Settings: React.FC = () => {
    const { user } = useAuth();
+   const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
+      logUiEvent({ userId: user?.id ?? null, page: 'settings', area, action, meta });
+   }, [user?.id]);
    if (!user || (!isAdmin(user) && user.role !== 'manager')) {
       return (
          <AccessDenied />
       );
       }
-   const [logs, setLogs] = useState<{id?: string; time: string; event: string; level: 'info' | 'warn' | 'error'}[]>([]);
+   const [logs, setLogs] = useState<UiLog[]>([]);
    const [showDbManager, setShowDbManager] = useState(false);
    const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+   const [showLogsModal, setShowLogsModal] = useState(false);
+   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
    const [settingsLoading, setSettingsLoading] = useState(false);
    const isManagerUser = user?.role === 'manager';
+
+   React.useEffect(() => {
+      sendTelemetry('page', 'view');
+   }, [sendTelemetry]);
   
    // Polling simples do audit log real
    useEffect(() => {
@@ -323,12 +350,25 @@ const Settings: React.FC = () => {
             if (!res.ok) return;
             const data = await res.json();
             if (!active || !Array.isArray(data?.logs)) return;
-            const mapped = data.logs.map((log: any) => ({
-               id: log.id,
-               time: new Date(log.created_at || Date.now()).toLocaleTimeString('pt-BR', { hour12: false }),
-               event: log.message,
-               level: (log.level === 'warn' || log.level === 'error') ? log.level : 'info',
-            }));
+            const mapped = data.logs.map((log: any) => {
+               const createdAt = Number(log?.created_at || Date.now());
+               let context: any = undefined;
+               if (log?.context_json) {
+                  try {
+                     context = JSON.parse(log.context_json);
+                  } catch (err) {
+                     context = log.context_json;
+                  }
+               }
+               return {
+                  id: String(log?.id ?? createdAt),
+                  message: log?.message ?? 'Evento sem mensagem',
+                  level: (log?.level === 'warn' || log?.level === 'error') ? log.level : 'info',
+                  createdAt,
+                  time: new Date(createdAt).toLocaleTimeString('pt-BR', { hour12: false }),
+                  context,
+               } as UiLog;
+            });
             setLogs(mapped);
          } catch (err) {
             console.error('[AuditTrail] Falha ao buscar logs:', err);
@@ -343,9 +383,31 @@ const Settings: React.FC = () => {
       };
    }, []);
 
+   const openLogsModal = () => {
+      setShowLogsModal(true);
+   };
+
+   const closeLogsModal = () => {
+      setShowLogsModal(false);
+      setExpandedLogIds(new Set());
+   };
+
+   const toggleLogRow = (id: string) => {
+      setExpandedLogIds(prev => {
+         const next = new Set(prev);
+         if (next.has(id)) {
+            next.delete(id);
+         } else {
+            next.add(id);
+         }
+         return next;
+      });
+   };
+
    const handleClearLogs = () => setLogs([]);
    
-      const handlePurgeCache = async () => {
+         const handlePurgeCache = async () => {
+            sendTelemetry('maintenance', 'purge-cache');
          try {
             const res = await fetch('/api/admin/maintenance/purge-cache', { method: 'POST' });
             if (!res.ok) throw new Error('Erro HTTP');
@@ -368,6 +430,7 @@ const Settings: React.FC = () => {
             toast('Limpeza cancelada');
             return;
          }
+         sendTelemetry('maintenance', 'wipe-local');
          try {
             const res = await fetch('/api/admin/maintenance/wipe-local', { method: 'POST' });
             if (!res.ok) throw new Error('Erro HTTP');
@@ -394,6 +457,7 @@ const Settings: React.FC = () => {
    }, []);
 
    const toggleNegativeStock = async (value: boolean) => {
+      sendTelemetry('inventory', 'toggle-allow-negative', { value });
       setAllowNegativeStock(value);
       try {
          const res = await fetch('/api/settings/Enable_Negative_Casher', {
@@ -459,14 +523,14 @@ const Settings: React.FC = () => {
           </p>
         </div>
             <div className="flex items-center gap-4">
-               <Button variant="secondary" icon={<Database size={18} />} disabled={!isManagerUser} onClick={() => isManagerUser && setShowDbManager(true)}>
+               <Button variant="secondary" icon={<Database size={18} />} disabled={!isManagerUser} onClick={() => { if (isManagerUser) { sendTelemetry('settings', 'open-db-manager'); setShowDbManager(true); } }}>
                   DB Manager
                </Button>
            <div className="flex items-center gap-2 px-4 py-2 bg-dark-900/60 border border-white/5 rounded-full backdrop-blur-md">
               <Server size={14} className="text-accent" />
               <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Instance: US-EAST-01</span>
            </div>
-           <Button icon={<RefreshCcw size={18} />} disabled={!isManagerUser} onClick={() => window.location.reload()}>Reiniciar Kernel</Button>
+           <Button icon={<RefreshCcw size={18} />} disabled={!isManagerUser} onClick={() => { sendTelemetry('settings', 'reload-kernel'); window.location.reload(); }}>Reiniciar Kernel</Button>
         </div>
       </div>
 
@@ -507,7 +571,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
            {/* Seção de Controle de IPs */}
-           <IPControlPanel canManage={isManagerUser} />
+           <IPControlPanel canManage={isManagerUser} telemetry={sendTelemetry} />
 
            {/* Seção de Segurança */}
            {/* <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
@@ -538,7 +602,7 @@ const Settings: React.FC = () => {
            <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
               <Terminal size={14} className="text-accent" /> Audit Trail // Real-time
            </h3>
-         <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative">
+         <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative cursor-pointer" role="button" onClick={openLogsModal}>
             <div className="absolute inset-0 pointer-events-none opacity-40 bg-gradient-to-br from-accent/10 via-transparent to-purple-500/10" />
             <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-slate-500 mb-3 relative z-10">
                <span className="flex items-center gap-2">
@@ -547,9 +611,9 @@ const Settings: React.FC = () => {
                </span>
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10">
-               {logs.map((log, index) => (
+               {logs.map((log) => (
                   <div
-                     key={`${log.time}-${index}`}
+                     key={log.id}
                      className="text-[10px] flex gap-3 items-start animate-in fade-in slide-in-from-right-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2 shadow-[0_0_12px_-8px_rgba(34,211,238,0.8)]"
                   >
                      <span className="text-emerald-300 shrink-0">
@@ -565,7 +629,7 @@ const Settings: React.FC = () => {
                         }
                      >
                         <span className="text-accent mr-2 opacity-60">{'>>'}</span>
-                        {log.event}
+                          {log.message}
                      </span>
                   </div>
                ))}
@@ -610,7 +674,7 @@ const Settings: React.FC = () => {
                   variant="secondary"
                   className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
                   icon={<Activity size={12} className="text-emerald-300" />}
-                  onClick={() => setShowPerformanceModal(true)}
+                  onClick={() => { sendTelemetry('maintenance', 'open-performance-modal'); setShowPerformanceModal(true); }}
                >
                   Monitorar Performance
                </Button>
@@ -627,6 +691,83 @@ const Settings: React.FC = () => {
          </div>
         </div>
       </div>
+
+         {showLogsModal && (
+            <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={closeLogsModal}>
+               <div className="bg-dark-950 border border-accent/40 rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/70">
+                     <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
+                           <Terminal size={14} className="text-accent" /> Logs detalhados
+                        </p>
+                        <p className="text-[11px] text-slate-400 font-mono">Clique em uma linha para expandir e ver o contexto completo</p>
+                     </div>
+                     <Button size="sm" variant="secondary" onClick={closeLogsModal}>Fechar</Button>
+                  </div>
+                  <div className="p-4 overflow-auto max-h-[78vh]">
+                     <div className="overflow-hidden border border-white/10 rounded-2xl">
+                        <table className="w-full text-left text-[12px] text-slate-200">
+                           <thead className="bg-black/60 uppercase text-[10px] tracking-[0.2em] text-slate-500">
+                              <tr>
+                                 <th className="px-3 py-2 w-10"></th>
+                                 <th className="px-3 py-2 w-56">Horário</th>
+                                 <th className="px-3 py-2 w-20">Nível</th>
+                                 <th className="px-3 py-2">Mensagem</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-white/5">
+                              {logs.map(log => {
+                                 const expanded = expandedLogIds.has(log.id);
+                                 const formattedDate = new Date(log.createdAt).toLocaleString('pt-BR', { hour12: false });
+                                 const shortMessage = log.message.length > 120 ? `${log.message.slice(0, 120)}...` : log.message;
+                                 return (
+                                    <React.Fragment key={log.id}>
+                                       <tr className="hover:bg-white/5 cursor-pointer" onClick={() => toggleLogRow(log.id)}>
+                                          <td className="px-3 py-2 text-center text-slate-400">
+                                             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                          </td>
+                                          <td className="px-3 py-2 font-mono text-[11px] text-slate-300">{formattedDate}</td>
+                                          <td className="px-3 py-2">
+                                             <span className={log.level === 'error' ? 'text-rose-300' : log.level === 'warn' ? 'text-amber-300' : 'text-emerald-300'}>{log.level}</span>
+                                          </td>
+                                          <td className="px-3 py-2 text-slate-200">{shortMessage}</td>
+                                       </tr>
+                                       {expanded && (
+                                          <tr className="bg-black/40">
+                                             <td colSpan={4} className="px-4 py-3">
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-[11px] text-slate-200">
+                                                   <div className="md:col-span-2 bg-white/5 rounded-xl p-3 border border-white/10">
+                                                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Mensagem completa</p>
+                                                      <p className="leading-snug">{log.message}</p>
+                                                   </div>
+                                                   <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">ID</p>
+                                                      <p className="font-mono break-all">{log.id}</p>
+                                                   </div>
+                                                   <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Timestamp</p>
+                                                      <p className="font-mono">{formattedDate}</p>
+                                                   </div>
+                                                   <div className="md:col-span-4 bg-white/5 rounded-xl p-3 border border-white/10">
+                                                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-2">Contexto</p>
+                                                      <pre className="text-[11px] text-slate-100 font-mono whitespace-pre-wrap bg-black/60 rounded-lg p-3 border border-white/5 overflow-x-auto">
+                                                         {log.context ? JSON.stringify(log.context, null, 2) : 'Sem contexto'}
+                                                      </pre>
+                                                   </div>
+                                                </div>
+                                             </td>
+                                          </tr>
+                                       )}
+                                    </React.Fragment>
+                                 );
+                              })}
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
 
       {/* Rodapé de Ações Globais */}
       <div className="mt-8 pt-6 border-t border-white/5 flex justify-end gap-4 relative z-10 shrink-0">

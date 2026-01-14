@@ -9,6 +9,7 @@ import { createSupplier, updateSupplier, deleteSupplier, listSuppliers } from '.
 import { listCategories } from '../services/category';
 import { createClient, updateClient, listClients, deleteClient } from '../services/client';
 import { FeedbackPopup } from '../components/FeedbackPopup';
+import { logUiEvent } from '../services/telemetry';
 
 type EntityTab = 'users' | 'clients' | 'suppliers';
 
@@ -43,6 +44,15 @@ const Entities: React.FC = () => {
 
   // Feedback popup
   const [popup, setPopup] = useState<{open: boolean, type?: any, title: string, message?: string}>({open: false, type: 'info', title: '', message: ''});
+
+  const { user } = useAuth();
+  const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
+    logUiEvent({ userId: user?.id ?? null, page: 'entities', area, action, meta });
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    sendTelemetry('tab', 'change', { tab: activeTab });
+  }, [activeTab, sendTelemetry]);
 
   // Carregar usuários/clientes reais ao abrir aba
   React.useEffect(() => {
@@ -99,7 +109,7 @@ const Entities: React.FC = () => {
 
   const TabButton = ({ id, label, icon: Icon }: { id: EntityTab, label: string, icon: any }) => (
     <button 
-      onClick={() => { setActiveTab(id); setSearchTerm(''); }}
+      onClick={() => { setActiveTab(id); setSearchTerm(''); sendTelemetry('tab', 'change', { tab: id }); }}
       className={`flex items-center gap-3 px-6 py-4 border-b-2 transition-all duration-300 ${
         activeTab === id 
           ? 'border-accent text-accent bg-accent/5' 
@@ -111,7 +121,6 @@ const Entities: React.FC = () => {
     </button>
   );
 
-  const { user } = useAuth();
   console.log('[DEBUG] Current user in Entities:', user);
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
@@ -133,6 +142,7 @@ const Entities: React.FC = () => {
                 if (activeTab === 'clients') setIsClientModalOpen(true);
                 if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
                 setEditingItem(null);
+                sendTelemetry('modal', 'open', { entity: activeTab, mode: 'create' });
               }} 
               icon={<Plus size={18} />}
             >
@@ -273,6 +283,7 @@ const Entities: React.FC = () => {
                       if (activeTab === 'users') setIsUserModalOpen(true);
                       if (activeTab === 'clients') setIsClientModalOpen(true);
                       if (activeTab === 'suppliers') setIsSupplierModalOpen(true);
+                      sendTelemetry('modal', 'open', { entity: activeTab, mode: 'edit', id: item.id });
                     }}
                     className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-accent border border-white/5 transition-all hover:scale-110 active:scale-90"
                   >

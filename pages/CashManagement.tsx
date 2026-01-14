@@ -6,6 +6,7 @@ import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
 import AdminPasswordModal from '../components/AdminPasswordModal';
 import { useAuth } from '../components/AuthContext';
+import { logUiEvent } from '../services/telemetry';
 
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -33,6 +34,9 @@ const INITIAL_TX_CATEGORIES = ['Logística', 'Infraestrutura', 'Retirada Lucro',
 
 const CashManagement: React.FC = () => {
    const { user } = useAuth();
+   const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
+      logUiEvent({ userId: user?.id ?? null, page: 'cash', area, action, meta });
+   }, [user?.id]);
    const [historySearch, setHistorySearch] = useState<string>('');
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
    const [cashHistory, setCashHistory] = useState([]);
@@ -71,6 +75,14 @@ const CashManagement: React.FC = () => {
    const [error, setError] = useState<string>('');
 
    const [showAdminPasswordModal, setShowAdminPasswordModal] = useState<'' | 'suprimento' | 'sangria' | 'pagamento'>("");
+
+   React.useEffect(() => {
+      sendTelemetry('tab', 'change', { tab: activeTab });
+   }, [activeTab, sendTelemetry]);
+
+   React.useEffect(() => {
+      sendTelemetry('modal-tab', 'change', { tab: historyModalTab });
+   }, [historyModalTab, sendTelemetry]);
 
    const cashBalanceCents = useMemo(() => calculateCashBalanceCents(session), [session]);
    const sessionSalesCents = useMemo(() => calculateSessionSalesTotalCents(session), [session]);
@@ -322,11 +334,12 @@ const CashManagement: React.FC = () => {
 
    function handleOpenProtectedModal(type: 'suprimento' | 'sangria' | 'pagamento') {
       setShowAdminPasswordModal(type);
+      sendTelemetry('modal', 'open', { modal: type, guarded: true });
    }
    function handleAdminPasswordSuccess() {
-      if (showAdminPasswordModal === 'suprimento') setIsSuprimentoModalOpen(true);
-      if (showAdminPasswordModal === 'sangria') setIsSangriaModalOpen(true);
-      if (showAdminPasswordModal === 'pagamento') setIsPagamentoModalOpen(true);
+      if (showAdminPasswordModal === 'suprimento') { setIsSuprimentoModalOpen(true); sendTelemetry('modal', 'open', { modal: 'suprimento', guarded: false }); }
+      if (showAdminPasswordModal === 'sangria') { setIsSangriaModalOpen(true); sendTelemetry('modal', 'open', { modal: 'sangria', guarded: false }); }
+      if (showAdminPasswordModal === 'pagamento') { setIsPagamentoModalOpen(true); sendTelemetry('modal', 'open', { modal: 'pagamento', guarded: false }); }
       setShowAdminPasswordModal("");
    }
 
@@ -732,7 +745,7 @@ const CashManagement: React.FC = () => {
                                        <tr
                                           key={history.id}
                                           className="group hover:bg-white/5 transition-all cursor-pointer"
-                                          onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); }}
+                                          onClick={() => { setSelectedHistory(history); setHistoryModalTab('resumo'); sendTelemetry('modal', 'open', { modal: 'cash-history', id: history.id }); }}
                                        >
                                           <td className="px-6 py-4">
                                              <div className="flex items-center gap-3">
@@ -762,7 +775,7 @@ const CashManagement: React.FC = () => {
                                              )}
                                           </td>
                                           <td className="px-6 py-4 text-right">
-                                             <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); }}>Ver</Button>
+                                             <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={e => { e.stopPropagation(); setSelectedHistory(history); setHistoryModalTab('resumo'); sendTelemetry('modal', 'open', { modal: 'cash-history', id: history.id }); }}>Ver</Button>
                                           </td>
                                        </tr>
                                     ))
@@ -785,7 +798,7 @@ const CashManagement: React.FC = () => {
          {/* MODAL DETALHADO DE HISTÓRICO (AUDITORIA RETROATIVA) */}
          <Modal
             isOpen={!!selectedHistory}
-            onClose={() => setSelectedHistory(null)}
+            onClose={() => { setSelectedHistory(null); sendTelemetry('modal', 'close', { modal: 'cash-history' }); }}
             title={`Relatório de Caixa: ${selectedHistory ? (selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleDateString() : '-') : ''}`}
             size="5xl"
          >

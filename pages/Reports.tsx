@@ -98,17 +98,23 @@ const SalesJsonViewer: React.FC = () => {
 import { Button } from '@/components/UI';
 import { Calendar, Download, Filter, Layers } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '../components/AuthContext';
 
 
 import ProductMixQuadrantsTab from '@/components/reports/ProductMixQuadrantsTab';
 import SoldProductsDetailedTable from '@/components/reports/SoldProductsDetailedTable';
 import SoldProductsResumoTable from '@/components/reports/SoldProductsResumoTable';
+import { logUiEvent } from '../services/telemetry';
 
 
 
 
 
 const Reports: React.FC = () => {
+  const { user } = useAuth();
+  const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
+    logUiEvent({ userId: user?.id ?? null, page: 'reports', area, action, meta });
+  }, [user?.id]);
   const [activeReport, setActiveReport] = useState<any | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState('Últimos 30 dias');
@@ -116,6 +122,10 @@ const Reports: React.FC = () => {
 
   // Estado para alternar entre os componentes
   const [selectedViewer, setSelectedViewer] = useState<'mixQuadrants' | 'soldProductsDetailed' | 'soldProductsResumo'>('mixQuadrants');
+
+  useEffect(() => {
+    sendTelemetry('viewer', 'switch', { viewer: selectedViewer });
+  }, [selectedViewer, sendTelemetry]);
 
   return (
     <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
