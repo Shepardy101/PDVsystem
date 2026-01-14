@@ -65,7 +65,9 @@ const palette = {
   pix: 'bg-amber-500 text-amber-100 border-amber-400',
 };
 
-const CashPerformanceTrends: React.FC = () => {
+type CashPerformanceTrendsProps = { onTelemetry?: (area: string, action: string, meta?: Record<string, any>) => void };
+
+const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemetry }) => {
   // Troque para false para usar a API real
   const USE_MOCK = false;
 
@@ -83,6 +85,7 @@ const CashPerformanceTrends: React.FC = () => {
       setData(mockPerformanceData);
       setLoading(false);
       setError(null);
+      onTelemetry?.('performance', 'load-mock');
       // Definir datas padrão após carregar mock
       const sales = mockPerformanceData.sales;
       if (sales && sales.length > 0) {
@@ -105,6 +108,7 @@ const CashPerformanceTrends: React.FC = () => {
         })
         .then(apiData => {
           setData(apiData);
+          onTelemetry?.('performance', 'load-success', { sales: Array.isArray(apiData?.sales) ? apiData.sales.length : 0 });
           // Definir datas padrão após carregar API
           const sales = apiData.sales;
           console.log('Vendas carregadas para CashPerformanceTrends:', sales);
@@ -120,10 +124,10 @@ const CashPerformanceTrends: React.FC = () => {
             setActiveDays(30);
           }
         })
-        .catch(e => setError(e.message))
+          .catch(e => { setError(e.message); onTelemetry?.('performance', 'load-error', { message: e.message }); })
         .finally(() => setLoading(false));
     }
-  }, [USE_MOCK]);
+        }, [USE_MOCK, onTelemetry]);
 
   // Filtro de vendas por data inicial/final (para os cards)
   const filteredSalesForCards = React.useMemo(() => {
@@ -240,11 +244,13 @@ const CashPerformanceTrends: React.FC = () => {
   function handlePeriodTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const type = e.target.value as PeriodType;
     setPeriodType(type);
+    onTelemetry?.('performance', 'period-change', { period: type });
     // Não altera dataRange!
   }
 
   function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
     setDateRange({ ...dateRange, [e.target.name]: e.target.value });
+    onTelemetry?.('performance', 'date-change', { field: e.target.name, value: e.target.value });
   }
 
   return (
@@ -278,6 +284,7 @@ const CashPerformanceTrends: React.FC = () => {
                       end: toLocalDateInput(end),
                     });
                     setActiveDays(days);
+                    onTelemetry?.('performance', 'quick-range', { days, start: toLocalDateInput(start), end: toLocalDateInput(end) });
                   }}
                   title={`Últimos ${days} dias`}
                 >
@@ -298,6 +305,7 @@ const CashPerformanceTrends: React.FC = () => {
                     start: toLocalDateInput(start),
                     end: toLocalDateInput(end),
                   });
+                  onTelemetry?.('performance', 'range-all', { start: toLocalDateInput(start), end: toLocalDateInput(end) });
                 }
               }}
               title="Todo o período"

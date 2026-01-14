@@ -5,11 +5,12 @@ import { Button, Input, Modal } from "../UI";
 
 interface SuprimentoModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (reason?: string) => void;
   txCategories: string[];
   onCategoryModalOpen: () => void;
   operatorId?: string;
   cashSessionId?: string;
+  telemetry?: (area: string, action: string, meta?: Record<string, any>) => void;
 }
 
 
@@ -20,6 +21,7 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
   onCategoryModalOpen,
   operatorId,
   cashSessionId,
+  telemetry,
 }) => {
   const [amount, setAmount] = React.useState('');
   const [category, setCategory] = React.useState(txCategories[0] || '');
@@ -33,10 +35,13 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
       setCategory(txCategories[0] || '');
       setDescription('');
       setError('');
+      telemetry?.('modal', 'open', { modal: 'suprimento' });
     }
-  }, [isOpen, txCategories]);
+  }, [isOpen, txCategories, telemetry]);
 
   const handleSubmit = async () => {
+    const numericAmount = parseFloat(amount.replace(',', '.'));
+    telemetry?.('suprimento', 'submit-start', { amount: isNaN(numericAmount) ? null : numericAmount, category });
     setLoading(true);
     setError('');
     try {
@@ -53,9 +58,12 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
         }),
       });
       if (!res.ok) throw new Error('Erro ao registrar suprimento');
-      onClose();
+      telemetry?.('suprimento', 'submit-success', { amount: numericAmount, category });
+      onClose('success');
     } catch (err: any) {
-      setError(err.message || 'Erro desconhecido');
+      const message = err.message || 'Erro desconhecido';
+      setError(message);
+      telemetry?.('suprimento', 'submit-error', { message, category });
     } finally {
       setLoading(false);
     }
@@ -70,7 +78,11 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
           icon={<DollarSign size={18} className="text-blue-400" />} 
           className="bg-dark-950/50 border-blue-500/10 text-xl font-mono text-blue-400" 
           value={amount}
-          onChange={e => setAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
+          onChange={e => {
+            const sanitized = e.target.value.replace(/[^0-9.,]/g, '');
+            setAmount(sanitized);
+            telemetry?.('suprimento', 'change-amount', { value: sanitized });
+          }}
         />
         <div className="space-y-2">
           <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Alocação / Categoria</label>
@@ -78,7 +90,7 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
             <select className="flex-1 bg-dark-950/50 border border-white/10 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all" value={category} onChange={e => setCategory(e.target.value)}>
               {txCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <button type="button" onClick={onCategoryModalOpen} className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400 hover:bg-blue-500/20 transition-all">
+            <button type="button" onClick={() => { telemetry?.('suprimento', 'open-category-modal'); onCategoryModalOpen(); }} className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400 hover:bg-blue-500/20 transition-all">
               <FolderPlus size={18} />
             </button>
           </div>
@@ -89,11 +101,14 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
           icon={<MessageSquare size={16} className="text-slate-500" />}
           className="bg-dark-950/50" 
           value={description}
-          onChange={e => setDescription(e.target.value)}
+          onChange={e => {
+            setDescription(e.target.value);
+            telemetry?.('suprimento', 'change-description');
+          }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-          <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={onClose} disabled={loading}>Cancelar</Button>
+          <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Cancelar</Button>
           <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-blue-500/10 bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20" icon={<Check size={18}/>} onClick={handleSubmit} disabled={loading || !amount || !category || !description}>Confirmar Entrada</Button>
         </div>
       </div>

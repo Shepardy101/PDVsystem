@@ -4,15 +4,16 @@ import { DollarSign, MessageSquare, FolderPlus, Check } from 'lucide-react';
 
 interface SangriaModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (reason?: string) => void;
   txCategories: string[];
   onCategoryModalOpen: () => void;
   operatorId?: string;
   cashSessionId?: string;
   availableCashCents?: number;
+  telemetry?: (area: string, action: string, meta?: Record<string, any>) => void;
 }
 
-const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen, operatorId, cashSessionId, availableCashCents }) => {
+const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategories, onCategoryModalOpen, operatorId, cashSessionId, availableCashCents, telemetry }) => {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(txCategories[0] || 'Sangria');
   const [description, setDescription] = useState('');
@@ -30,8 +31,9 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
       setDescription('');
       setError('');
       setCategory(txCategories[0] || 'Sangria');
+      telemetry?.('modal', 'open', { modal: 'sangria' });
     }
-  }, [isOpen, txCategories]);
+  }, [isOpen, txCategories, telemetry]);
 
   const handleSubmit = async () => {
     setError('');
@@ -40,12 +42,15 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
     const amountCentsSubmit = Math.round(numericAmount * 100);
     if (!amount || isNaN(numericAmount) || numericAmount <= 0 || !normalizedCategory || !description) {
       setError('Preencha todos os campos.');
+      telemetry?.('sangria', 'validation-fail', { reason: 'missing-fields' });
       return;
     }
     if (typeof availableCashCents === 'number' && amountCentsSubmit > availableCashCents) {
       setError('Valor excede o saldo disponível em caixa.');
+      telemetry?.('sangria', 'validation-fail', { reason: 'exceeds-cash', availableCashCents, amountCents: amountCentsSubmit });
       return;
     }
+    telemetry?.('sangria', 'submit-start', { amount: numericAmount, category: normalizedCategory });
     setLoading(true);
     try {
       const response = await fetch('/api/cash/sangria', {
@@ -62,11 +67,14 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
       if (!response.ok) {
         const data = await response.json();
         setError(data.error || 'Erro ao registrar sangria.');
+          telemetry?.('sangria', 'submit-error', { message: data.error || 'Erro ao registrar sangria.' });
       } else {
-        onClose();
+          telemetry?.('sangria', 'submit-success', { amount: numericAmount, category: normalizedCategory });
+          onClose('success');
       }
     } catch (err) {
       setError('Erro ao registrar sangria.');
+        telemetry?.('sangria', 'submit-error', { message: 'network' });
     } finally {
       setLoading(false);
     }
@@ -81,7 +89,11 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
           icon={<DollarSign size={18} className="text-red-400" />}
           className="bg-dark-950/50 border-red-500/10 text-xl font-mono text-red-400"
           value={amount}
-          onChange={e => setAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
+          onChange={e => {
+            const sanitized = e.target.value.replace(/[^0-9.,]/g, '');
+            setAmount(sanitized);
+            telemetry?.('sangria', 'change-amount', { value: sanitized });
+          }}
         />
         {typeof availableCashCents === 'number' && (
           <p className="text-[15px] text-slate-500 font-semibold">Saldo disponível: R$ {(availableCashCents / 100).toFixed(2)}</p>
@@ -102,11 +114,14 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
           icon={<MessageSquare size={16} className="text-slate-500" />}
           className="bg-dark-950/50"
           value={description}
-          onChange={e => setDescription(e.target.value)}
+          onChange={e => {
+            setDescription(e.target.value);
+            telemetry?.('sangria', 'change-description');
+          }}
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-          <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={onClose} disabled={loading}>Abortar</Button>
+          <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => onClose('cancel')} disabled={loading}>Abortar</Button>
           <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-red-500/10 bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20" icon={<Check size={18}/>} onClick={handleSubmit} disabled={loading || !amount || !category || !description || exceedsCash}>Executar Sangria</Button>
         </div>
       </div>

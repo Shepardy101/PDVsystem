@@ -37,6 +37,9 @@ const CashManagement: React.FC = () => {
    const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
       logUiEvent({ userId: user?.id ?? null, page: 'cash', area, action, meta });
    }, [user?.id]);
+   React.useEffect(() => {
+      sendTelemetry('page', 'view');
+   }, [sendTelemetry]);
    const [historySearch, setHistorySearch] = useState<string>('');
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
    const [cashHistory, setCashHistory] = useState([]);
@@ -81,8 +84,8 @@ const CashManagement: React.FC = () => {
    }, [activeTab, sendTelemetry]);
 
    React.useEffect(() => {
-      sendTelemetry('modal-tab', 'change', { tab: historyModalTab });
-   }, [historyModalTab, sendTelemetry]);
+      sendTelemetry('modal-tab', 'change', { tab: historyModalTab, historyId: selectedHistory?.id ?? null });
+   }, [historyModalTab, selectedHistory?.id, sendTelemetry]);
 
    const cashBalanceCents = useMemo(() => calculateCashBalanceCents(session), [session]);
    const sessionSalesCents = useMemo(() => calculateSessionSalesTotalCents(session), [session]);
@@ -221,7 +224,7 @@ const CashManagement: React.FC = () => {
       if (!selectedTx) return;
       const handleEsc = (e: KeyboardEvent) => {
          if (e.key === 'Escape') {
-            setSelectedTx(null);
+            closeTxDetail('escape');
          }
       };
       window.addEventListener('keydown', handleEsc);
@@ -246,10 +249,6 @@ const CashManagement: React.FC = () => {
 
 
 
-
-   const handlePrint = useCallback(() => {
-      window.print();
-   }, []);
 
 
    // Buscar nome do operador ao abrir modal de histórico
@@ -285,11 +284,70 @@ const CashManagement: React.FC = () => {
       }
    };
 
+   const handleHistorySearchChange = (value: string) => {
+      setHistorySearch(value);
+      sendTelemetry('history', 'search', { term: value });
+   };
+
+   const handleSelectTx = (tx: SaleTransaction | MovementTransaction, origin: string) => {
+      setSelectedTx(tx);
+      sendTelemetry('tx-detail', 'open', {
+         id: (tx as any)?.id ?? null,
+         type: (tx as any)?.type || (Array.isArray((tx as any)?.items) ? 'sale' : 'unknown'),
+         origin,
+      });
+   };
+
+   const closeTxDetail = (reason: string = 'close') => {
+      setSelectedTx(null);
+      setIsReceiptPreviewOpen(false);
+      sendTelemetry('tx-detail', 'close', { reason });
+   };
+
+   const handleHistoryModalClose = (reason: string = 'close') => {
+      setSelectedHistory(null);
+      sendTelemetry('modal', 'close', { modal: 'cash-history', reason });
+   };
+
+   const handlePrintWithTelemetry = (context: string) => {
+      sendTelemetry('print', 'click', { context });
+      window.print();
+   };
+
+   const openTxCategoryModal = () => {
+      setIsTxCategoryModalOpen(true);
+      sendTelemetry('tx-category', 'open');
+   };
+
+   const closeTxCategoryModal = (reason: string = 'close') => {
+      setIsTxCategoryModalOpen(false);
+      sendTelemetry('tx-category', 'close', { reason });
+   };
+
+   const closeSuprimentoModal = (reason: string = 'close') => {
+      setIsSuprimentoModalOpen(false);
+      setRefreshFlag(f => f + 1);
+      sendTelemetry('modal', 'close', { modal: 'suprimento', reason });
+   };
+
+   const closeSangriaModal = (reason: string = 'close') => {
+      setIsSangriaModalOpen(false);
+      setRefreshFlag(f => f + 1);
+      sendTelemetry('modal', 'close', { modal: 'sangria', reason });
+   };
+
+   const closePagamentoModal = (reason: string = 'close') => {
+      setIsPagamentoModalOpen(false);
+      setRefreshFlag(f => f + 1);
+      sendTelemetry('modal', 'close', { modal: 'pagamento', reason });
+   };
+
    const handleCreateTxCategory = () => {
       if (newTxCategoryName.trim()) {
          setTxCategories(prev => [...prev, newTxCategoryName.trim()]);
          setNewTxCategoryName('');
          setIsTxCategoryModalOpen(false);
+         sendTelemetry('tx-category', 'create', { name: newTxCategoryName.trim() });
       }
    };
 
@@ -549,7 +607,7 @@ const CashManagement: React.FC = () => {
                                                          );
                                                       const description = `Venda #${tx.id}`;
                                                       return (
-                                                         <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                         <tr key={tx.id} onClick={() => handleSelectTx(tx, 'current-transactions')} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
                                                             <td className="px-6 py-4">
                                                                <div className="flex items-center gap-3">
                                                                   <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor('sale')}`}>{getStatusIcon('sale')}</div>
@@ -567,7 +625,7 @@ const CashManagement: React.FC = () => {
                                                       const total = typeof tx.amount === 'number' ? tx.amount : 0;
                                                       const description = tx.description;
                                                       return (
-                                                         <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                         <tr key={tx.id} onClick={() => handleSelectTx(tx, 'current-transactions')} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
                                                             <td className="px-6 py-4">
                                                                <div className="flex items-center gap-3">
                                                                   <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
@@ -693,7 +751,7 @@ const CashManagement: React.FC = () => {
                         placeholder="Busca rápida..."
                         className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-slate-400 outline-none w-32 md:w-40"
                         value={historySearch}
-                        onChange={e => setHistorySearch(e.target.value)}
+                        onChange={e => handleHistorySearchChange(e.target.value)}
                         type="text"
                      />
                   </div>
@@ -790,7 +848,7 @@ const CashManagement: React.FC = () => {
             <div className="flex-1 animate-in fade-in duration-300 min-h-0 flex flex-col">
                {/* Componente externo para desempenho ao longo do tempo */}
                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
-                  <CashPerformanceTrends />
+                  <CashPerformanceTrends onTelemetry={(area, action, meta) => sendTelemetry(area, action, meta)} />
                </div>
             </div>
          ) : null}
@@ -798,7 +856,7 @@ const CashManagement: React.FC = () => {
          {/* MODAL DETALHADO DE HISTÓRICO (AUDITORIA RETROATIVA) */}
          <Modal
             isOpen={!!selectedHistory}
-            onClose={() => { setSelectedHistory(null); sendTelemetry('modal', 'close', { modal: 'cash-history' }); }}
+            onClose={() => handleHistoryModalClose('overlay')}
             title={`Relatório de Caixa: ${selectedHistory ? (selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleDateString() : '-') : ''}`}
             size="5xl"
          >
@@ -968,7 +1026,7 @@ const CashManagement: React.FC = () => {
                                     </tr>
                                     {/* Vendas principais */}
                                     {sales.map((tx: any) => (
-                                       <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer">
+                                       <tr key={tx.id} onClick={() => handleSelectTx(tx, 'history-movements-sales')} className="group hover:bg-white/5 transition-all cursor-pointer">
                                           <td className="px-4 py-3">
                                              <div className="flex items-center gap-2">
                                                 <div className={`p-1 rounded bg-white/2 border border-white/5 text-accent`}>{getStatusIcon('sale')}</div>
@@ -999,7 +1057,7 @@ const CashManagement: React.FC = () => {
                                           label = tx.type;
                                        }
                                        return (
-                                          <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer">
+                                          <tr key={tx.id} onClick={() => handleSelectTx(tx, 'history-movements')} className="group hover:bg-white/5 transition-all cursor-pointer">
                                              <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
                                                    <div className={`p-1 rounded bg-white/2 border border-white/5 ${color}`}>{getStatusIcon(tx.type)}</div>
@@ -1058,8 +1116,8 @@ const CashManagement: React.FC = () => {
                   ) : null}
 
                   <div className="flex flex-col sm:flex-row gap-4 pt-4 shrink-0">
-                     <Button variant="secondary" className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest" onClick={() => setSelectedHistory(null)}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={handlePrint}>Gerar PDF Consolidado</Button>
+                     <Button variant="secondary" className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest" onClick={() => handleHistoryModalClose('button')}>Fechar Auditoria</Button>
+                     <Button className="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => handlePrintWithTelemetry('cash-history')}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
@@ -1068,7 +1126,7 @@ const CashManagement: React.FC = () => {
          {/* TRANSACTION DETAIL MODAL */}
          <Modal
             isOpen={!!selectedTx && !isReceiptPreviewOpen}
-            onClose={() => setSelectedTx(null)}
+            onClose={() => closeTxDetail('modal-close')}
             title="Auditoria de Movimentação Transacional"
             size="lg"
          >
@@ -1185,8 +1243,8 @@ const CashManagement: React.FC = () => {
 
                   {/* Rodapé do Modal */}
                   <div className="flex gap-4 pt-4 border-t border-white/5">
-                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => setSelectedTx(null)}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={handlePrint}>Gerar PDF Consolidado</Button>
+                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => closeTxDetail('close-button')}>Fechar Auditoria</Button>
+                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => handlePrintWithTelemetry('tx-detail')}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
@@ -1195,7 +1253,7 @@ const CashManagement: React.FC = () => {
          {/* TRANSACTION DETAIL MODAL */}
          <Modal
             isOpen={!!selectedTx && !isReceiptPreviewOpen}
-            onClose={() => setSelectedTx(null)}
+            onClose={() => closeTxDetail('modal-close')}
             title="Auditoria de Movimentação Transacional"
             size="lg"
          >
@@ -1312,15 +1370,15 @@ const CashManagement: React.FC = () => {
 
                   {/* Rodapé do Modal */}
                   <div className="flex gap-4 pt-4 border-t border-white/5">
-                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => setSelectedTx(null)}>Fechar Auditoria</Button>
-                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={handlePrint}>Gerar PDF Consolidado</Button>
+                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => closeTxDetail('close-button')}>Fechar Auditoria</Button>
+                     <Button className="flex-1 py-4 text-xs font-bold uppercase tracking-widest shadow-accent-glow" icon={<Printer size={16} />} onClick={() => handlePrintWithTelemetry('tx-detail')}>Gerar PDF Consolidado</Button>
                   </div>
                </div>
             )}
          </Modal>
 
          {/* Modal Virtual Receipt */}
-         <Modal isOpen={isReceiptPreviewOpen} onClose={() => setIsReceiptPreviewOpen(false)} title="Visualização de Comprovante">
+         <Modal isOpen={isReceiptPreviewOpen} onClose={() => { setIsReceiptPreviewOpen(false); sendTelemetry('receipt-preview', 'close', { reason: 'overlay' }); }} title="Visualização de Comprovante">
             <div className="flex flex-col items-center gap-6">
                <div className="bg-white text-black p-8 rounded shadow-2xl w-full max-w-[80mm] font-mono receipt-assemble" id="thermal-receipt">
                   {selectedTx && (
@@ -1361,8 +1419,8 @@ const CashManagement: React.FC = () => {
                   )}
                </div>
                <div className="w-full flex gap-4 no-print">
-                  <Button variant="secondary" className="flex-1 py-4" icon={<X size={18} />} onClick={() => setIsReceiptPreviewOpen(false)}>Fechar</Button>
-                  <Button className="flex-1 py-4 shadow-accent-glow" icon={<Printer size={18} />} onClick={handlePrint}>Imprimir Agora</Button>
+                  <Button variant="secondary" className="flex-1 py-4" icon={<X size={18} />} onClick={() => { setIsReceiptPreviewOpen(false); sendTelemetry('receipt-preview', 'close', { reason: 'button' }); }}>Fechar</Button>
+                  <Button className="flex-1 py-4 shadow-accent-glow" icon={<Printer size={18} />} onClick={() => handlePrintWithTelemetry('receipt-preview')}>Imprimir Agora</Button>
                </div>
             </div>
          </Modal>
@@ -1370,46 +1428,40 @@ const CashManagement: React.FC = () => {
          {/* Modal de Suprimento componentizado */}
          <SuprimentoModal
             isOpen={isSuprimentoModalOpen}
-            onClose={() => {
-               setIsSuprimentoModalOpen(false);
-               setRefreshFlag(f => f + 1);
-            }}
+            onClose={(reason) => closeSuprimentoModal(reason || 'close')}
             txCategories={txCategories}
-            onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+            onCategoryModalOpen={openTxCategoryModal}
             operatorId={user?.id || ''}
             cashSessionId={session?.id || ''}
+            telemetry={sendTelemetry}
          />
 
          <SangriaModal
             isOpen={isSangriaModalOpen}
-            onClose={() => {
-               setIsSangriaModalOpen(false);
-               setRefreshFlag(f => f + 1);
-            }}
+            onClose={(reason) => closeSangriaModal(reason || 'close')}
             txCategories={txCategories}
-            onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+            onCategoryModalOpen={openTxCategoryModal}
             operatorId={user?.id || ''}
             cashSessionId={session?.id || ''}
             availableCashCents={cashBalanceCents}
+            telemetry={sendTelemetry}
          />
 
          <PagamentoModal
             isOpen={isPagamentoModalOpen}
-            onClose={() => {
-               setIsPagamentoModalOpen(false);
-               setRefreshFlag(f => f + 1);
-            }}
+            onClose={(reason) => closePagamentoModal(reason || 'close')}
             txCategories={txCategories}
-            onCategoryModalOpen={() => setIsTxCategoryModalOpen(true)}
+            onCategoryModalOpen={openTxCategoryModal}
             operatorId={user?.id || ''}
             cashSessionId={session?.id || ''}
             paymentLimitCents={paymentLimitCents}
+            telemetry={sendTelemetry}
          />
 
          {/* MODAL CRIAR CATEGORIA DE TRANSAÇÃO */}
          <Modal
             isOpen={isTxCategoryModalOpen}
-            onClose={() => setIsTxCategoryModalOpen(false)}
+            onClose={() => closeTxCategoryModal('overlay')}
             title="Nova Classificação Financeira"
             size="md"
          >
@@ -1438,7 +1490,7 @@ const CashManagement: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                  <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => setIsTxCategoryModalOpen(false)}>Cancelar</Button>
+                  <Button variant="secondary" className="py-4 uppercase text-[10px] font-bold tracking-widest" onClick={() => closeTxCategoryModal('cancel')}>Cancelar</Button>
                   <Button className="py-4 uppercase text-[10px] font-bold tracking-widest shadow-accent-glow" icon={<Check size={18} />} onClick={handleCreateTxCategory} disabled={!newTxCategoryName.trim()}>Salvar Alocação</Button>
                </div>
             </div>
