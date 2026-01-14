@@ -4,6 +4,12 @@ import mockPerformanceData from './mockPerformanceData';
 
 type PeriodType = 'day' | 'week' | 'month';
 
+function toLocalDateInput(value: string | number | Date) {
+  const d = new Date(value);
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
 function formatBRL(cents: number) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -61,11 +67,11 @@ const palette = {
 
 const CashPerformanceTrends: React.FC = () => {
   // Troque para false para usar a API real
-  const USE_MOCK = false;
+  const USE_MOCK = true;
 
   const [periodType, setPeriodType] = useState<PeriodType>('day');
   // Estado para saber qual botão de dias está ativo
-  const [activeDays, setActiveDays] = useState<1 | 30 | 60 | 90 | null>(30);
+  const [activeDays, setActiveDays] = useState<30 | 60 | 90 | null>(30);
   // Inicializa datas com base na primeira/última venda
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [data, setData] = useState<any>(null);
@@ -85,8 +91,8 @@ const CashPerformanceTrends: React.FC = () => {
         const start = new Date(end);
         start.setDate(end.getDate() - 29); // 30d padrão
         setDateRange({
-          start: start.toISOString().slice(0, 10),
-          end: end.toISOString().slice(0, 10),
+          start: toLocalDateInput(start),
+          end: toLocalDateInput(end),
         });
         setActiveDays(30);
       }
@@ -108,8 +114,8 @@ const CashPerformanceTrends: React.FC = () => {
             const start = new Date(end);
             start.setDate(end.getDate() - 29); // 30d padrão
             setDateRange({
-              start: start.toISOString().slice(0, 10),
-              end: end.toISOString().slice(0, 10),
+              start: toLocalDateInput(start),
+              end: toLocalDateInput(end),
             });
             setActiveDays(30);
           }
@@ -248,7 +254,7 @@ const CashPerformanceTrends: React.FC = () => {
         <div className="flex items-center gap-2">
           {/* Botões de período automático */}
           <div className="flex gap-1 mr-2">
-            {[1, 30, 60, 90].map(days => (
+            {[30, 60, 90].map(days => (
                 <button
                   key={days}
                   type="button"
@@ -262,19 +268,14 @@ const CashPerformanceTrends: React.FC = () => {
                     let endDateStr = dateRange.end;
                     if (data && Array.isArray(data.sales) && data.sales.length > 0) {
                       const sorted = [...data.sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                      endDateStr = new Date(sorted[sorted.length - 1].timestamp).toISOString().slice(0, 10);
+                      endDateStr = toLocalDateInput(sorted[sorted.length - 1].timestamp);
                     }
                     const end = new Date(endDateStr);
                     const start = new Date(end);
-                    if (days === 1) {
-                      // Últimas 24h
-                      start.setDate(end.getDate() - 1);
-                    } else {
-                      start.setDate(end.getDate() - (days - 1));
-                    }
+                    start.setDate(end.getDate() - (days - 1));
                     setDateRange({
-                      start: start.toISOString().slice(0, 10),
-                      end: end.toISOString().slice(0, 10),
+                      start: toLocalDateInput(start),
+                      end: toLocalDateInput(end),
                     });
                     setActiveDays(days);
                   }}
@@ -294,8 +295,8 @@ const CashPerformanceTrends: React.FC = () => {
                   const end = new Date(sorted[sorted.length - 1].timestamp);
                   end.setDate(end.getDate() + 1); // +1 dia para manter padrão inicial
                   setDateRange({
-                    start: start.toISOString().slice(0, 10),
-                    end: end.toISOString().slice(0, 10),
+                    start: toLocalDateInput(start),
+                    end: toLocalDateInput(end),
                   });
                 }
               }}

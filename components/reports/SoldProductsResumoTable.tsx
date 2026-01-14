@@ -149,6 +149,7 @@ const SoldProductsResumoTable: React.FC = () => {
       </div>
       <div className="flex items-center justify-between mb-2 gap-2">
         <div className="text-xs text-slate-400 font-mono">Resumo de Produtos Vendidos</div>
+        
         <div className="flex gap-1 flex-wrap">
           {['30', '60', '90', 'all', 'custom'].map((key) => (
             <button
@@ -207,114 +208,146 @@ const SoldProductsResumoTable: React.FC = () => {
           <table className="min-w-[800px] w-full text-xs text-left text-slate-100 border-separate border-spacing-0">
             <thead className="sticky top-0 z-20 bg-dark-950/80 backdrop-blur-xl">
               <tr>
-                <th
-                  className={[
-                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl select-none cursor-pointer transition-colors",
-                    sort.key === 'product_name' ? 'text-accent' : '',
-                    'hover:bg-cyan-500/10 hover:text-accent',
-                  ].join(' ')}
-                  onClick={() => handleSort('product_name')}
-                >
-                  Produto
-                  {sort.key === 'product_name' && (
-                    <span className="ml-1 inline-block align-middle">
-                      {sort.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </th>
-                <th
-                  className={[
-                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
-                    sort.key === 'cost_price' ? 'text-accent' : '',
-                    'hover:bg-cyan-500/10 hover:text-accent',
-                  ].join(' ')}
-                  onClick={() => handleSort('cost_price')}
-                >
-                  Preço de Custo
-                  {sort.key === 'cost_price' && (
-                    <span className="ml-1 inline-block align-middle">
-                      {sort.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </th>
-                <th
-                  className={[
-                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
-                    sort.key === 'total_quantity' ? 'text-accent' : '',
-                    'hover:bg-cyan-500/10 hover:text-accent',
-                  ].join(' ')}
-                  onClick={() => handleSort('total_quantity')}
-                >
-                  Total Unidades Vendidas
-                  {sort.key === 'total_quantity' && (
-                    <span className="ml-1 inline-block align-middle">
-                      {sort.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </th>
-                <th
-                  className={[
-                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
-                    sort.key === 'total_value' ? 'text-accent' : '',
-                    'hover:bg-cyan-500/10 hover:text-accent',
-                  ].join(' ')}
-                  onClick={() => handleSort('total_value')}
-                >
-                  Valor Total Vendido
-                  {sort.key === 'total_value' && (
-                    <span className="ml-1 inline-block align-middle">
-                      {sort.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </th>
-                <th
-                  className={[
-                    "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
-                    sort.key === 'stock_on_hand' ? 'text-accent' : '',
-                    'hover:bg-cyan-500/10 hover:text-accent',
-                  ].join(' ')}
-                  onClick={() => handleSort('stock_on_hand')}
-                >
-                  Estoque Restante
-                  {sort.key === 'stock_on_hand' && (
-                    <span className="ml-1 inline-block align-middle">
-                      {sort.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </th>
+          <th
+            className={[
+              "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 sticky left-0 z-30 bg-dark-950/80 backdrop-blur-xl select-none cursor-pointer transition-colors",
+              sort.key === "product_name" ? "text-accent" : "",
+              "hover:bg-cyan-500/10 hover:text-accent",
+            ].join(" ")}
+            onClick={() => handleSort("product_name")}
+          >
+            Produto
+            {sort.key === "product_name" && (
+              <span className="ml-1 inline-block align-middle">
+                {sort.direction === "asc" ? "▲" : "▼"}
+              </span>
+            )}
+          </th>
+          <th
+            className={[
+              "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+              sort.key === "cost_price" ? "text-accent" : "",
+              "hover:bg-cyan-500/10 hover:text-accent",
+            ].join(" ")}
+            onClick={() => handleSort("cost_price")}
+          >
+            Preço de Custo
+            {sort.key === "cost_price" && (
+              <span className="ml-1 inline-block align-middle">
+                {sort.direction === "asc" ? "▲" : "▼"}
+              </span>
+            )}
+          </th>
+          <th
+            className={[
+              "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+              sort.key === "total_quantity" ? "text-accent" : "",
+              "hover:bg-cyan-500/10 hover:text-accent",
+            ].join(" ")}
+            onClick={() => handleSort("total_quantity")}
+          >
+            Total Unidades Vendidas
+            {sort.key === "total_quantity" && (
+              <span className="ml-1 inline-block align-middle">
+                {sort.direction === "asc" ? "▲" : "▼"}
+              </span>
+            )}
+          </th>
+          <th
+            className={[
+              "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+              sort.key === "total_value" ? "text-accent" : "",
+              "hover:bg-cyan-500/10 hover:text-accent",
+            ].join(" ")}
+            onClick={() => handleSort("total_value")}
+          >
+            Valor Total Vendido
+            {sort.key === "total_value" && (
+              <span className="ml-1 inline-block align-middle">
+                {sort.direction === "asc" ? "▲" : "▼"}
+              </span>
+            )}
+          </th>
+          <th
+            className={[
+              "py-3 px-3 border-b border-white/10 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 select-none cursor-pointer transition-colors",
+              sort.key === "stock_on_hand" ? "text-accent" : "",
+              "hover:bg-cyan-500/10 hover:text-accent",
+            ].join(" ")}
+            onClick={() => handleSort("stock_on_hand")}
+          >
+            Estoque Restante
+            {sort.key === "stock_on_hand" && (
+              <span className="ml-1 inline-block align-middle">
+                {sort.direction === "asc" ? "▲" : "▼"}
+              </span>
+            )}
+          </th>
               </tr>
             </thead>
             <tbody>
               {products.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 px-4 text-slate-400 text-center">Nenhum produto vendido.</td>
-                </tr>
+          <tr>
+            <td colSpan={5} className="py-8 px-4 text-slate-400 text-center">
+              Nenhum produto vendido.
+            </td>
+          </tr>
               ) : (
-                sortedProducts.map((p: ProductResumo, i: number) => {
-                  const isOdd = i % 2 === 1;
-                  const isLowStock = p.stock_on_hand <= 0;
-                  return (
-                    <tr
-                      key={p.product_id + '-' + i}
-                      className={[
-                        "group transition-colors",
-                        isOdd ? "bg-white/[0.02]" : "bg-transparent",
-                        "hover:bg-cyan-500/5",
-                        "border-b border-white/5",
-                      ].join(" ")}
-                    >
-                      <td className={["py-2.5 px-3 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 max-w-[200px] overflow-hidden text-ellipsis"].join(" ")}>{p.product_name}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">
-                        {p.cost_price ? (p.cost_price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
-                      </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">{p.total_quantity}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">{(p.total_value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                      <td className={["py-2.5 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>{p.stock_on_hand}</td>
-                    </tr>
-                  );
-                })
+          sortedProducts.map((p: ProductResumo, i: number) => {
+            const isOdd = i % 2 === 1;
+            const isLowStock = p.stock_on_hand <= 0;
+            return (
+              <tr
+                key={p.product_id + "-" + i}
+                className={[
+            "group transition-colors",
+            isOdd ? "bg-white/[0.02]" : "bg-transparent",
+            "hover:bg-cyan-500/5",
+            "border-b border-white/5",
+                ].join(" ")}
+              >
+                <td
+            className={[
+              "py-2.5 px-3 whitespace-nowrap sticky left-0 z-10 bg-inherit border-r border-white/5 text-slate-100 max-w-[200px] overflow-hidden text-ellipsis",
+            ].join(" ")}
+                >
+            {p.product_name}
+                </td>
+                <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">
+            {p.cost_price ? (p.cost_price / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}
+                </td>
+                <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">{p.total_quantity}</td>
+                <td className="py-2.5 px-3 whitespace-nowrap font-mono text-slate-100">
+            {(p.total_value / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </td>
+                <td className={["py-2.5 px-3 whitespace-nowrap font-mono", isLowStock ? "text-rose-300" : "text-emerald-300"].join(" ")}>
+            {p.stock_on_hand}
+                </td>
+              </tr>
+            );
+          })
               )}
             </tbody>
+            {products.length > 0 && (
+              <tfoot className="bg-dark-950/70 backdrop-blur-xl border-t border-white/10">
+          <tr>
+            <td className="py-2.5 px-3 text-[11px] font-semibold text-slate-200 sticky left-0 z-20 bg-dark-950/70 border-r border-white/5">
+              Totais
+            </td>
+            <td className="py-2.5 px-3" />
+            <td className="py-2.5 px-3 font-mono text-slate-100">
+              {products.reduce((sum, p) => sum + (p.total_quantity || 0), 0)}
+            </td>
+            <td className="py-2.5 px-3 font-mono text-slate-100">
+              {(products.reduce((sum, p) => sum + (p.total_value || 0), 0) / 100).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </td>
+            <td className="py-2.5 px-3" />
+          </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>

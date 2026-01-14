@@ -65,7 +65,8 @@ const CashManagement: React.FC = () => {
    const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
    const [operatorNameHistory, setOperatorNameHistory] = useState('');
 
-   const [cashSessionDetailsId, setCashSessionDetailsId] = useState<string | null>(null);
+   const [sessionActive, setSessionActive] = useState(false)
+
 
    const [error, setError] = useState<string>('');
 
@@ -134,62 +135,71 @@ const CashManagement: React.FC = () => {
    useEffect(() => {
       if (!user?.id) return;
       setSessionLoading(true);
-      fetch(`/api/cash/open?userId=${user.id}`)
-         .then(async res => {
+      (async () => {
+         try {
+            const res = await fetch(`/api/cash/open?userId=${user.id}`);
             if (!res.ok) {
-               const errorBody = await res.text();
-               console.error('Erro ao buscar sessão aberta:', {
-                  status: res.status,
-                  statusText: res.statusText,
-                  body: errorBody
-               });
-               throw new Error('Nenhum caixa aberto');
-            }
-            const data = await res.json();
-            const sessionId = data.session?.id;
-            if (sessionId) {
-               // Buscar vendas
-               const salesRes = await fetch(`/api/pos/sales?cashSessionId=${sessionId}`);
-               const salesData = salesRes.ok ? await salesRes.json() : { sales: [] };
-               // Buscar suprimentos
-               const suprimentosRes = await fetch(`/api/cash/movements?operatorId=${encodeURIComponent(user.id)}`);
-               const suprimentosData = suprimentosRes.ok ? await suprimentosRes.json() : { movements: [] };
-               // Unir vendas e suprimentos
-               const allMovements = [
-                  ...(salesData.sales || []),
-                  ...(suprimentosData.movements || []).map((m: any) => ({
-                     ...m,
-                     type:
-                        m.type === 'supply_in' ? 'suprimento'
-                           : m.type === 'withdraw_out' ? 'sangria'
-                              : m.type === 'adjustment' ? 'pagamento'
-                                 : m.type
-                  }))
-               ];
-               // Ordenar por data/hora decrescente (mais recente no topo)
-               allMovements.sort((a, b) => (b.timestamp || b.created_at) - (a.timestamp || a.created_at));
-               setSession({
-                  ...data.session,
-                  transactions: allMovements
-               });
-            } else {
+               setSessionActive(false);
                setSession({
                   id: 'N/A',
                   transactions: [],
                   message: 'Nenhuma sessão ativa no momento.'
                });
+               console.log('[CashManagement] Nenhuma sessão ativa encontrada para o usuário.', res.status);
+               return;
             }
-         })
-         .catch(err => {
+
+            const data = await res.json();
+            const sessionId = data.session?.id;
+            const isOpen = data.session?.is_open === 1;
+            if (!sessionId || !isOpen) {
+               setSessionActive(false);
+               setSession({
+                  id: sessionId || 'N/A',
+                  transactions: data.session?.transactions || [],
+                  message: 'Nenhuma sessão ativa no momento.'
+               });
+               return;
+            }
+
+            // Há sessão ativa e aberta
+            setSessionActive(true);
+
+            const salesRes = await fetch(`/api/pos/sales?cashSessionId=${sessionId}`);
+            const salesData = salesRes.ok ? await salesRes.json() : { sales: [] };
+            const suprimentosRes = await fetch(`/api/cash/movements?operatorId=${encodeURIComponent(user.id)}`);
+            const suprimentosData = suprimentosRes.ok ? await suprimentosRes.json() : { movements: [] };
+
+            const allMovements = [
+               ...(salesData.sales || []),
+               ...(suprimentosData.movements || []).map((m: any) => ({
+                  ...m,
+                  type:
+                     m.type === 'supply_in' ? 'suprimento'
+                        : m.type === 'withdraw_out' ? 'sangria'
+                           : m.type === 'adjustment' ? 'pagamento'
+                              : m.type
+               }))
+            ];
+            allMovements.sort((a, b) => (b.timestamp || b.created_at) - (a.timestamp || a.created_at));
+
+            setSession({
+               ...data.session,
+               transactions: allMovements
+            });
+         } catch (err) {
             console.error('Erro ao carregar sessão:', err);
+            setSessionActive(false);
             setSessionError('Nenhum caixa aberto ou erro ao buscar vendas/suprimentos.');
             setSession({
                id: 'N/A',
                transactions: [],
                message: 'Erro ao carregar a sessão atual.'
             });
-         })
-         .finally(() => setSessionLoading(false));
+         } finally {
+            setSessionLoading(false);
+         }
+      })();
    }, [refreshFlag, user?.id]);
 
 
@@ -286,17 +296,17 @@ const CashManagement: React.FC = () => {
 
    // Removido: busca de nomes dos operadores após cashHistory, pois agora é feito junto com o fetch
 
-   if (sessionError) {
-      return (
-         <div className="min-h-screen flex items-center justify-center bg-dark-950">
-            <div className="flex flex-col items-center gap-4">
-               <AlertTriangle size={48} className="text-red-500" />
-               <h1 className="text-2xl font-bold text-white">Erro na Sessão</h1>
-               <p className="text-slate-400 text-center max-w-md">{sessionError}</p>
-            </div>
-         </div>
-      );
-   }
+   // if (sessionError) {
+   //    return (
+   //       <div className="min-h-screen flex items-center justify-center bg-dark-950">
+   //          <div className="flex flex-col items-center gap-4">
+   //             <AlertTriangle size={48} className="text-red-500" />
+   //             <h1 className="text-2xl font-bold text-white">Erro na Sessão</h1>
+   //             <p className="text-slate-400 text-center max-w-md">{sessionError}</p>
+   //          </div>
+   //       </div>
+   //    );
+   // }
 
    if (error) {
       return (
@@ -321,7 +331,7 @@ const CashManagement: React.FC = () => {
    }
 
    return (
-      <div className="p-6 md:p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+      <div className="p-4 md:p-8 flex flex-col min-h-screen overflow-x-hidden overflow-y-auto assemble-view bg-dark-950 bg-cyber-grid relative">
          <div className="flex items-center justify-between shrink-0 mb-6 relative z-10">
             <div>
                <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -329,12 +339,7 @@ const CashManagement: React.FC = () => {
                </h1>
                <p className="text-slate-500 text-xs md:text-sm font-medium">Auditoria em tempo real do fluxo de caixa e sangrias.</p>
             </div>
-            <div className="flex items-center gap-4">
-               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]" />
-                  <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Ativo</span>
-               </div>
-            </div>
+
          </div>
 
          {/* Tabs Principais */}
@@ -377,175 +382,292 @@ const CashManagement: React.FC = () => {
                   <FuturisticSpinner />
                </div>
             ) : (
-               <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0 mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                     {/* ...cards... */}
-                     <Card className="bg-dark-900/40 border-accent/20 shadow-accent-glow/10 p-4">
-                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Total de vendas</p>
-                        <h3 className="text-xl md:text-2xl font-mono font-bold text-accent">
-                           R$ {
-                              (() => {
-                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                 // Filtra apenas vendas: objetos com campo 'status' e array 'items'
-                                 const vendas = session.transactions.filter(
-                                    (tx): tx is SaleTransaction => 'status' in tx && Array.isArray((tx as SaleTransaction).items)
-                                 );
-                                 const totalVendas = vendas.reduce((acc, venda) => {
-                                    if (typeof venda.total === 'number') {
-                                       return acc + venda.total;
-                                    }
-                                    if (Array.isArray(venda.items)) {
-                                       return acc + venda.items.reduce((sum, item) => sum + (item.line_total || item.lineTotal || 0), 0);
-                                    }
-                                    return acc;
-                                 }, 0);
-                                 return (totalVendas / 100).toFixed(2);
-                              })()
-                           }
-                        </h3>
-                     </Card>
-                     <Card className="bg-dark-900/40 border-white/5 p-4">
-                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
-                        <h3 className="text-lg md:text-xl font-mono font-bold text-blue-400">
-                           + R$ {
-                              (() => {
-                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                 let totalSuprimentos = 0;
-                                 session.transactions.forEach(tx => {
-                                    if (tx.type === 'suprimento' && typeof tx.amount === 'number') {
-                                       totalSuprimentos += tx.amount;
-                                    }
-                                 });
-                                 return (totalSuprimentos / 100).toFixed(2);
-                              })()
-                           }
-                        </h3>
-                     </Card>
-                     <Card className="bg-dark-900/40 border-white/5 p-4">
-                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
-                        <h3 className="text-lg md:text-xl font-mono font-bold text-red-400">
-                           - R$ {
-                              (() => {
-                                 if (!session || !Array.isArray(session.transactions)) return '0.00';
-                                 let totalDeducoes = 0;
-                                 session.transactions.forEach(tx => {
-                                    if ((tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number') {
-                                       totalDeducoes += tx.amount;
-                                    }
-                                 });
-                                 return (totalDeducoes / 100).toFixed(2);
-                              })()
-                           }
-                        </h3>
-                     </Card>
-                     <Card className="bg-dark-900/40 border-white/5 p-4">
-                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
-                        <h3 className="text-lg md:text-xl font-mono font-bold text-slate-400">
-                           R$ {calculateCashBalance(session)}
-                        </h3>
-                     </Card>
-                  </div>
 
-                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden min-h-0 relative z-10">
-                     <div className="lg:col-span-8 flex flex-col overflow-hidden animate-in fade-in slide-in-from-left-4 duration-700">
-                        <div className="flex items-center justify-between mb-3 shrink-0 px-2">
-                           <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Fluxo Transacional</h2>
+               <>
+
+                  {sessionActive ? (
+
+                     <div>
+
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 shrink-0 mb-4 sm:mb-6 relative z-10 animate-in fade-in slide-in-from-top-4 duration-500">
+                           <Card className="bg-dark-900/60 border-accent/20 shadow-accent-glow/10 p-2 sm:p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                 <div className="p-1.5 rounded-lg bg-accent/10 text-accent border border-accent/20">
+                                    <ShoppingBag size={14} />
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Total de vendas</p>
+                                    <h3 className="text-base sm:text-lg font-mono font-bold text-accent leading-tight">
+                                       R$ {
+                                          (() => {
+                                             if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                             const vendas = session.transactions.filter(
+                                                (tx): tx is SaleTransaction => 'status' in tx && Array.isArray((tx as SaleTransaction).items)
+                                             );
+                                             const totalVendas = vendas.reduce((acc: number, venda: SaleTransaction) => {
+                                                if (typeof venda.total === 'number') return acc + venda.total;
+                                                if (Array.isArray(venda.items)) {
+                                                   return acc + venda.items.reduce(
+                                                      (sum: number, item: SaleTransaction['items'][number]) =>
+                                                         sum + (typeof item?.line_total === 'number'
+                                                            ? item.line_total
+                                                            : (item as any)?.lineTotal || 0),
+                                                      0
+                                                   );
+                                                }
+                                                return acc;
+                                             }, 0);
+                                             return (totalVendas / 100).toFixed(2);
+                                          })()
+                                       }
+                                    </h3>
+                                 </div>
+                              </div>
+                           </Card>
+
+                           <Card className="bg-dark-900/60 border-white/5 p-2 sm:p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                 <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                                    <ArrowDownLeft size={14} />
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
+                                    <h3 className="text-sm sm:text-base font-mono font-bold text-blue-400 leading-tight">
+                                       + R$ {
+                                          (() => {
+                                             if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                             const totalSuprimentos = (session.transactions as Array<SaleTransaction | MovementTransaction>).reduce(
+                                                (sum: number, tx: SaleTransaction | MovementTransaction) =>
+                                                   'type' in tx && tx.type === 'suprimento' && typeof tx.amount === 'number'
+                                                      ? sum + tx.amount
+                                                      : sum,
+                                                0
+                                             );
+                                             return (totalSuprimentos / 100).toFixed(2);
+                                          })()
+                                       }
+                                    </h3>
+                                 </div>
+                              </div>
+                           </Card>
+
+                           <Card className="bg-dark-900/60 border-white/5 p-2 sm:p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                 
+                                 <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30">
+                                    <ArrowUpRight size={14} />
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
+                                    <h3 className="text-sm sm:text-base font-mono font-bold text-red-400 leading-tight">
+                                       - R$ {
+                                          (() => {
+                                             if (!session || !Array.isArray(session.transactions)) return '0.00';
+                                             const totalDeducoes = (session.transactions as Array<SaleTransaction | MovementTransaction>).reduce(
+                                                (sum: number, tx: SaleTransaction | MovementTransaction) =>
+                                                   'type' in tx && (tx.type === 'sangria' || tx.type === 'pagamento') && typeof tx.amount === 'number'
+                                                      ? sum + tx.amount
+                                                      : sum,
+                                                0
+                                             );
+                                             return (totalDeducoes / 100).toFixed(2);
+                                          })()
+                                       }
+                                    </h3>
+                                 </div>
+                              </div>
+                           </Card>
+
+                           <Card className="bg-dark-900/60 border-white/5 p-2 sm:p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                 <div className="p-1.5 rounded-lg bg-slate-500/10 text-slate-300 border border-white/10">
+                                    <Calculator size={14} />
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
+                                    <h3 className="text-sm sm:text-base font-mono font-bold text-slate-200 leading-tight">
+                                       R$ {calculateCashBalance(session)}
+                                    </h3>
+                                 </div>
+                              </div>
+                           </Card>
                         </div>
+
 
                         {/* Tabela de Movimentações */}
-                        <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-2xl backdrop-blur-md">
-                           <div className="overflow-y-auto flex-1 custom-scrollbar">
-                              <table className="w-full text-left border-collapse">
-                                 <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
-                                    <tr className="text-slate-600 text-[9px] uppercase font-bold tracking-[0.2em]">
-                                       <th className="px-6 py-4">Movimento</th>
-                                       <th className="px-6 py-4">Evento</th>
-                                       <th className="px-6 py-4">Valor</th>
-                                       <th className="px-6 py-4 text-right">Hora</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody className="divide-y divide-white/5">
-                                    {console.log('Sessão atual:', session)}
-                                    {(session && Array.isArray(session.transactions))
-                                       ? session.transactions
-                                          .filter(tx => {
-                                             // Exibir apenas vendas, suprimentos, sangrias e pagamentos
-                                             if ('status' in tx && Array.isArray(tx.items)) return true; // SaleTransaction
-                                             if ('type' in tx && ['suprimento', 'sangria', 'pagamento'].includes(tx.type)) return true; // MovementTransaction
-                                             return false;
-                                          })
-                                          .map(tx => {
-                                             if ('status' in tx && Array.isArray(tx.items)) {
-                                                // SaleTransaction
-                                                const total = typeof tx.total === 'number' ? tx.total : tx.items.reduce((sum, item) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0);
-                                                const description = `Venda #${tx.id}`;
-                                                return (
-                                                   <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                                      <td className="px-6 py-4">
-                                                         <div className="flex items-center gap-3">
-                                                            <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor('sale')}`}>{getStatusIcon('sale')}</div>
-                                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">sale</span>
-                                                         </div>
-                                                      </td>
-                                                      <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description.toString().slice(0, 15)}</td>
-                                                      <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                      <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                   </tr>
-                                                );
-                                             } else if ('type' in tx) {
-                                                // MovementTransaction
-                                                const type = tx.type;
-                                                const total = typeof tx.amount === 'number' ? tx.amount : 0;
-                                                const description = tx.description;
-                                                return (
-                                                   <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
-                                                      <td className="px-6 py-4">
-                                                         <div className="flex items-center gap-3">
-                                                            <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
-                                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
-                                                         </div>
-                                                      </td>
-                                                      <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
-                                                      <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                      <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                   </tr>
-                                                );
-                                             }
-                                             return null;
-                                          })
-                                       : null}
-                                 </tbody>
-                              </table>
+                        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden min-h-0 relative z-10">
+                           <div className="lg:col-span-8 flex flex-col overflow-hidden animate-in fade-in slide-in-from-left-4 duration-700">
+                              <div className="flex items-center justify-between mb-3 shrink-0 px-2">
+                                 <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Fluxo Transacional</h2>
+                              </div>
+
+                              {/* Tabela de Movimentações */}
+                              <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-2xl backdrop-blur-md">
+                                 <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                    <table className="w-full text-left border-collapse">
+                                       <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
+                                          <tr className="text-slate-600 text-[9px] uppercase font-bold tracking-[0.2em]">
+                                             <th className="px-6 py-4">Movimento</th>
+                                             <th className="px-6 py-4">Evento</th>
+                                             <th className="px-6 py-4">Valor</th>
+                                             <th className="px-6 py-4 text-right">Hora</th>
+                                          </tr>
+                                       </thead>
+                                       <tbody className="divide-y divide-white/5">
+                                          {console.log('Sessão atual:', session)}
+                                          {(session && Array.isArray(session.transactions))
+                                             ? (session.transactions as Array<SaleTransaction | MovementTransaction>)
+                                                .filter((tx: SaleTransaction | MovementTransaction) => {
+                                                   // Exibir apenas vendas, suprimentos, sangrias e pagamentos
+                                                   if ('status' in tx && Array.isArray(tx.items)) return true; // SaleTransaction
+                                                   if ('type' in tx && ['suprimento', 'sangria', 'pagamento'].includes(tx.type)) return true; // MovementTransaction
+                                                   return false;
+                                                })
+                                                .map((tx: SaleTransaction | MovementTransaction) => {
+                                                   if ('status' in tx && Array.isArray(tx.items)) {
+                                                      // SaleTransaction
+                                                      const total = typeof tx.total === 'number'
+                                                         ? tx.total
+                                                         : tx.items.reduce(
+                                                            (sum: number, item: SaleTransaction['items'][number]) =>
+                                                               sum + (typeof item?.line_total === 'number' ? item.line_total : 0),
+                                                            0
+                                                         );
+                                                      const description = `Venda #${tx.id}`;
+                                                      return (
+                                                         <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                            <td className="px-6 py-4">
+                                                               <div className="flex items-center gap-3">
+                                                                  <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor('sale')}`}>{getStatusIcon('sale')}</div>
+                                                                  <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">sale</span>
+                                                               </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description.toString().slice(0, 15)}</td>
+                                                            <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                            <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                         </tr>
+                                                      );
+                                                   } else if ('type' in tx) {
+                                                      // MovementTransaction
+                                                      const type = tx.type;
+                                                      const total = typeof tx.amount === 'number' ? tx.amount : 0;
+                                                      const description = tx.description;
+                                                      return (
+                                                         <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="group hover:bg-white/5 transition-all cursor-pointer active:scale-[0.99]">
+                                                            <td className="px-6 py-4">
+                                                               <div className="flex items-center gap-3">
+                                                                  <div className={`p-1.5 rounded-lg bg-white/2 border border-white/5 ${getStatusColor(type)}`}>{getStatusIcon(type)}</div>
+                                                                  <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">{type}</span>
+                                                               </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
+                                                            <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                            <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                         </tr>
+                                                      );
+                                                   }
+                                                   return null;
+                                                })
+                                             : null}
+                                       </tbody>
+                                    </table>
+                                 </div>
+                              </div>
+                           </div>
+                           {/* Painel de Comandos */}
+                           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 animate-in fade-in slide-in-from-right-4 duration-700 overflow-y-auto lg:overflow-visible custom-scrollbar">
+                              <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 px-2 shrink-0">Comandos</h2>
+                              <div className="flex flex-col gap-3 shrink-0">
+                                 <Button variant="secondary" onClick={() => handleOpenProtectedModal('suprimento')} className="justify-start py-4 px-5 border-white/5 hover:border-blue-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowDownLeft className="text-blue-400 group-hover:-translate-y-1 transition-transform" size={18} />}>
+                                    <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Suprimento</p></div>
+                                 </Button>
+                                 <Button variant="secondary" onClick={() => handleOpenProtectedModal('sangria')} className="justify-start py-4 px-5 border-white/5 hover:border-red-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowUpRight className="text-red-400 group-hover:translate-y-1 transition-transform" size={18} />}>
+                                    <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Sangria</p></div>
+                                 </Button>
+                                 <Button variant="secondary" onClick={() => handleOpenProtectedModal('pagamento')} className="justify-start py-4 px-5 border-white/5 hover:border-amber-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<FileText className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />}>
+                                    <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Pagamento</p></div>
+                                 </Button>
+                              </div>
+                              <div className="mt-auto lg:mt-6 pt-4 border-t border-white/5 shrink-0">
+                                 <div className="bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center shadow-inner">
+                                    <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Abertura do Caixa</p>
+                                    <h3 className="text-lg md:text-xl font-mono font-bold text-accent">
+                                       {session && session.opened_at
+                                          ? new Date(session.opened_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                                          : '--'}
+                                    </h3>
+                                 </div>
+                              </div>
                            </div>
                         </div>
                      </div>
-                     {/* Painel de Comandos */}
-                     <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 animate-in fade-in slide-in-from-right-4 duration-700 overflow-y-auto lg:overflow-visible custom-scrollbar">
-                        <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 px-2 shrink-0">Comandos</h2>
-                        <div className="flex flex-col gap-3 shrink-0">
-                           <Button variant="secondary" onClick={() => handleOpenProtectedModal('suprimento')} className="justify-start py-4 px-5 border-white/5 hover:border-blue-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowDownLeft className="text-blue-400 group-hover:-translate-y-1 transition-transform" size={18} />}>
-                              <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Suprimento</p></div>
-                           </Button>
-                           <Button variant="secondary" onClick={() => handleOpenProtectedModal('sangria')} className="justify-start py-4 px-5 border-white/5 hover:border-red-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<ArrowUpRight className="text-red-400 group-hover:translate-y-1 transition-transform" size={18} />}>
-                              <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Sangria</p></div>
-                           </Button>
-                           <Button variant="secondary" onClick={() => handleOpenProtectedModal('pagamento')} className="justify-start py-4 px-5 border-white/5 hover:border-amber-500/30 group bg-dark-900/40 backdrop-blur-md" icon={<FileText className="text-amber-500 group-hover:scale-110 transition-transform" size={18} />}>
-                              <div className="text-left"><p className="text-[10px] font-bold uppercase tracking-widest">Pagamento</p></div>
-                           </Button>
-                        </div>
-                        <div className="mt-auto lg:mt-6 pt-4 border-t border-white/5 shrink-0">
-                           <div className="bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center shadow-inner">
-                              <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Abertura do Caixa</p>
-                              <h3 className="text-lg md:text-xl font-mono font-bold text-accent">
-                                 {session && session.opened_at
-                                    ? new Date(session.opened_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                                    : '--'}
-                              </h3>
+                  ) : (
+                     <div>
+                        <div className="flex-1 flex items-center justify-center relative overflow-visible py-4">
+                           {/* Animated background grid */}
+                           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent animate-pulse"></div>
+
+                           {/* Animated scan lines */}
+                           <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_0%,rgba(6,182,212,0.03)_50%,transparent_100%)] bg-size-[100%_4px] animate-scan"></div>
+
+                           <div className="relative z-10 flex flex-col items-center gap-6 text-center max-w-2xl px-6 animate-in fade-in zoom-in-95 duration-700">
+                              {/* Holographic icon container */}
+                              <div className="relative pt-4">
+                                 <div className="absolute inset-0 bg-accent/20 blur-3xl animate-pulse"></div>
+                                 <div className="relative p-6 rounded-3xl bg-dark-900/60 border-2 border-accent/30 backdrop-blur-xl shadow-[0_0_50px_rgba(6,182,212,0.3)] animate-float">
+                                    <div className="relative">
+                                       <DollarSign size={72} className="text-accent animate-pulse" strokeWidth={1.5} />
+                                       <div className="absolute inset-0 bg-accent/20 blur-2xl animate-ping"></div>
+                                    </div>
+                                 </div>
+                                 {/* Corner accents */}
+                                 <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-accent/50 rounded-tl-lg"></div>
+                                 <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-accent/50 rounded-tr-lg"></div>
+                                 <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-accent/50 rounded-bl-lg"></div>
+                                 <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-accent/50 rounded-br-lg"></div>
+                              </div>
+
+                              {/* Status message */}
+                              <div className="space-y-3">
+                                 <div className="inline-flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.2)] animate-in slide-in-from-top-4 duration-500">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_#ef4444]"></div>
+                                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-[0.3em]">Sistema Inativo</span>
+                                 </div>
+
+                                 <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight animate-in slide-in-from-top-6 duration-700">
+                                    Nenhum Caixa Aberto
+                                 </h2>
+
+                                 <p className="text-slate-400 text-sm md:text-base max-w-md leading-relaxed animate-in slide-in-from-top-8 duration-900">
+                                    Não há sessões de caixa ativas no momento. Inicie uma nova sessão para começar as operações financeiras.
+                                 </p>
+                              </div>
+
+
+
+                              {/* Action hint */}
+                              <div className="mt-6 p-5 bg-accent/5 border border-accent/20 rounded-2xl backdrop-blur-sm animate-in slide-in-from-bottom-6 duration-1100">
+                                 <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-accent/10 rounded-lg shrink-0">
+                                       <Info size={20} className="text-accent" />
+                                    </div>
+                                    <div className="text-left space-y-2">
+                                       <h4 className="text-xs font-bold uppercase tracking-widest text-accent">Como Iniciar</h4>
+                                       <p className="text-[11px] text-slate-400 leading-relaxed">
+                                          Para abrir uma nova sessão de caixa, navegue até a tela do <span className="text-accent font-bold">Terminal</span>.
+                                       </p>
+                                    </div>
+                                 </div>
+                              </div>
                            </div>
                         </div>
                      </div>
-                  </div>
+                  )}
+
+
                </>
+
             )
          ) : activeTab === 'history' ? (
             /* ABA DE HISTÓRICO */
