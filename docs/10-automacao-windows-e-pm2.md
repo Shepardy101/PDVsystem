@@ -1,10 +1,10 @@
 # 10 - Automação Windows e pm2
 
 ## Scripts .bat (identificados)
-- `instalar-app.bat`: instala dependências, pm2, prepara backend e cria atalho Chrome app.
+- `instalar-app.bat`: `npm ci --production`, garante pm2, sobe backend em produção e cria atalho Chrome app.
 - `iniciar-app.bat`: inicia backend (pm2) se necessário e abre Chrome em modo app para `http://localhost:8787`.
-- `package-app.bat`: empacota dist/uploads/db/migrations/server em zip.
-- `build/instalar-app.bat`, `build/iniciar-app.bat`, `build/package-app.bat`: variantes para distribuição.
+- `package-app.bat`: cria staging com dist, server/dist, banco, uploads, scripts e gera `build/PDVsystem-release.zip`.
+- `build/*`: wrappers que chamam os scripts da raiz.
 - `build/instalar-cyberpunk.bat`: instala backend/pm2 com mensagens estilizadas.
 - `build/criar-db-e-root.bat`: executa migrations e cria usuário root padrão.
 

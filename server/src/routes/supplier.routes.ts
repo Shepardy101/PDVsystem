@@ -3,6 +3,16 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/database';
 
+type SupplierPayload = {
+    name?: string;
+    fantasy?: string;
+    cnpj?: string;
+    category?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+};
+
 const router = Router();
 
 // Listar fornecedores
@@ -13,7 +23,7 @@ router.get('/', (req, res) => {
 
 // Criar fornecedor
 router.post('/', (req, res) => {
-    let { name, fantasy, cnpj, category, email, phone, address } = req.body;
+    const { name, fantasy, cnpj, category, email, phone, address } = (req.body as SupplierPayload);
     if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
     const incomingCnpj = (cnpj && String(cnpj).trim()) ? String(cnpj).trim() : '';
     const cnpjNormalized = incomingCnpj ? incomingCnpj.replace(/\D/g, '').padStart(5, '0') : '';
@@ -34,13 +44,13 @@ router.post('/', (req, res) => {
 // Atualizar fornecedor
 router.put('/:id', (req, res) => {
     const { id } = req.params;
-    let { name, fantasy, cnpj, category, email, phone, address } = req.body;
-    const existing = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    const { name, fantasy, cnpj, category, email, phone, address } = (req.body as SupplierPayload);
+    const existing = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id) as (SupplierPayload & { id: string; cnpj?: string; fantasy?: string; category?: string; email?: string; phone?: string; address?: string });
     if (!existing) return res.status(404).json({ error: 'Fornecedor não encontrado' });
     if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
 
     // Mantém CNPJ existente se não vier no payload; se vier vazio, limpa para ''
-    const incomingCnpj = (cnpj === undefined || cnpj === null) ? existing.cnpj : String(cnpj).trim();
+    const incomingCnpj = (cnpj === undefined || cnpj === null) ? (existing.cnpj ?? '') : String(cnpj).trim();
     const normalizedCnpj = incomingCnpj === '' ? '' : incomingCnpj.replace(/\D/g, '').padStart(5, '0');
     // Verifica duplicidade apenas se houver CNPJ após normalização
     if (normalizedCnpj) {

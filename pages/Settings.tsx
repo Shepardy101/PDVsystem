@@ -14,8 +14,33 @@ import { Button, Card, Input, Switch, Badge } from '../components/UI';
 import AccessDenied from '@/components/AccessDenied';
 import PerformanceMetricsModal from '../components/modals/PerformanceMetricsModal';
 
+// Reusable small detail row for the IP detail modal
+const DetailRow = ({ label, value }: { label: string; value: string }) => (
+   <div className="bg-black/30 border border-white/5 rounded-lg px-3 py-2">
+      <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">{label}</div>
+      <div className="text-[12px] text-slate-200 break-words leading-tight">{value || '-'}</div>
+   </div>
+);
+
 // --- Painel de Controle de IPs ---
-type IpEntry = { id: number; ip: string; hostname?: string|null; tentado_em?: string; autorizado_em?: string; autorizado_por?: string|null };
+type IpEntry = {
+   id: number;
+   ip: string;
+   hostname?: string|null;
+   tentado_em?: string;
+   autorizado_em?: string;
+   autorizado_por?: string|null;
+   user_agent?: string|null;
+   requested_path?: string|null;
+   request_method?: string|null;
+   referer?: string|null;
+   accept_language?: string|null;
+   accept_header?: string|null;
+   accept_encoding?: string|null;
+   forwarded_for_raw?: string|null;
+   remote_port?: number|null;
+   http_version?: string|null;
+};
 type IPControlPanelProps = { canManage: boolean };
 
 const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
@@ -25,6 +50,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
    const [error, setError] = useState<string|null>(null);
    const [blocked, setBlocked] = useState<IpEntry[]>([]);
    const [refresh, setRefresh] = useState(0);
+   const [selectedIp, setSelectedIp] = useState<{ entry: IpEntry; list: 'pending' | 'allowed' | 'blocked' } | null>(null);
 
    useEffect(() => {
       let isMounted = true;
@@ -106,6 +132,9 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
       }
    };
 
+   const openDetails = (entry: IpEntry, list: 'pending' | 'allowed' | 'blocked') => setSelectedIp({ entry, list });
+   const closeDetails = () => setSelectedIp(null);
+
    return (
       <div className="mt-8 rounded-3xl overflow-hidden border border-accent/20 bg-gradient-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
          <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
@@ -147,17 +176,18 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
                <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar-thin">
                   {pending.length === 0 && <div className="text-slate-600 text-xs font-mono bg-dark-950/60 border border-white/5 rounded-xl px-3 py-2">Nenhum IP pendente.</div>}
                   {pending.map(ip => (
-                     <div key={ip.id} className="bg-[#0b1924] border border-accent/20 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(34,211,238,0.7)]">
+                     <div
+                        key={ip.id}
+                        className="bg-[#0b1924] border border-accent/20 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(34,211,238,0.7)] cursor-pointer hover:border-accent/40"
+                        onClick={() => openDetails(ip, 'pending')}
+                     >
                         <div className="flex items-center justify-between">
                            <div className="font-mono text-xs md:text-sm text-accent">{ip.ip}</div>
-                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-mono text-slate-400">
-                              <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-400/30 text-amber-200">Pendente</span>
-                              <span>{ip.tentado_em?.replace('T',' ').slice(0,19)}</span>
-                           </div>
+                           <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-400/30 text-amber-200 text-[9px] md:text-[10px] font-mono">Pendente</span>
                         </div>
                         <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
                            <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
-                           <div className="flex gap-2">
+                           <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                               <Button size="xs" variant="success" disabled={loading || !canManage} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
                               <Button size="xs" variant="danger" disabled={loading || !canManage} onClick={() => handleDeny(ip.ip)}>deny</Button>
                            </div>
@@ -180,17 +210,18 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
                <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar-thin">
                   {allowed.length === 0 && <div className="text-slate-600 text-xs font-mono bg-dark-950/60 border border-white/5 rounded-xl px-3 py-2">Nenhum IP autorizado.</div>}
                   {allowed.map(ip => (
-                     <div key={ip.id} className="bg-[#0b1f1a] border border-emerald-400/20 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(16,185,129,0.7)]">
+                     <div
+                        key={ip.id}
+                        className="bg-[#0b1f1a] border border-emerald-400/20 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(16,185,129,0.7)] cursor-pointer hover:border-emerald-300/40"
+                        onClick={() => openDetails(ip, 'allowed')}
+                     >
                         <div className="flex items-center justify-between">
                            <div className="font-mono text-xs md:text-sm text-emerald-200">{ip.ip}</div>
-                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-mono text-slate-400">
-                              <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/30 text-emerald-200">Allow</span>
-                              <span>{ip.autorizado_em?.replace('T',' ').slice(0,19)}</span>
-                           </div>
+                           <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/30 text-emerald-200 text-[9px] md:text-[10px] font-mono">Allow</span>
                         </div>
                         <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
                            <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
-                           <div className="flex gap-2">
+                           <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                               <Button size="xs" variant="danger" disabled={loading || !canManage} onClick={() => handleRemove(ip.ip)}>remove</Button>
                            </div>
                         </div>
@@ -212,17 +243,18 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
                <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar-thin">
                   {blocked.length === 0 && <div className="text-slate-600 text-xs font-mono bg-dark-950/60 border border-white/5 rounded-xl px-3 py-2">Nenhum IP bloqueado.</div>}
                   {blocked.map(ip => (
-                     <div key={ip.id} className="bg-[#1f0b12] border border-rose-400/25 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(244,63,94,0.7)]">
+                     <div
+                        key={ip.id}
+                        className="bg-[#1f0b12] border border-rose-400/25 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(244,63,94,0.7)] cursor-pointer hover:border-rose-300/40"
+                        onClick={() => openDetails(ip, 'blocked')}
+                     >
                         <div className="flex items-center justify-between">
                            <div className="font-mono text-xs md:text-sm text-rose-200">{ip.ip}</div>
-                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-mono text-slate-400">
-                              <span className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-400/30 text-rose-200">Blocked</span>
-                              <span>{ip.autorizado_em?.replace('T',' ').slice(0,19) || ip.tentado_em?.replace('T',' ').slice(0,19)}</span>
-                           </div>
+                           <span className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-400/30 text-rose-200 text-[9px] md:text-[10px] font-mono">Blocked</span>
                         </div>
                         <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
                            <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
-                           <div className="flex gap-2">
+                           <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                               <Button size="xs" variant="success" disabled={loading || !canManage} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
                               <Button size="xs" variant="danger" disabled={loading || !canManage} onClick={() => handleRemove(ip.ip)}>remove</Button>
                            </div>
@@ -232,6 +264,38 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage }) => {
                </div>
             </div>
          </div>
+
+         {selectedIp && (
+            <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={closeDetails}>
+               <div className="bg-dark-950 border border-accent/30 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-black/60">
+                     <div className="flex items-center gap-2">
+                        <Badge variant={selectedIp.list === 'pending' ? 'secondary' : selectedIp.list === 'allowed' ? 'success' : 'danger'} className="uppercase text-[10px] tracking-[0.3em]">
+                           {selectedIp.list}
+                        </Badge>
+                        <span className="font-mono text-sm text-white">{selectedIp.entry.ip}</span>
+                     </div>
+                     <Button size="sm" variant="secondary" onClick={closeDetails}>Fechar</Button>
+                  </div>
+                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px] text-slate-200 font-mono overflow-y-auto max-h-[75vh]">
+                     <DetailRow label="Hostname" value={selectedIp.entry.hostname || '-'} />
+                     <DetailRow label="Tentado em" value={selectedIp.entry.tentado_em?.replace('T',' ').slice(0,19) || '-'} />
+                     <DetailRow label="Autorizado em" value={selectedIp.entry.autorizado_em?.replace('T',' ').slice(0,19) || '-'} />
+                     <DetailRow label="Autorizado por" value={selectedIp.entry.autorizado_por || '-'} />
+                     <DetailRow label="User-Agent" value={selectedIp.entry.user_agent || '-'} />
+                     <DetailRow label="Accept-Language" value={selectedIp.entry.accept_language || '-'} />
+                     <DetailRow label="Accept" value={selectedIp.entry.accept_header || '-'} />
+                     <DetailRow label="Accept-Encoding" value={selectedIp.entry.accept_encoding || '-'} />
+                     <DetailRow label="Rota" value={selectedIp.entry.requested_path || '-'} />
+                     <DetailRow label="Método" value={selectedIp.entry.request_method || '-'} />
+                     <DetailRow label="Referer" value={selectedIp.entry.referer || '-'} />
+                     <DetailRow label="X-Forwarded-For" value={selectedIp.entry.forwarded_for_raw || '-'} />
+                     <DetailRow label="Porta Remota" value={selectedIp.entry.remote_port?.toString() || '-'} />
+                     <DetailRow label="HTTP" value={selectedIp.entry.http_version || '-'} />
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
    );
 };

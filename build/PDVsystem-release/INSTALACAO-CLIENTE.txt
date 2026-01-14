@@ -1,0 +1,20 @@
+Guia rápido de instalação (cliente final)
+=======================================
+
+1) Descompacte o arquivo PDVsystem-release.zip em uma pasta de sua escolha.
+2) Abra um Prompt (ou PowerShell) nessa pasta e execute: instalar-app.bat
+   - O script instala dependências (modo produção), configura pm2 e cria um atalho PDVsystem.lnk.
+3) Para abrir o sistema:
+   - Use o atalho PDVsystem.lnk (abre no navegador em modo aplicativo) OU
+   - Rode iniciar-app.bat para iniciar/garantir o backend e abrir o app.
+
+URLs e porta
+- O sistema roda em http://localhost:8787
+
+Requisitos
+- Windows com Node.js instalado.
+- Navegador Google Chrome (para o modo app do atalho).
+
+Observações
+- pm2 mantém o backend rodando em segundo plano. Se reiniciar o PC, rode iniciar-app.bat ou configure pm2 startup conforme necessidade.
+- O banco de dados já vai pronto no pacote (data/novabev.sqlite). Faça backup periódico desse arquivo e da pasta public/uploads/.

@@ -138,8 +138,9 @@
 - `value TEXT NOT NULL`
 - Seeds: `('admin_password','admin123')`, `('can_approve_movements','true')`
 
-### allowed_ips / pending_ips (0011)
-- Criadas em 0011 (não exibidas no recorte, mas usadas por `ipAccessControl` para whitelist/pending).
+### allowed_ips / pending_ips (0011, 0025, 0026)
+- `allowed_ips`: `id INTEGER PK AUTOINCREMENT`, `ip TEXT NOT NULL UNIQUE`, `hostname TEXT`, `autorizado_em DATETIME DEFAULT CURRENT_TIMESTAMP`, `autorizado_por TEXT`.
+- `pending_ips`: `id INTEGER PK AUTOINCREMENT`, `ip TEXT NOT NULL UNIQUE`, `hostname TEXT`, `user_agent TEXT`, `requested_path TEXT`, `request_method TEXT`, `referer TEXT`, `accept_language TEXT`, `accept_header TEXT`, `accept_encoding TEXT`, `forwarded_for_raw TEXT`, `remote_port INTEGER`, `http_version TEXT`, `tentado_em DATETIME DEFAULT CURRENT_TIMESTAMP`. Detalhes adicionados em 0025/0026.
 
 ## Padrões
 - Valores monetários sempre inteiros em centavos.

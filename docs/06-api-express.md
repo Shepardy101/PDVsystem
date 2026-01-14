@@ -60,8 +60,18 @@
 - `POST /api/admin-db/query`: query builder segura (valida colunas, ops).
 - `POST /api/admin-db/reset`: limpa tabelas e recria root (senha texto "root").
 
+## Admin Maintenance (`server/src/routes/admin/maintenance.routes.ts`)
+- Guard: `guardAdminDb` (mesma proteção de admin-db; exige `ENABLE_DB_ADMIN === 'true'` e localhost).
+- `POST /api/admin/maintenance/purge-cache`: limpa logs e pending_ips; registra auditoria.
+- `POST /api/admin/maintenance/wipe-local`: desliga FKs, limpa todas as tabelas exceto `settings` e `schema_version`, reseta sequences, recria root user; reativa FKs; registra auditoria.
+
 ## IP Control (`server/src/routes/admin/ipControl.routes.ts`)
-- Registrada antes do middleware global; detalhes da rota não exibidos (lacuna). Middleware `ipAccessControl` usa tabelas allowed_ips/pending_ips.
+- Registrada antes do middleware global (acesso liberado). Middleware `ipAccessControl` grava tentativas em `pending_ips` com IP, hostname, user_agent, requested_path, request_method, referer, accept_language, accept_header, accept_encoding, forwarded_for_raw, remote_port e http_version.
+- `GET /api/admin/ip-control/pending`: lista fila de aprovação com os campos acima + `tentado_em`.
+- `GET /api/admin/ip-control/allowed`: lista whitelist (`ip`, `hostname`, `autorizado_em`, `autorizado_por`).
+- `POST /api/admin/ip-control/allow` body `{ ip, hostname?, autorizado_por? }`: remove de pending (se existir) e insere em allowed.
+- `POST /api/admin/ip-control/deny` body `{ ip }`: remove da fila pending.
+- `POST /api/admin/ip-control/remove` body `{ ip }`: remove da whitelist.
 
 ## Sys
 - Rotas em `server/src/routes/sys` (não exibidas; lacuna provável para métricas/uploads).

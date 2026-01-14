@@ -12,6 +12,16 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
   // Captura IP real (X-Forwarded-For se atrás de proxy)
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
   const hostname = req.hostname || req.headers['host'] || null;
+  const userAgent = (req.headers['user-agent'] as string) || null;
+  const requestedPath = req.originalUrl || req.path;
+  const requestMethod = req.method;
+  const referer = (req.headers['referer'] as string) || (req.headers['referrer'] as string) || null;
+  const acceptLanguage = (req.headers['accept-language'] as string) || null;
+  const acceptHeader = (req.headers['accept'] as string) || null;
+  const acceptEncoding = (req.headers['accept-encoding'] as string) || null;
+  const forwardedForRaw = (req.headers['x-forwarded-for'] as string) || null;
+  const remotePort = (req.socket as any)?.remotePort || null;
+  const httpVersion = req.httpVersion || null;
   console.log(`[IPAccess] Requisição recebida de IP: ${ip} | Hostname: ${hostname} | Path: ${req.path}`);
 
 
@@ -34,13 +44,65 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
 
   if (!pending) {
     try {
-      db.prepare('INSERT INTO pending_ips (ip, hostname) VALUES (?, ?)').run(ip, hostname);
+      db.prepare(`
+        INSERT INTO pending_ips (
+          ip, hostname, user_agent, requested_path, request_method, referer,
+          accept_language, accept_header, accept_encoding, forwarded_for_raw,
+          remote_port, http_version
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        ip,
+        hostname,
+        userAgent,
+        requestedPath,
+        requestMethod,
+        referer,
+        acceptLanguage,
+        acceptHeader,
+        acceptEncoding,
+        forwardedForRaw,
+        remotePort,
+        httpVersion
+      );
       console.log(`[IPAccess] IP PENDENTE registrado no banco: ${ip} (${hostname})`);
     } catch (err) {
       console.error(`[IPAccess] ERRO ao registrar IP pendente: ${ip} (${hostname})`, err);
     }
   } else {
-    console.log(`[IPAccess] IP PENDENTE já registrado: ${ip} (${hostname})`);
+    try {
+      db.prepare(`
+        UPDATE pending_ips
+        SET hostname = COALESCE(?, hostname),
+            user_agent = ?,
+            requested_path = ?,
+            request_method = ?,
+            referer = ?,
+            accept_language = ?,
+            accept_header = ?,
+            accept_encoding = ?,
+            forwarded_for_raw = ?,
+            remote_port = ?,
+            http_version = ?,
+            tentado_em = CURRENT_TIMESTAMP
+        WHERE ip = ?
+      `).run(
+        hostname || null,
+        userAgent,
+        requestedPath,
+        requestMethod,
+        referer,
+        acceptLanguage,
+        acceptHeader,
+        acceptEncoding,
+        forwardedForRaw,
+        remotePort,
+        httpVersion,
+        ip
+      );
+      console.log(`[IPAccess] IP PENDENTE atualizado: ${ip} (${hostname})`);
+    } catch (err) {
+      console.error(`[IPAccess] ERRO ao atualizar IP pendente: ${ip} (${hostname})`, err);
+    }
   }
 
   // Bloqueia acesso

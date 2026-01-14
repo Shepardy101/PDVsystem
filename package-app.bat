@@ -1,17 +1,46 @@
 @echo off
-REM Script para empacotar a aplicação para distribuição
-REM Gera um arquivo PDVsystem-20260112.zip com os arquivos necessários
+setlocal
+REM Empacota artefatos de produção em um .zip pronto para levar ao cliente.
 
-set ZIPNAME=PDVsystem-20260112.zip
 set OUTDIR=build
+set STAGEDIR=%OUTDIR%\PDVsystem-release
+set ZIPNAME=PDVsystem-release.zip
 
-REM Limpa build anterior
-if exist %OUTDIR%\%ZIPNAME% del %OUTDIR%\%ZIPNAME%
+echo Limpando artefatos anteriores...
+if exist "%STAGEDIR%" rmdir /s /q "%STAGEDIR%"
+if exist "%OUTDIR%\%ZIPNAME%" del /f /q "%OUTDIR%\%ZIPNAME%"
 
+echo Criando staging em %STAGEDIR%...
+mkdir "%STAGEDIR%" >nul
 
-REM Compacta todos os arquivos essenciais para o pacote final
-powershell Compress-Archive -Path dist,public\uploads,data\novabev.sqlite,package.json,package-lock.json,README.md,iniciar-app.bat,instalar-app.bat,criar-atalho-app.bat,server,server\migrations -DestinationPath %OUTDIR%\%ZIPNAME% -Force
+echo Copiando frontend (dist)...
+xcopy /e /i /y "dist" "%STAGEDIR%\dist" >nul
+
+echo Copiando backend compilado (server/dist)...
+xcopy /e /i /y "server\dist" "%STAGEDIR%\server\dist" >nul
+
+echo Copiando banco de dados (data/novabev.sqlite)...
+if not exist "%STAGEDIR%\data" mkdir "%STAGEDIR%\data"
+copy /y "data\novabev.sqlite" "%STAGEDIR%\data\novabev.sqlite" >nul
+
+echo Copiando uploads...
+xcopy /e /i /y "public\uploads" "%STAGEDIR%\public\uploads" >nul
+
+echo Copiando manifestos e scripts...
+copy /y "package.json" "%STAGEDIR%" >nul
+copy /y "package-lock.json" "%STAGEDIR%" >nul
+copy /y "README.md" "%STAGEDIR%" >nul
+copy /y "instalar-app.bat" "%STAGEDIR%" >nul
+copy /y "iniciar-app.bat" "%STAGEDIR%" >nul
+copy /y "criar-atalho-app.bat" "%STAGEDIR%" >nul
+copy /y "INSTALACAO-CLIENTE.txt" "%STAGEDIR%" >nul
+
+echo Copiando migrations (referencia)...
+xcopy /e /i /y "server\src\db\migrations" "%STAGEDIR%\server\src\db\migrations" >nul
+
+echo Gerando zip final...
+if not exist "%OUTDIR%" mkdir "%OUTDIR%"
+powershell -Command "Compress-Archive -Path '%STAGEDIR%\*' -DestinationPath '%OUTDIR%\%ZIPNAME%' -Force"
 
 echo Pacote gerado em %OUTDIR%\%ZIPNAME%
-
-echo Pacote gerado em %OUTDIR%\%ZIPNAME%
+endlocal
