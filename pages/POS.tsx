@@ -70,6 +70,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
    }, [user?.id]);
    const [operatorId, setOperatorId] = useState<string>('');
    const [isLoadingSession, setIsLoadingSession] = useState(true);
+   const [sessionResolved, setSessionResolved] = useState(false);
    const [availableCashCents, setAvailableCashCents] = useState<number | null>(null);
 
    // Modais de Estado do Caixa
@@ -340,15 +341,23 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
 
    useEffect(() => {
-      if (!cashOpen || !operatorId) {
+      // Enquanto não sabemos o operador, mantemos o spinner para evitar piscar a tela de caixa fechado
+      if (!operatorId) {
          setIsLoadingSession(true);
-         setCashSessionId(null);
-         setTimeout(() => {
-            setIsLoadingSession(false);
-         }, 500); // Garante spinner mínimo
+         setSessionResolved(false);
          return;
       }
+
+      // Se o flag global indica caixa fechado, mostra diretamente a tela de bloqueio
+      if (!cashOpen) {
+         setCashSessionId(null);
+         setIsLoadingSession(false);
+         setSessionResolved(true);
+         return;
+      }
+
       setIsLoadingSession(true);
+      setSessionResolved(false);
      // console.log('[PDV] Verificando se existe caixa aberto para usuário:', operatorId);
       fetch(`/api/cash/open?userId=${operatorId}`)
          .then(async res => {
@@ -377,6 +386,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          .finally(() => {
             setTimeout(() => {
                setIsLoadingSession(false);
+               setSessionResolved(true);
                //foca  o input
                if (inputRef.current) inputRef.current.focus();
             }, 500); // Garante spinner mínimo
@@ -901,8 +911,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          </div>
       );
    }
-   // Se o caixa está realmente fechado
-   if (!cashOpen || !cashSessionId) {
+   // Se o caixa está realmente fechado (após resolver a verificação)
+   if (!cashOpen || (!cashSessionId && sessionResolved)) {
       return (
          <div className="flex-1 flex flex-col items-center justify-center bg-dark-950 bg-cyber-grid p-6 relative overflow-hidden assemble-view">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse" />
