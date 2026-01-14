@@ -9,6 +9,18 @@ interface PermissionDeniedModalProps {
 }
 
 const PermissionDeniedModal: React.FC<PermissionDeniedModalProps> = ({ isOpen, onClose, message }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col items-center justify-center p-8">

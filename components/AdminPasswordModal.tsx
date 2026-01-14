@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// c:/PDVsystem/components/AdminPasswordModal.tsx
+import React, { useEffect, useState } from 'react';
 import { Modal, Input, Button } from './UI';
 
 interface AdminPasswordModalProps {
@@ -11,6 +12,15 @@ const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({ isOpen, onClose
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,13 +52,15 @@ const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({ isOpen, onClose
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Autenticação Administrador" size="sm">
-      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6" autoComplete="off">
         <Input
           type="password"
           label="Senha Administrador"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
           autoFocus
+          name="admin-new-password"
+          autoComplete="new-password"
           required
         />
         {error && <div className="text-red-500 text-xs font-bold">{error}</div>}

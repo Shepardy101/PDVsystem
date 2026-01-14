@@ -47,6 +47,18 @@ const SuprimentoModal: React.FC<SuprimentoModalProps> = ({
     }
   }, [isOpen, txCategories, telemetry]);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose('cancel');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   const handleSubmit = async () => {
     const numericAmount = parseFloat(amount.replace(',', '.'));
     telemetry?.('suprimento', 'submit-start', { amount: isNaN(numericAmount) ? null : numericAmount, category });

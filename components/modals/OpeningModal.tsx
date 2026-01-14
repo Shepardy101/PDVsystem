@@ -18,6 +18,22 @@ const OpeningModal: React.FC<OpeningModalProps> = ({ isOpen, initialBalance, onC
       inputRef.current.setSelectionRange(0, inputRef.current.value.length);
     }
   }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onConfirm();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose, onConfirm]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

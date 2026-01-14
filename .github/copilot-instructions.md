@@ -147,3 +147,13 @@ Quando pedir mais contexto (abrir no código):
 - Contratos usados no frontend: services/*.ts e pages/*.tsx.
 - Migrations e schema: server/src/db/migrations/*.sql.
 - Admin DB / segurança IP: server/src/services/adminDb.service.ts, server/src/middleware/ipAccessControl.ts.
+
+
+Keyboard-first/hotkeys — Sempre que criar ou alterar modais, formulários ou componentes interativos, implemente UX “keyboard-driven”:
+
+Suporte Esc para fechar/cancelar quando fizer sentido.
+Use Enter para avançar fluxo ou submeter quando válido; mova foco para o próximo campo ao concluir etapas intermediárias.
+Respeite Tab/Shift+Tab para navegação natural; evite prender o foco.
+Defina focos iniciais (autoFocus) e gerencie refs para mover foco entre campos/botões conforme o fluxo.
+Limpe listeners de teclado ao desmontar/fechar para evitar vazamentos e conflitos.
+Documente hotkeys visivelmente (ex.: rótulos “[ENTER]”, “[ESC]”, “[I]”) quando houver ações principais.

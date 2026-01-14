@@ -39,6 +39,18 @@ const SangriaModal: React.FC<SangriaModalProps> = ({ isOpen, onClose, txCategori
     }
   }, [isOpen, txCategories, telemetry]);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose('cancel');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   const handleSubmit = async () => {
     setError('');
     const normalizedCategory = category || 'Sangria';

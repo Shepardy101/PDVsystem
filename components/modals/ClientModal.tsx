@@ -21,6 +21,18 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, clientSearch, clientR
       setTimeout(() => clientInputRef.current?.focus(), 10);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">

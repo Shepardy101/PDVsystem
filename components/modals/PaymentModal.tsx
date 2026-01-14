@@ -93,6 +93,27 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
         }
     }, [isOpen, setMultiMode]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !showCashChangeModal) {
+                e.preventDefault();
+                if (multiMode) {
+                    setMultiMode(false);
+                    setFocusStep('input');
+                    setTimeout(() => {
+                        inputRef.current?.focus();
+                        inputRef.current?.select();
+                    }, 10);
+                } else {
+                    onClose();
+                }
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [isOpen, multiMode, showCashChangeModal, onClose]);
+
 
 
     // controle de etapa do ciclo: 'input' | 'select' | 'add' | 'finalize'

@@ -73,6 +73,18 @@ const PerformanceMetricsModal: React.FC<Props> = ({ open, onClose }) => {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
   const serverMemPct = useMemo(() => {
     if (!serverMem.total) return 0;
     return (serverMem.used / serverMem.total) * 100;

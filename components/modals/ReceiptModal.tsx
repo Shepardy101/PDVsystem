@@ -19,6 +19,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
       } else if (e.key.toLowerCase() === 'i') {
         e.preventDefault();
         onPrint();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);

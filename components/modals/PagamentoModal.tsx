@@ -30,6 +30,18 @@ const PagamentoModal: React.FC<PagamentoModalProps> = ({ isOpen, onClose, txCate
     }
   }, [isOpen, telemetry]);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose('cancel');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   const parsedAmount = parseFloat(amount.replace(',', '.')) || 0;
   const amountCents = Math.round(parsedAmount * 100);
   const exceedsLimit = typeof paymentLimitCents === 'number' && amountCents > paymentLimitCents;

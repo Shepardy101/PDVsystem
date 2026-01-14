@@ -51,7 +51,7 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
 
         <div className="bg-dark-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
           {step === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleLogin} className="space-y-6" autoComplete="off">
               <Input 
                 label="Usuário" 
                 placeholder="nome@distribuidora.com" 
@@ -65,6 +65,8 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
                 placeholder="••••••••" 
                 icon={<Key size={18} />} 
                 value={password}
+                name="new-password"
+                autoComplete="new-password"
                 onChange={e => setPassword(e.target.value)}
               />
               {error && <div className="text-red-500 text-sm text-center">{error}</div>}
