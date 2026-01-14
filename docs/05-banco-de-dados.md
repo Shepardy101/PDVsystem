@@ -146,6 +146,7 @@
 - Valores monetários sempre inteiros em centavos.
 - Datas/timestamps em epoch ms (inteiros) quando em rotas e colunas de tempo; algumas migrations usam DATETIME default CURRENT_TIMESTAMP para IPs.
 - IDs em TEXT (UUID ou chaves amigáveis como `root`).
+- Tabela `logs` armazena auditoria e telemetria de UI: colunas `id`, `message`, `level` (`info|warn|error`), `context_json`, `created_at` (epoch ms).
 
 ## Exemplos JSON (baseados no schema)
 ```json

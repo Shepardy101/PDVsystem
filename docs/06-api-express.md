@@ -17,6 +17,13 @@
   - Body: venda completa (items, payments, subtotal, total, discounts, operatorId, cashSessionId). Validado em `finalizeSale` (repo não exibido).
   - Sucesso: 201 `{ saleId }`. Erro: 400 `{ error: { code: 'SALE_ERROR', message } }`.
 
+## Telemetria / UI (`server/src/routes/telemetry.routes.ts`)
+- `POST /api/telemetry/track`
+  - Body: `{ userId?, page, area, action, meta?, ts? }`
+  - Grava em `logs` via `logEvent` com mensagem: `[page] area/action :: metaSummary` (primeiros pares chave/valor de meta, truncados).
+  - Campos adicionais no contexto: `tsClient`, `userAgent`, `path`, `ip` (x-forwarded-for ou socket).
+  - Retorno: 200 `{ ok: true }`; 400 se faltar `page|area|action`; 500 em erro de escrita.
+
 ## Caixa (`server/src/routes/cash.routes.ts`)
 - `GET /api/cash/movements/:cashSessionId`: lista movimentos por sessão; usa `getCashMovementsBySession`.
 - `GET /api/cash/sessions-movements`: retorna `{ sessions, movements, sales }` (sales com `payments` e `items`).

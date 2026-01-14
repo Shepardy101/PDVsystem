@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { isAdmin } from '../types';
 import DbManager from '../src/renderer/components/adminDb/DbManager';
@@ -336,6 +336,28 @@ const Settings: React.FC = () => {
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
    const [settingsLoading, setSettingsLoading] = useState(false);
    const isManagerUser = user?.role === 'manager';
+
+   const interactionCounts = useMemo(() => {
+      const acc: Record<string, number> = {};
+      logs.forEach(log => {
+         const ctxArea = log?.context?.area;
+         const ctxAction = log?.context?.action;
+         let key = (ctxArea && ctxAction) ? `${ctxArea}/${ctxAction}` : undefined;
+         if (!key) {
+            const match = log.message.match(/\[(.*?)\]\s+([^/]+)\/([^:\s]+)/);
+            if (match && match[2] && match[3]) {
+               key = `${match[2]}/${match[3]}`;
+            }
+         }
+         if (!key) {
+            key = log.message || 'sem-mensagem';
+         }
+         acc[key] = (acc[key] || 0) + 1;
+      });
+      return Object.entries(acc)
+         .map(([key, count]) => ({ key, count }))
+         .sort((a, b) => b.count - a.count);
+   }, [logs]);
 
    React.useEffect(() => {
       sendTelemetry('page', 'view');
@@ -704,7 +726,37 @@ const Settings: React.FC = () => {
                      </div>
                      <Button size="sm" variant="secondary" onClick={closeLogsModal}>Fechar</Button>
                   </div>
-                  <div className="p-4 overflow-auto max-h-[78vh]">
+                  <div className="p-4 overflow-auto max-h-[78vh] space-y-4">
+                     {interactionCounts.length > 0 && (
+                        <div className="bg-gradient-to-br from-[#0a1b2a] via-[#0c2233] to-[#050b15] border border-accent/30 rounded-2xl p-4 shadow-[0_15px_45px_-20px_rgba(34,211,238,0.7)] relative overflow-hidden">
+                           <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(168,85,247,0.12),transparent_40%)]" />
+                           <div className="flex items-center justify-between mb-4 relative z-10 flex-wrap gap-2">
+                              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-300 flex items-center gap-2">
+                                 <span className="h-2 w-2 rounded-full bg-accent animate-pulse" /> Distribuição de interações
+                              </p>
+                              <span className="text-[10px] text-slate-400">Total tipos: {interactionCounts.length}</span>
+                           </div>
+                           <div className="flex items-end gap-3 h-48 overflow-x-auto custom-scrollbar-thin pr-2 relative z-10">
+                              {interactionCounts.map(item => {
+                                 const max = interactionCounts[0]?.count || 1;
+                                 const heightPct = Math.max(10, Math.round((item.count / max) * 100));
+                                 return (
+                                    <div key={item.key} className="flex flex-col items-center min-w-[86px]">
+                                       <div className="flex-1 flex items-end w-full">
+                                          <div
+                                             className="w-full rounded-t-xl bg-[linear-gradient(180deg,rgba(34,211,238,0.9)_0%,rgba(34,211,238,0.45)_60%,rgba(12,34,51,0)_100%)] border border-accent/60 shadow-[0_15px_40px_-18px_rgba(34,211,238,0.9)]"
+                                             style={{ height: `${heightPct}%` }}
+                                          />
+                                       </div>
+                                       <div className="mt-2 text-center text-[10px] text-slate-200 font-mono break-words leading-tight">{item.key}</div>
+                                       <div className="text-[11px] font-bold text-accent">{item.count}</div>
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        </div>
+                     )}
+
                      <div className="overflow-hidden border border-white/10 rounded-2xl">
                         <table className="w-full text-left text-[12px] text-slate-200">
                            <thead className="bg-black/60 uppercase text-[10px] tracking-[0.2em] text-slate-500">
