@@ -23,95 +23,211 @@ const IPControlPanel: React.FC = () => {
    const [allowed, setAllowed] = useState<IpEntry[]>([]);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string|null>(null);
+   const [blocked, setBlocked] = useState<IpEntry[]>([]);
    const [refresh, setRefresh] = useState(0);
 
    useEffect(() => {
+      let isMounted = true;
       setLoading(true);
       setError(null);
+      const safeFetch = async (url: string) => {
+         const res = await fetch(url);
+         if (!res.ok) throw new Error(`Erro ao buscar ${url}`);
+         return res.json();
+      };
       Promise.all([
-         fetch('/api/admin/ip-control/pending').then(r => r.json()),
-         fetch('/api/admin/ip-control/allowed').then(r => r.json())
-      ]).then(([pending, allowed]) => {
-         setPending(pending);
-         setAllowed(allowed);
-      }).catch(e => setError('Erro ao carregar IPs')).finally(() => setLoading(false));
+         safeFetch('/api/admin/ip-control/pending'),
+         safeFetch('/api/admin/ip-control/allowed'),
+         safeFetch('/api/admin/ip-control/blocked').catch(() => [])
+      ]).then(([pendingResp, allowedResp, blockedResp]) => {
+         if (!isMounted) return;
+         setPending(pendingResp);
+         setAllowed(allowedResp);
+         setBlocked(blockedResp || []);
+      }).catch(e => {
+         if (!isMounted) return;
+         setError('Erro ao carregar IPs');
+      }).finally(() => {
+         if (!isMounted) return;
+         setLoading(false);
+      });
+      return () => { isMounted = false; };
    }, [refresh]);
 
    const handleAllow = async (ip: string, hostname?: string|null) => {
       setLoading(true);
-      await fetch('/api/admin/ip-control/allow', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ ip, hostname, autorizado_por: 'admin' })
-      });
-      setRefresh(r => r + 1);
+      try {
+         const res = await fetch('/api/admin/ip-control/allow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip, hostname, autorizado_por: 'admin' })
+         });
+         if (!res.ok) throw new Error('Erro ao autorizar');
+         setRefresh(r => r + 1);
+      } catch (e) {
+         setError('Falha ao autorizar IP');
+      } finally {
+         setLoading(false);
+      }
    };
    const handleDeny = async (ip: string) => {
       setLoading(true);
-      await fetch('/api/admin/ip-control/deny', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ ip })
-      });
-      setRefresh(r => r + 1);
+      try {
+         const res = await fetch('/api/admin/ip-control/deny', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip })
+         });
+         if (!res.ok) throw new Error('Erro ao negar');
+         setRefresh(r => r + 1);
+      } catch (e) {
+         setError('Falha ao negar IP');
+      } finally {
+         setLoading(false);
+      }
    };
    const handleRemove = async (ip: string) => {
       setLoading(true);
-      await fetch('/api/admin/ip-control/remove', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ ip })
-      });
-      setRefresh(r => r + 1);
+      try {
+         const res = await fetch('/api/admin/ip-control/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip })
+         });
+         if (!res.ok) throw new Error('Erro ao remover');
+         setRefresh(r => r + 1);
+      } catch (e) {
+         setError('Falha ao remover IP');
+      } finally {
+         setLoading(false);
+      }
    };
 
    return (
-      <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8 mt-8">
-         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-            <Globe size={14} className="text-accent" /> Controle de Dispositivos/IPs
-         </h3>
-         {error && <div className="text-red-400 text-xs">{error}</div>}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-               <h4 className="text-xs font-bold text-slate-300 mb-2">Aguardando Autorização</h4>
-               <div className="space-y-2">
-                  {pending.length === 0 && <div className="text-slate-500 text-xs">Nenhum IP pendente.</div>}
-                  {pending.map(ip => (
-                     <div key={ip.id} className="flex items-center justify-between bg-dark-950/60 border border-white/10 rounded-xl px-3 py-2">
-                        <div>
-                           <span className="font-mono text-sm text-slate-100">{ip.ip}</span>
-                           {ip.hostname && <span className="ml-2 text-slate-500 text-xs">({ip.hostname})</span>}
-                           <span className="ml-2 text-slate-500 text-[10px]">{ip.tentado_em?.replace('T',' ').slice(0,19)}</span>
-                        </div>
-                        <div className="flex gap-2">
-                           <Button size="xs" variant="success" onClick={() => handleAllow(ip.ip, ip.hostname)}>Autorizar</Button>
-                           <Button size="xs" variant="danger" onClick={() => handleDeny(ip.ip)}>Negar</Button>
-                        </div>
-                     </div>
-                  ))}
+      <div className="mt-8 rounded-3xl overflow-hidden border border-accent/20 bg-gradient-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
+         <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
+            <div className="flex items-center gap-3">
+               <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
+               <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
+                     <Globe size={14} className="text-accent" /> Firewall Sentinel
+                  </p>
+                  <p className="text-[11px] text-slate-300 font-mono">Controle e bloqueio de dispositivos</p>
                </div>
             </div>
-            <div>
-               <h4 className="text-xs font-bold text-slate-300 mb-2">IPs Autorizados</h4>
-               <div className="space-y-2">
-                  {allowed.length === 0 && <div className="text-slate-500 text-xs">Nenhum IP autorizado.</div>}
-                  {allowed.map(ip => (
-                     <div key={ip.id} className="flex items-center justify-between bg-dark-950/60 border border-white/10 rounded-xl px-3 py-2">
-                        <div>
-                           <span className="font-mono text-sm text-slate-100">{ip.ip}</span>
-                           {ip.hostname && <span className="ml-2 text-slate-500 text-xs">({ip.hostname})</span>}
-                           <span className="ml-2 text-slate-500 text-[10px]">{ip.autorizado_em?.replace('T',' ').slice(0,19)}</span>
-                        </div>
-                        <div className="flex gap-2">
-                           <Button size="xs" variant="danger" onClick={() => handleRemove(ip.ip)}>Remover</Button>
-                        </div>
-                     </div>
-                  ))}
-               </div>
+            <div className="flex items-center gap-3 flex-wrap justify-end">
+               <span className="text-[10px] font-mono text-amber-200 bg-amber-500/10 border border-amber-400/40 px-3 py-1 rounded-full uppercase">Pending {pending.length}</span>
+               <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-400/40 px-3 py-1 rounded-full uppercase">Allowed {allowed.length}</span>
+               <span className="text-[10px] font-mono text-rose-200 bg-rose-500/10 border border-rose-400/40 px-3 py-1 rounded-full uppercase">Blocked {blocked.length}</span>
+               <Button size="sm" variant="secondary" disabled={loading} onClick={() => setRefresh(r => r + 1)} icon={<RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />}>Sync</Button>
             </div>
          </div>
-         <div className="flex justify-end mt-4">
-            <Button size="sm" variant="secondary" onClick={() => setRefresh(r => r + 1)} icon={<RefreshCcw size={14}/>}>Atualizar</Button>
+
+         {error && <div className="px-6 py-2 text-red-400 text-xs bg-red-900/20 border-b border-red-500/30">{error}</div>}
+         {loading && !error && (
+            <div className="px-6 py-2 text-[10px] font-mono text-accent bg-accent/5 border-b border-accent/20 flex items-center gap-2">
+               <RefreshCcw size={14} className="animate-spin" /> sincronizando listas...
+            </div>
+         )}
+
+         <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-accent/10">
+            <div className="p-6 min-h-[340px] bg-black/20">
+               <div className="flex items-center justify-between mb-3">
+                  <div>
+                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400 flex items-center gap-2">
+                        <Zap size={14} className="text-amber-400" /> Queue // Pending
+                     </p>
+                     <p className="text-[11px] text-slate-500 font-mono">Aguardando autorização</p>
+                  </div>
+                  <Badge variant="secondary">{pending.length} itens</Badge>
+               </div>
+               <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar-thin">
+                  {pending.length === 0 && <div className="text-slate-600 text-xs font-mono bg-dark-950/60 border border-white/5 rounded-xl px-3 py-2">Nenhum IP pendente.</div>}
+                  {pending.map(ip => (
+                     <div key={ip.id} className="bg-[#0b1924] border border-accent/20 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(34,211,238,0.7)]">
+                        <div className="flex items-center justify-between">
+                           <div className="font-mono text-xs md:text-sm text-accent">{ip.ip}</div>
+                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-mono text-slate-400">
+                              <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-400/30 text-amber-200">Pendente</span>
+                              <span>{ip.tentado_em?.replace('T',' ').slice(0,19)}</span>
+                           </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
+                           <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
+                           <div className="flex gap-2">
+                              <Button size="xs" variant="success" disabled={loading} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
+                              <Button size="xs" variant="danger" disabled={loading} onClick={() => handleDeny(ip.ip)}>deny</Button>
+                           </div>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+
+            <div className="p-6 min-h-[340px] bg-black/10">
+               <div className="flex items-center justify-between mb-3">
+                  <div>
+                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-300 flex items-center gap-2">
+                        <Shield size={14} className="text-emerald-300" /> Allowlist // Trusted
+                     </p>
+                     <p className="text-[11px] text-slate-500 font-mono">IPs já autorizados</p>
+                  </div>
+                  <Badge variant="success">{allowed.length} ativos</Badge>
+               </div>
+               <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar-thin">
+                  {allowed.length === 0 && <div className="text-slate-600 text-xs font-mono bg-dark-950/60 border border-white/5 rounded-xl px-3 py-2">Nenhum IP autorizado.</div>}
+                  {allowed.map(ip => (
+                     <div key={ip.id} className="bg-[#0b1f1a] border border-emerald-400/20 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(16,185,129,0.7)]">
+                        <div className="flex items-center justify-between">
+                           <div className="font-mono text-xs md:text-sm text-emerald-200">{ip.ip}</div>
+                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-mono text-slate-400">
+                              <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/30 text-emerald-200">Allow</span>
+                              <span>{ip.autorizado_em?.replace('T',' ').slice(0,19)}</span>
+                           </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
+                           <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
+                           <div className="flex gap-2">
+                              <Button size="xs" variant="danger" disabled={loading} onClick={() => handleRemove(ip.ip)}>remove</Button>
+                           </div>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+
+            <div className="p-6 min-h-[340px] bg-black/20">
+               <div className="flex items-center justify-between mb-3">
+                  <div>
+                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-rose-300 flex items-center gap-2">
+                        <Shield size={14} className="text-rose-300" /> Blocklist // Deny
+                     </p>
+                     <p className="text-[11px] text-slate-500 font-mono">IPs bloqueados</p>
+                  </div>
+                  <Badge variant="danger">{blocked.length} bloqueados</Badge>
+               </div>
+               <div className="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar-thin">
+                  {blocked.length === 0 && <div className="text-slate-600 text-xs font-mono bg-dark-950/60 border border-white/5 rounded-xl px-3 py-2">Nenhum IP bloqueado.</div>}
+                  {blocked.map(ip => (
+                     <div key={ip.id} className="bg-[#1f0b12] border border-rose-400/25 rounded-xl px-4 py-3 flex flex-col gap-2 shadow-[0_0_12px_-6px_rgba(244,63,94,0.7)]">
+                        <div className="flex items-center justify-between">
+                           <div className="font-mono text-xs md:text-sm text-rose-200">{ip.ip}</div>
+                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-mono text-slate-400">
+                              <span className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-400/30 text-rose-200">Blocked</span>
+                              <span>{ip.autorizado_em?.replace('T',' ').slice(0,19) || ip.tentado_em?.replace('T',' ').slice(0,19)}</span>
+                           </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-300 font-mono">
+                           <span>{ip.hostname ? `host:${ip.hostname}` : 'host:desconhecido'}</span>
+                           <div className="flex gap-2">
+                              <Button size="xs" variant="success" disabled={loading} onClick={() => handleAllow(ip.ip, ip.hostname)}>allow</Button>
+                              <Button size="xs" variant="danger" disabled={loading} onClick={() => handleRemove(ip.ip)}>remove</Button>
+                           </div>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
          </div>
       </div>
    );
@@ -200,7 +316,7 @@ const Settings: React.FC = () => {
   );
 
    return (
-      <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+      <div className="p-8 flex flex-col min-h-screen overflow-auto assemble-view bg-dark-950 bg-cyber-grid relative">
          
          {/* Modal DB Manager */}
          {showDbManager && (
@@ -246,90 +362,42 @@ const Settings: React.FC = () => {
 
       <div className="flex-1 grid grid-cols-12 gap-8 overflow-hidden min-h-0 relative z-10">
         {/* Coluna Esquerda: Configurações */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
-          {/* Controle de Estoque no Caixa */}
-          <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-6">
-             <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                      <Zap size={14} className="text-accent" /> Estoque no Caixa
-                   </p>
-                   <p className="text-sm text-slate-200 font-bold">Permitir vender acima do estoque?</p>
-                   <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl">
-                      Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
-                   </p>
-                </div>
-                <div className="flex items-center gap-3 bg-dark-900/60 border border-white/10 rounded-2xl px-4 py-2">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{allowNegativeStock ? 'Habilitado' : 'Bloqueado'}</span>
-                   <Switch
-                      enabled={allowNegativeStock}
-                      disabled={settingsLoading}
-                      onChange={v => toggleNegativeStock(v)}
-                   />
-                </div>
-             </div>
+      <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar min-h-0 h-full max-h-[calc(100vh-220px)]">
+        
+        
+      <div className="mt-0 rounded-3xl overflow-hidden border border-accent/20 bg-gradient-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
+            <div>
+         <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
+           <Zap size={14} className="text-accent" /> Estoque no Caixa
+         </p>
+         <p className="text-[11px] text-slate-300 font-mono">Permitir vender acima do estoque?</p>
+            </div>
           </div>
-           
-          
-
-           {/* Seção de Periféricos */}
-           <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                 <Bluetooth size={14} className="text-accent" /> Periféricos & Hardware
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                       <div className="flex items-center gap-4">
-                          <Printer size={20} className="text-slate-400" />
-                          <div>
-                             <p className="text-xs font-bold text-slate-200">Impressora Térmica</p>
-                             <p className="text-[9px] text-slate-500 uppercase">Status: Conectado (USB-0)</p>
-                          </div>
-                       </div>
-                       <Switch enabled={true} onChange={() => {}} />
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                       <div className="flex items-center gap-4">
-                          <Wifi size={20} className="text-slate-400" />
-                          <div>
-                             <p className="text-xs font-bold text-slate-200">Scanner Bluetooth</p>
-                             <p className="text-[9px] text-slate-500 uppercase">Status: Emparelhado</p>
-                          </div>
-                       </div>
-                       <Switch enabled={true} onChange={() => {}} />
-                    </div>
-                 </div>
-                 <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                       <div className="flex items-center gap-4">
-                          <CreditCard size={20} className="text-slate-400" />
-                          <div>
-                             <p className="text-xs font-bold text-slate-200">TEF / Pinpad</p>
-                             <p className="text-[9px] text-slate-500 uppercase">Status: Inativo</p>
-                          </div>
-                       </div>
-                       <Switch enabled={false} onChange={() => {}} />
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                       <div className="flex items-center gap-4">
-                          <Laptop size={20} className="text-slate-400" />
-                          <div>
-                             <p className="text-xs font-bold text-slate-200">Display Secundário</p>
-                             <p className="text-[9px] text-slate-500 uppercase">Status: Desconectado</p>
-                          </div>
-                       </div>
-                       <Switch enabled={false} onChange={() => {}} />
-                    </div>
-                 </div>
-              </div>
-           </div>
-
+          <div className="flex items-center gap-3 bg-dark-900/60 border border-accent/30 rounded-2xl px-4 py-2 shadow-[0_0_18px_-8px_rgba(34,211,238,0.9)]">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+         {allowNegativeStock ? 'Habilitado' : 'Bloqueado'}
+            </span>
+            <Switch
+         enabled={allowNegativeStock}
+         disabled={settingsLoading}
+         onChange={(value: boolean) => toggleNegativeStock(value)}
+            />
+          </div>
+        </div>
+        <div className="p-6 bg-black/10">
+          <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl font-mono">
+            Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
+          </p>
+        </div>
+      </div>
            {/* Seção de Controle de IPs */}
            <IPControlPanel />
 
            {/* Seção de Segurança */}
-           <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
+           {/* <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
                  <Shield size={14} className="text-accent" /> Protocolos de Segurança
               </h3>
@@ -349,7 +417,7 @@ const Settings: React.FC = () => {
                     <Button variant="secondary" className="w-full py-3" icon={<Cloud size={16} />}>Configurar Cloud Sync</Button>
                  </div>
               </div>
-           </div>
+           </div> */}
         </div>
 
         {/* Coluna Direita: Logs Técnicos */}
@@ -357,38 +425,90 @@ const Settings: React.FC = () => {
            <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
               <Terminal size={14} className="text-accent" /> Audit Trail // Real-time
            </h3>
-           <div className="flex-1 bg-dark-900 border border-white/5 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-inner">
-              <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar-thin">
-                 {logs.map((log, i) => (
-                    <div key={i} className="text-[10px] flex gap-3 animate-in fade-in slide-in-from-right-2">
-                       <span className="text-slate-600 shrink-0">[{log.time}]</span>
-                       <span className={log.level === 'warn' ? 'text-amber-500' : 'text-slate-400'}>
-                          <span className="text-accent mr-2 opacity-50">{'>>'}</span>
-                          {log.event}
-                       </span>
-                    </div>
-                 ))}
-                 {logs.length === 0 && (
-                    <div className="flex items-center justify-center h-full opacity-10">
-                       <Activity size={64} className="animate-pulse" />
-                    </div>
-                 )}
-              </div>
-              <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-[9px] text-slate-600 font-bold uppercase tracking-widest">
-                 <span>Listening to stream...</span>
-                 <button className="hover:text-accent transition-colors">Clear Buffer</button>
-              </div>
-           </div>
+         <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative">
+            <div className="absolute inset-0 pointer-events-none opacity-40 bg-gradient-to-br from-accent/10 via-transparent to-purple-500/10" />
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-slate-500 mb-3 relative z-10">
+               <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Packet Stream
+               </span>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10">
+               {logs.map((log, index) => (
+                  <div
+                     key={`${log.time}-${index}`}
+                     className="text-[10px] flex gap-3 items-start animate-in fade-in slide-in-from-right-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2 shadow-[0_0_12px_-8px_rgba(34,211,238,0.8)]"
+                  >
+                     <span className="text-emerald-300 shrink-0">
+                        [{log.time}]
+                     </span>
+                     <span
+                        className={
+                           log.level === 'warn'
+                              ? 'text-amber-400'
+                              : log.level === 'error'
+                              ? 'text-rose-400'
+                              : 'text-slate-300'
+                        }
+                     >
+                        <span className="text-accent mr-2 opacity-60">{'>>'}</span>
+                        {log.event}
+                     </span>
+                  </div>
+               ))}
+               {logs.length === 0 && (
+                  <div className="flex items-center justify-center h-full opacity-10">
+                     <Activity size={64} className="animate-pulse" />
+                  </div>
+               )}
+            </div>
+            <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-widest relative z-10">
+               <span className="flex items-center gap-2">
+                  <Wifi size={10} className="text-accent" /> Listening to stream...
+               </span>
+               <button className="hover:text-accent transition-colors">Clear Buffer</button>
+            </div>
+         </div>
 
-           {/* Painel de Manutenção Rápida */}
-           <div className="glass-panel rounded-3xl p-6 border-white/5 space-y-4">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ferramentas de Manutenção</h4>
-              <div className="grid grid-cols-2 gap-3">
-                 <Button variant="secondary" className="text-[9px] py-3" icon={<RefreshCcw size={12}/>}>Limpar Cache</Button>
-                 <Button variant="secondary" className="text-[9px] py-3" icon={<Database size={12}/>}>Fix DB Indexes</Button>
-                 <Button variant="danger" className="text-[9px] py-3 col-span-2" icon={<Trash2 size={12}/>}>Wipe Local Storage</Button>
-              </div>
-           </div>
+         {/* Painel de Manutenção Rápida */}
+         <div className="rounded-3xl overflow-hidden border border-accent/25 bg-gradient-to-br from-[#0b1420] via-[#0b1f2e] to-[#04090f] shadow-[0_0_28px_-14px_rgba(34,211,238,0.9)] relative">
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.08),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.08),transparent_40%)]" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-accent/20 bg-black/40 relative z-10">
+               <div className="flex items-center gap-3">
+                  <div className="h-8 w-1 bg-accent shadow-[0_0_14px_rgba(34,211,238,0.7)]" />
+                  <div>
+                     <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-400 flex items-center gap-2">
+                        <Cpu size={14} className="text-accent" /> Maintenance // Quick Ops
+                     </p>
+                     <p className="text-[11px] text-slate-500 font-mono">Ferramentas de reparo e limpeza instantânea</p>
+                  </div>
+               </div>
+               <Badge variant="secondary" className="uppercase tracking-[0.3em]">Safe</Badge>
+            </div>
+            <div className="p-5 grid grid-cols-2 gap-3 relative z-10">
+               <Button
+                  variant="secondary"
+                  className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
+                  icon={<RefreshCcw size={12} className="text-accent" />}
+               >
+                  Purge Cache
+               </Button>
+               <Button
+                  variant="secondary"
+                  className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
+                  icon={<Database size={12} className="text-emerald-300" />}
+               >
+                  Rebuild Indexes
+               </Button>
+               <Button
+                  variant="danger"
+                  className="text-[9px] py-3 col-span-2 w-full bg-[#1f0b12]/70 border border-rose-400/40 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
+                  icon={<Trash2 size={12} className="text-rose-300" />}
+               >
+                  Wipe Local Storage
+               </Button>
+            </div>
+         </div>
         </div>
       </div>
 
