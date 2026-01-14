@@ -333,6 +333,7 @@ const Settings: React.FC = () => {
    const [showDbManager, setShowDbManager] = useState(false);
    const [showPerformanceModal, setShowPerformanceModal] = useState(false);
    const [showLogsModal, setShowLogsModal] = useState(false);
+   const [showPerfDetails, setShowPerfDetails] = useState(false);
    const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
    const [settingsLoading, setSettingsLoading] = useState(false);
@@ -359,6 +360,68 @@ const Settings: React.FC = () => {
          .map(([key, count]) => ({ key, count }))
          .sort((a, b) => b.count - a.count);
    }, [logs]);
+
+   const perfSamples = useMemo(() => {
+      const items = logs
+         .filter((log) => (log.message || '').toLowerCase().includes('performance server'))
+         .map((log) => {
+            const ctx: any = log.context || {};
+            const cpu = Number(ctx.cpuPct ?? ctx.cpu ?? 0);
+            const mem = Number(ctx.osMemUsedMb ?? ctx.rssMb ?? ctx.heapUsedMb ?? 0);
+            const loop = Number(ctx.eventLoopDelayP95Ms ?? ctx.eventLoopDelayMaxMs ?? 0);
+            return {
+               t: log.createdAt,
+               cpu: Number.isFinite(cpu) ? cpu : 0,
+               mem: Number.isFinite(mem) ? mem : 0,
+               loop: Number.isFinite(loop) ? loop : 0,
+            };
+         })
+         .filter((s) => s.t && (s.cpu || s.mem || s.loop))
+         .sort((a, b) => a.t - b.t);
+      return items.slice(-24); // últimas leituras
+   }, [logs]);
+
+   const perfStats = useMemo(() => {
+      if (!perfSamples.length) return null;
+      const pickStats = (key: 'cpu' | 'mem' | 'loop') => {
+         const vals = perfSamples.map((p) => p[key]).filter((v) => Number.isFinite(v));
+         const last = vals[vals.length - 1] ?? 0;
+         return {
+            last,
+            min: Math.min(...vals),
+            max: Math.max(...vals),
+         };
+      };
+      return {
+         cpu: pickStats('cpu'),
+         mem: pickStats('mem'),
+         loop: pickStats('loop'),
+      };
+   }, [perfSamples]);
+
+   const Sparkline = ({ values, color = '#22d3ee' }: { values: number[]; color?: string }) => {
+      const width = 120;
+      const height = 36;
+      const safeValues = values.length ? values : [0];
+      const max = Math.max(...safeValues, 1);
+      const points = safeValues.map((v, i) => {
+         const x = (i / Math.max(1, safeValues.length - 1)) * width;
+         const y = height - (v / max) * height;
+         return `${x},${y}`;
+      }).join(' ');
+      return (
+         <svg width={width} height={height} className="opacity-90">
+            <polyline
+               fill="none"
+               stroke={color}
+               strokeWidth="2"
+               strokeLinejoin="round"
+               strokeLinecap="round"
+               points={points}
+            />
+         </svg>
+      );
+   };
 
    React.useEffect(() => {
       sendTelemetry('page', 'view');
@@ -752,36 +815,108 @@ const Settings: React.FC = () => {
                      </div>
                   </div>
                   <div className="p-4 overflow-auto max-h-[78vh] space-y-4">
-                     {interactionCounts.length > 0 && (
+                     {(interactionCounts.length > 0 || perfSamples.length > 0) && (
                         <div className="bg-gradient-to-br from-[#0a1b2a] via-[#0c2233] to-[#050b15] border border-accent/30 rounded-2xl p-4 shadow-[0_15px_45px_-20px_rgba(34,211,238,0.7)] relative overflow-hidden">
                            <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(168,85,247,0.12),transparent_40%)]" />
-                           <div className="flex items-center justify-between mb-4 relative z-10 flex-wrap gap-2">
-                              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-300 flex items-center gap-2">
-                                 <span className="h-2 w-2 rounded-full bg-accent animate-pulse" /> Distribuição de interações
-                              </p>
-                              <span className="text-[10px] text-slate-400">Total tipos: {interactionCounts.length}</span>
+                           <div className="flex items-center justify-between mb-3 relative z-10 flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                 <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                                 <p className="text-[10px] uppercase tracking-[0.3em] text-slate-300">Distribuição & Performance</p>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                 {interactionCounts.length > 0 && <span>Total tipos: {interactionCounts.length}</span>}
+                                 {perfSamples.length > 0 && (
+                                    <button
+                                       className="px-2 py-1 rounded-full border border-white/10 text-slate-300 hover:text-accent hover:border-accent/50"
+                                       onClick={() => setShowPerfDetails(v => !v)}
+                                    >
+                                       {showPerfDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
+                                    </button>
+                                 )}
+                              </div>
                            </div>
-                           <div className="flex items-end gap-4 h-48 overflow-x-auto custom-scrollbar-thin pr-2 relative z-10">
-                              {interactionCounts.map(item => {
-                                 const max = interactionCounts[0]?.count || 1;
-                                 const barMax = 180; // px
-                                 const barMin = 16; // px for visibility
-                                 const heightPx = Math.max(barMin, Math.round((item.count / max) * barMax));
-                                 return (
-                                    <div key={item.key} className="flex flex-col items-center min-w-[110px]">
-                                       <div className="flex-1 flex items-end w-full">
-                                          <div
-                                             className="w-full rounded-t-xl bg-[linear-gradient(180deg,rgba(34,211,238,0.9)_0%,rgba(34,211,238,0.45)_55%,rgba(12,34,51,0)_100%)] border border-accent/60 shadow-[0_12px_32px_-18px_rgba(34,211,238,0.9)]"
-                                             style={{ height: `${heightPx}px` }}
-                                             title={`${item.key}: ${item.count}`}
-                                          />
-                                       </div>
-                                       <div className="mt-2 text-center text-[10px] text-slate-200 font-mono leading-tight w-28 line-clamp-2" title={item.key}>{item.key}</div>
-                                       <div className="text-[11px] font-bold text-accent">{item.count}</div>
+                           {perfSamples.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 relative z-10">
+                                 <div className="group relative">
+                                    <div className="rounded-2xl border border-white/10 bg-black/30 p-3 flex items-center justify-between">
+                                       <div className="text-[10px] uppercase tracking-[0.26em] text-slate-400">CPU (%)</div>
+                                       <Sparkline values={perfSamples.map(p => p.cpu)} color="#22d3ee" />
                                     </div>
-                                 );
-                              })}
-                           </div>
+                                    <div className="pointer-events-none absolute -top-10 right-2 bg-black/80 text-[11px] text-slate-100 px-3 py-1 rounded-lg border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                       Uso da CPU do servidor (100 - idle).
+                                    </div>
+                                 </div>
+                                 <div className="group relative">
+                                    <div className="rounded-2xl border border-white/10 bg-black/30 p-3 flex items-center justify-between">
+                                       <div className="text-[10px] uppercase tracking-[0.26em] text-slate-400">RAM (MB)</div>
+                                       <Sparkline values={perfSamples.map(p => p.mem)} color="#a855f7" />
+                                    </div>
+                                    <div className="pointer-events-none absolute -top-10 right-2 bg-black/80 text-[11px] text-slate-100 px-3 py-1 rounded-lg border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                       RAM usada no host (inclui outros processos).
+                                    </div>
+                                 </div>
+                                 <div className="group relative">
+                                    <div className="rounded-2xl border border-white/10 bg-black/30 p-3 flex items-center justify-between">
+                                       <div className="text-[10px] uppercase tracking-[0.26em] text-slate-400">Loop p95 (ms)</div>
+                                       <Sparkline values={perfSamples.map(p => p.loop)} color="#fbbf24" />
+                                    </div>
+                                    <div className="pointer-events-none absolute -top-10 right-2 bg-black/80 text-[11px] text-slate-100 px-3 py-1 rounded-lg border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                       Atraso do event loop (p95); picos indicam travas.
+                                    </div>
+                                 </div>
+                              </div>
+                           )}
+                           {showPerfDetails && perfStats && (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 relative z-10">
+                                 <div className="group relative rounded-xl border border-white/10 bg-black/40 p-3 text-[11px] text-slate-200">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500 mb-1">CPU</div>
+                                    <div>Atual: {perfStats.cpu.last.toFixed(0)}%</div>
+                                    <div>Min: {perfStats.cpu.min.toFixed(0)}% · Max: {perfStats.cpu.max.toFixed(0)}%</div>
+                                    <div className="pointer-events-none absolute -top-10 right-2 bg-black/80 text-[11px] text-slate-100 px-3 py-1 rounded-lg border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                       CPU do servidor (média das CPUs).
+                                    </div>
+                                 </div>
+                                 <div className="group relative rounded-xl border border-white/10 bg-black/40 p-3 text-[11px] text-slate-200">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500 mb-1">RAM usada</div>
+                                    <div>Atual: {perfStats.mem.last.toFixed(0)} MB</div>
+                                    <div>Min: {perfStats.mem.min.toFixed(0)} · Max: {perfStats.mem.max.toFixed(0)} MB</div>
+                                    <div className="pointer-events-none absolute -top-10 right-2 bg-black/80 text-[11px] text-slate-100 px-3 py-1 rounded-lg border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                       RAM usada no host (inclui outros processos).
+                                    </div>
+                                 </div>
+                                 <div className="group relative rounded-xl border border-white/10 bg-black/40 p-3 text-[11px] text-slate-200">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500 mb-1">Loop p95</div>
+                                    <div>Atual: {perfStats.loop.last.toFixed(0)} ms</div>
+                                    <div>Min: {perfStats.loop.min.toFixed(0)} · Max: {perfStats.loop.max.toFixed(0)} ms</div>
+                                    <div className="pointer-events-none absolute -top-10 right-2 bg-black/80 text-[11px] text-slate-100 px-3 py-1 rounded-lg border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                       Atraso do event loop (p95); picos = risco de travar.
+                                    </div>
+                                 </div>
+                              </div>
+                           )}
+                           {interactionCounts.length > 0 && (
+                              <div className="flex items-end gap-4 h-48 overflow-x-auto custom-scrollbar-thin pr-2 relative z-10">
+                                 {interactionCounts.map(item => {
+                                    const max = interactionCounts[0]?.count || 1;
+                                    const barMax = 180; // px
+                                    const barMin = 16; // px for visibility
+                                    const heightPx = Math.max(barMin, Math.round((item.count / max) * barMax));
+                                    return (
+                                       <div key={item.key} className="flex flex-col items-center min-w-[110px]">
+                                          <div className="flex-1 flex items-end w-full">
+                                             <div
+                                                className="w-full rounded-t-xl bg-[linear-gradient(180deg,rgba(34,211,238,0.9)_0%,rgba(34,211,238,0.45)_55%,rgba(12,34,51,0)_100%)] border border-accent/60 shadow-[0_12px_32px_-18px_rgba(34,211,238,0.9)]"
+                                                style={{ height: `${heightPx}px` }}
+                                                title={`${item.key}: ${item.count}`}
+                                             />
+                                          </div>
+                                          <div className="mt-2 text-center text-[10px] text-slate-200 font-mono leading-tight w-28 line-clamp-2" title={item.key}>{item.key}</div>
+                                          <div className="text-[11px] font-bold text-accent">{item.count}</div>
+                                       </div>
+                                    );
+                                 })}
+                              </div>
+                           )}
                         </div>
                      )}
 
