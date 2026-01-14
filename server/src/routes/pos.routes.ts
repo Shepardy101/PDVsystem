@@ -25,8 +25,17 @@ posRouter.get('/sales', (req, res) => {
         payments
       };
     });
+    logEvent('Consulta vendas do turno', 'info', {
+      cashSessionId,
+      sales: salesWithDetails.length
+    });
     res.json({ sales: salesWithDetails });
   } catch (err) {
+    logEvent('Erro ao buscar vendas do turno', 'error', {
+      message: (err as any)?.message || String(err),
+      stack: (err as any)?.stack,
+      cashSessionId
+    });
     res.status(500).json({ error: 'Erro ao buscar vendas do turno' });
   }
 });

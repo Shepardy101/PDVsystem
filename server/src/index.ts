@@ -19,6 +19,7 @@ import settingsRouter from './routes/settings.routes';
 import sysRouter from './routes/sys';
 import ipControlRouter from './routes/admin/ipControl.routes';
 import maintenanceRouter from './routes/admin/maintenance.routes';
+import { scheduleLogRetention } from './services/logRetention';
 
 import { ipAccessControl } from './middleware/ipAccessControl';
 const app = express();
@@ -87,3 +88,6 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT} (ou pelo IP local)`);
 });
+
+// Agendamento diário de retenção de logs
+scheduleLogRetention();

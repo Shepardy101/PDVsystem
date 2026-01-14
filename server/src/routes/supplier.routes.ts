@@ -39,6 +39,7 @@ router.post('/', (req, res) => {
     db.prepare(`INSERT INTO suppliers (id, name, cnpj, address, phone, email, category, created_at, updated_at, fantasy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(id, name, cnpjNormalized, address || '', phone || '', email || '', category || '', now, now, fantasy || '');
     const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    logEvent('Fornecedor criado', 'info', { supplierId: id, name, cnpj: cnpjNormalized, category });
     res.json({ supplier });
 });
 
@@ -76,6 +77,7 @@ router.put('/:id', (req, res) => {
         );
 
     const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    logEvent('Fornecedor atualizado', 'info', { supplierId: id, name, cnpj: normalizedCnpj, category });
     res.json({ supplier });
 });
 
@@ -96,6 +98,7 @@ router.delete('/:id', (req, res) => {
         console.log('[DELETE] Result:', result);
         const allAfter = db.prepare('SELECT id, name FROM suppliers').all();
         console.log('[DELETE] Lista depois:', allAfter);
+        logEvent('Fornecedor deletado', 'warn', { supplierId: req.params.id, removed: result.changes });
         res.json({ changes: result.changes, lastInsertRowid: result.lastInsertRowid });
     } catch (err) {
         logEvent('Erro ao remover fornecedor', 'error', {

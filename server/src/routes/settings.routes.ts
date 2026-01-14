@@ -10,6 +10,7 @@ settingsRouter.get('/', async (req, res) => {
     const settings = await getAllSettings();
     res.json(settings);
   } catch (e) {
+    logEvent('Erro ao buscar configurações', 'error', { message: (e as any)?.message || String(e), stack: (e as any)?.stack });
     res.status(500).json({ error: 'Erro ao buscar configurações', details: e });
   }
 });
@@ -21,6 +22,7 @@ settingsRouter.get('/:key', async (req, res) => {
     if (value === null) return res.status(404).json({ error: 'Configuração não encontrada' });
     res.json({ key: req.params.key, value });
   } catch (e) {
+    logEvent('Erro ao buscar configuração', 'error', { key: req.params.key, message: (e as any)?.message || String(e), stack: (e as any)?.stack });
     res.status(500).json({ error: 'Erro ao buscar configuração', details: e });
   }
 });
@@ -36,9 +38,10 @@ settingsRouter.put('/:key', async (req, res) => {
       }
     }
     await setSetting(req.params.key, value);
-    logEvent('Configuração atualizada', 'info', { key: req.params.key });
+    logEvent('Configuração atualizada', 'info', { key: req.params.key, value });
     res.json({ key: req.params.key, value });
   } catch (e) {
+    logEvent('Erro ao atualizar configuração', 'error', { key: req.params.key, message: (e as any)?.message || String(e), stack: (e as any)?.stack });
     res.status(500).json({ error: 'Erro ao atualizar configuração', details: e });
   }
 });

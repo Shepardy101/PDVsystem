@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import db from '../db/database.js';
+import { logEvent } from '../utils/audit';
 const reportRouter = Router();
 
 // GET /api/report/sold-products-detailed
@@ -19,6 +20,10 @@ reportRouter.get('/sold-products-detailed', (req, res) => {
     res.json({ products: rows });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
+    logEvent('Erro em sold-products-detailed', 'error', {
+      message: errorMessage,
+      stack: (err as any)?.stack
+    });
     res.status(500).json({ error: 'Erro ao buscar produtos vendidos detalhados', details: errorMessage });
   }
 });
@@ -51,11 +56,16 @@ reportRouter.get('/sold-products', (req, res) => {
       GROUP BY si.product_id, si.product_name_snapshot
       ORDER BY total_quantity DESC
     `).all(...params);
-    //console de intervalo de datas
-    console.log(`[Sold Products] Filtro de data aplicado: start=${start}, end=${end}`);
+    logEvent('Relatório sold-products executado', 'info', { start, end, rows: rows.length });
     res.json({ products: rows });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
+    logEvent('Erro em sold-products', 'error', {
+      message: errorMessage,
+      stack: (err as any)?.stack,
+      start: req.query.start,
+      end: req.query.end
+    });
     res.status(500).json({ error: 'Erro ao buscar produtos vendidos', details: errorMessage });
   }
 });

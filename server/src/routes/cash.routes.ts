@@ -13,6 +13,10 @@ cashRouter.get('/movements/:cashSessionId', (req: Request, res: Response) => {
     const { cashSessionId } = req.params;
     if (!cashSessionId) return res.status(400).json({ error: 'cashSessionId é obrigatório.' });
     const movements = require('../repositories/cash.repo.js').getCashMovementsBySession(cashSessionId);
+    logEvent('Movimentações consultadas por sessão', 'info', {
+      cashSessionId,
+      count: Array.isArray(movements) ? movements.length : 0
+    });
     res.json({ movements });
   } catch (err) {
     const error = err as Error;
@@ -45,7 +49,11 @@ cashRouter.get('/sessions-movements', async (_req, res) => {
       const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
       return { ...sale, payments, items };
     });
-
+    logEvent('Consulta sessions-movements', 'info', {
+      sessions: sessions.length,
+      movements: movements.length,
+      sales: sales.length
+    });
     res.json({ sessions, movements, sales });
   } catch (err) {
     const error = err as Error;
@@ -145,6 +153,11 @@ cashRouter.get('/movements', (req: Request, res: Response) => {
     const session = getOpenCashSession(operatorId as string);
     if (!session) return res.status(404).json({ error: 'Nenhuma sessão aberta.' });
     const movements = require('../repositories/cash.repo.js').getCashMovementsBySession((session as { id: string }).id);
+    logEvent('Movimentações consultadas sessão atual', 'info', {
+      cashSessionId: (session as { id: string }).id,
+      operatorId,
+      count: Array.isArray(movements) ? movements.length : 0
+    });
     res.json({ movements });
   } catch (err) {
     const error = err as Error;
