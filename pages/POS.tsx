@@ -1205,8 +1205,11 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                     </div>
                                  </div>
 
-                                 <div className="flex items-center gap-1.5 sm:gap-2 bg-dark-950/80 rounded-lg px-2 py-1 border border-white/10">
-                                    <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 text-slate-500 hover:text-accent"><Minus size={12} /></button>
+                                  <div className="text-right whitespace-nowrap text-sm sm:text-base font-pdv font-bold text-white leading-tight">
+                                    R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}
+                                  </div>
+
+                                  <div className="flex items-center bg-dark-950/80 rounded-lg px-2 py-1 border border-white/10">
                                     <input
                                        ref={el => { qtyInputRefs.current[item.product.id] = el; }}
                                        data-role="qty-input"
@@ -1216,25 +1219,22 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                        className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
                                        value={item.quantity}
                                        onChange={e => {
-                                          const next = parseInt(e.target.value, 10);
-                                          setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
+                                         const next = parseInt(e.target.value, 10);
+                                         setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
                                        }}
                                        onKeyDown={e => {
-                                          e.stopPropagation();
-                                          if (e.key === 'Enter') {
-                                             e.preventDefault();
-                                             inputRef.current?.focus();
-                                             inputRef.current?.select();
-                                          }
+                                         e.stopPropagation();
+                                         if (e.key === 'Enter') {
+                                           e.preventDefault();
+                                           inputRef.current?.focus();
+                                           inputRef.current?.select();
+                                         }
                                        }}
                                        onFocus={e => e.stopPropagation()}
                                     />
-                                    <button onClick={() => addToCart(item.product)} className="p-1 text-slate-500 hover:text-accent"><Plus size={12} /></button>
-                                 </div>
+                                  </div>
 
-                                 <div className="text-right whitespace-nowrap text-sm sm:text-base font-pdv font-bold text-white leading-tight">
-                                    R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}
-                                 </div>
+                              
 
                                  <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity justify-self-end">
                                     <Trash2 size={14} />
