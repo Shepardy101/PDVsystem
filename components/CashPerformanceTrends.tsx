@@ -88,6 +88,7 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
       onTelemetry?.('performance', 'load-mock');
       // Definir datas padrão após carregar mock
       const sales = mockPerformanceData.sales;
+      console.log('Vendas carregadas para CashPerformanceTrends (mock):', sales);
       if (sales && sales.length > 0) {
         const sorted = [...sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         const end = new Date(sorted[sorted.length - 1].timestamp);
@@ -270,21 +271,22 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
                       : 'text-accent hover:bg-accent/20'
                   }`}
                   onClick={() => {
-                    // Usa a última data disponível nos dados como referência
-                    let endDateStr = dateRange.end;
+                    // Usa as vendas carregadas como referência
                     if (data && Array.isArray(data.sales) && data.sales.length > 0) {
                       const sorted = [...data.sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                      endDateStr = toLocalDateInput(sorted[sorted.length - 1].timestamp);
+                        const end = new Date(sorted[sorted.length - 1].timestamp);
+                        end.setDate(end.getDate() + 1); // adiciona 1 dia à data final
+                      const start = new Date(end);
+                      start.setDate(end.getDate() - (days - 1));
+                      const range = {
+                        start: toLocalDateInput(start),
+                        end: toLocalDateInput(end),
+                      };
+                      setDateRange(range);
+                      setActiveDays(days);
+                      console.log(`[CashPerformanceTrends] Botão ${days}d clicado. Novo range:`, range);
+                      onTelemetry?.('performance', 'quick-range', { days, ...range });
                     }
-                    const end = new Date(endDateStr);
-                    const start = new Date(end);
-                    start.setDate(end.getDate() - (days - 1));
-                    setDateRange({
-                      start: toLocalDateInput(start),
-                      end: toLocalDateInput(end),
-                    });
-                    setActiveDays(days);
-                    onTelemetry?.('performance', 'quick-range', { days, start: toLocalDateInput(start), end: toLocalDateInput(end) });
                   }}
                   title={`Últimos ${days} dias`}
                 >
@@ -301,11 +303,14 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
                   const start = new Date(sorted[0].timestamp);
                   const end = new Date(sorted[sorted.length - 1].timestamp);
                   end.setDate(end.getDate() + 1); // +1 dia para manter padrão inicial
-                  setDateRange({
+                  const range = {
                     start: toLocalDateInput(start),
                     end: toLocalDateInput(end),
-                  });
-                  onTelemetry?.('performance', 'range-all', { start: toLocalDateInput(start), end: toLocalDateInput(end) });
+                  };
+                  setDateRange(range);
+                  setActiveDays(null); // Indica modo ALL
+                  console.log('[CashPerformanceTrends] Botão ALL clicado. Novo range:', range);
+                  onTelemetry?.('performance', 'range-all', { ...range });
                 }
               }}
               title="Todo o período"
