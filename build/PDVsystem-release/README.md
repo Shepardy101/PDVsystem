@@ -1,4 +1,4 @@
-PDVsystem / NovaBev POS é um ponto de venda para distribuidores de bebidas: frontend React/Vite (SPA) servido pelo backend Node/Express na porta 8787, com banco SQLite único em `data/novabev.sqlite` e controle de acesso por whitelist de IP.
+PDVsystem  é um ponto de venda para distribuidores de bebidas: frontend React/Vite (SPA) servido pelo backend Node/Express na porta 8787, com banco SQLite único em `data/novabev.sqlite` e controle de acesso por whitelist de IP.
 
 ## Visão rápida
 - Módulos: PDV (vendas/pagamentos), Caixa (sessões e movimentos), Produtos/Categorias, Entidades (usuários/clientes/fornecedores), Relatórios/BI, Settings, Admin DB/Manutenção.

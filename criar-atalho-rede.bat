@@ -1,27 +1,34 @@
 @echo off
-setlocal
-REM Cria um atalho PDVsystem.lnk para acesso via rede (Chrome app mode)
+REM Script para criar atalho do Chrome para IP informado na porta 8787
 
-set "HOST_INPUT=%1"
-set "PORT_INPUT=%2"
-if "%HOST_INPUT%"=="" (
-  echo Host nao informado. Use: criar-atalho-rede.bat <host> [porta]
-  exit /b 1
-)
-if "%PORT_INPUT%"=="" set "PORT_INPUT=8787"
+REM Solicita o IP ao usuário
+set /p IP=Digite o IP desejado: 
 
-set "SHORTCUT_PATH=%~dp0PDVsystem.lnk"
-set "APP_URL=http://%HOST_INPUT%:%PORT_INPUT%"
 
-set "CHROME_PATH=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
-if not exist "%CHROME_PATH%" set "CHROME_PATH=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
-if not exist "%CHROME_PATH%" set "CHROME_PATH=%LocalAppData%\Google\Chrome\Application\chrome.exe"
-if not exist "%CHROME_PATH%" (
-  echo Chrome nao encontrado! Instale o Google Chrome.
-  exit /b 1
-)
+REM Define o caminho do Chrome (ajuste se necessário)
+set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
 
-powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut('%SHORTCUT_PATH%');$s.TargetPath='%CHROME_PATH%';$s.Arguments='--app=%APP_URL%';$s.Save()"
 
-echo Atalho criado em %SHORTCUT_PATH% apontando para %APP_URL%
-endlocal
+REM Define o destino do atalho (na mesma pasta do script)
+set SCRIPT_DIR=%~dp0
+set SHORTCUT_PATH=%SCRIPT_DIR%Chrome_PDVsystem.lnk
+
+REM Cria um arquivo temporário VBScript para gerar o atalho
+echo Set oWS = WScript.CreateObject("WScript.Shell") > "%temp%\makeShortcut.vbs"
+echo sLinkFile = "%SHORTCUT_PATH%" >> "%temp%\makeShortcut.vbs"
+echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%temp%\makeShortcut.vbs"
+
+echo oLink.TargetPath = "%CHROME_PATH%" >> "%temp%\makeShortcut.vbs"
+echo oLink.Arguments = "--app=http://%IP%:8787" >> "%temp%\makeShortcut.vbs"
+echo oLink.Description = "Atalho para Chrome no IP %IP% porta 8787" >> "%temp%\makeShortcut.vbs"
+echo oLink.IconLocation = "C:\PDVsystem\public\uploads\logo.jpg" >> "%temp%\makeShortcut.vbs"
+echo oLink.Save >> "%temp%\makeShortcut.vbs"
+
+REM Executa o VBScript para criar o atalho
+cscript //nologo "%temp%\makeShortcut.vbs"
+
+REM Remove o script temporário
+del "%temp%\makeShortcut.vbs"
+
+echo Atalho criado na área de trabalho!
+pause

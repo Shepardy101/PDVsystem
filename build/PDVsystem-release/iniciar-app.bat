@@ -6,23 +6,23 @@ echo INICIANDO PDVsystem
 echo ================================
 
 REM Caminho absoluto da raiz do projeto (pasta onde está este script)
-set ROOT=%~dp0
-echo [INFO] Raiz do projeto: %ROOT%
+
+REM Sempre resolve o backend relativo à pasta do script, independente da pasta atual
+set SCRIPT_DIR=%~dp0
+set BACKEND=%SCRIPT_DIR%server\dist\index.js
+echo [INFO] Backend esperado em: %BACKEND%
+if not exist "%BACKEND%" (
+  echo [ERRO] Backend compilado não encontrado em %BACKEND%!
+  echo [DICA] Rode o build do backend antes de empacotar.
+  pause
+  exit /b 1
+)
 
 REM 1. Iniciar backend com pm2 (se não estiver rodando)
 echo [INFO] Verificando pm2...
 pm2 -v
 if %errorlevel% neq 0 (
   echo [ERRO] pm2 não está instalado! Instale com: npm install -g pm2
-  pause
-  exit /b 1
-)
-
-echo [INFO] Verificando backend compilado...
-set BACKEND=%ROOT%server\dist\index.js
-if not exist "%BACKEND%" (
-  echo [ERRO] Backend compilado não encontrado em %BACKEND%!
-  echo [DICA] Rode o build do backend antes de empacotar.
   pause
   exit /b 1
 )
@@ -60,6 +60,7 @@ echo [INFO] Aguardando backend responder na porta 8787...
 
 :openapp
 REM 3. Abrir app no Chrome modo app
+
 set APP_URL=http://localhost:8787
 set CHROME_PATH=%ProgramFiles%\Google\Chrome\Application\chrome.exe
 if not exist "%CHROME_PATH%" set CHROME_PATH=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe
