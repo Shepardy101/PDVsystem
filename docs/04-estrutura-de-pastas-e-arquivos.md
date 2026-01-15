@@ -1,6 +1,6 @@
 # 04 - Estrutura de Pastas e Arquivos
 
-## Árvore (alto nível)
+- `/public/uploads/`: uploads servidos pelo backend. O arquivo `logo.jpg` é usado como logo customizável na tela de login.
 - `/server/src/index.ts`: configura Express, CORS, JSON, IP control, estáticos de `dist/`, registra rotas.
 - `/server/src/config.ts`: porta e caminho do DB (quando usado).
 - `/server/src/db/database.ts`: abre SQLite em `data/novabev.sqlite`, aplica PRAGMAs WAL e foreign_keys.
@@ -18,7 +18,7 @@
 - `/.githooks/`: hooks git (pre-commit executando docs-check).
 - `/*.bat`, `/build/*.bat`: automações Windows/pm2 (instalar, iniciar, empacotar, criar DB/root).
 
-## Arquivos principais (exemplos)
+- O título da aba do navegador é atualizado dinamicamente pelo frontend conforme a variável de ambiente `VITE_APP_NAME` definida em `.env` ou `.env.local`.
 - `server/src/routes/pos.routes.ts`: GET `/api/pos/sales`, POST `/api/pos/finalizeSale`.
 - `server/src/routes/cash.routes.ts`: movimentações, abrir/fechar caixa, sangria, suprimento, pagamento, sessions-movements.
 - `server/src/routes/cash.history.routes.ts`: GET `/api/cash/history` (consolida vendas/sangrias/suprimentos por sessão).

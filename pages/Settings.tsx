@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+// URL do webhook para envio dos logs ao purgar
+const LOGS_WEBHOOK_URL = import.meta.env.VITE_LOGS_WEBHOOK_URL || '';
 import { useAuth } from '../components/AuthContext';
 import { isAdmin } from '../types';
 import DbManager from '../src/renderer/components/adminDb/DbManager';
@@ -502,17 +504,33 @@ const Settings: React.FC = () => {
    
          const handlePurgeCache = async () => {
             sendTelemetry('maintenance', 'purge-cache');
-         try {
-            const res = await fetch('/api/admin/maintenance/purge-cache', { method: 'POST' });
-            if (!res.ok) throw new Error('Erro HTTP');
-            const data = await res.json();
-            toast.success(`Cache limpo (${data.logsDeleted ?? 0} logs, ${data.pendingDeleted ?? 0} pendentes)`);
-            setLogs([]);
-         } catch (err) {
-            console.error('[Settings] Falha ao purgar cache:', err);
-            toast.error('Falha ao limpar cache');
-         }
-      };
+            // 1. Envia os logs para o webhook, se configurado
+            if (LOGS_WEBHOOK_URL && logs.length > 0) {
+               try {
+                  const res = await fetch(LOGS_WEBHOOK_URL, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ logs })
+                  });
+                  if (!res.ok) throw new Error('Erro HTTP ao enviar logs para webhook');
+                  toast.success('Logs enviados para o webhook com sucesso');
+               } catch (err) {
+                  console.error('[Settings] Falha ao enviar logs para webhook:', err);
+                  toast.error('Falha ao enviar logs para o webhook');
+               }
+            }
+            // 2. Executa o purge normalmente
+            try {
+               const res = await fetch('/api/admin/maintenance/purge-cache', { method: 'POST' });
+               if (!res.ok) throw new Error('Erro HTTP');
+               const data = await res.json();
+               toast.success(`Cache limpo (${data.logsDeleted ?? 0} logs, ${data.pendingDeleted ?? 0} pendentes)`);
+               setLogs([]);
+            } catch (err) {
+               console.error('[Settings] Falha ao purgar cache:', err);
+               toast.error('Falha ao limpar cache');
+            }
+         };
 
       const handleWipeLocal = async () => {
          if (!isManagerUser) {

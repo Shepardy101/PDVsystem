@@ -7,6 +7,12 @@ PDVsystem (NovaBev POS) é um sistema de ponto de venda e gestão para distribui
 - Operadores de caixa (PDV).
 - Gerentes e administradores (caixa, estoque, entidades, relatórios, configurações, DB Manager).
 
+
+## Branding e Personalização
+- O nome do sistema exibido na sidebar, login e título do navegador é definido pela variável de ambiente `VITE_APP_NAME` (em `.env` ou `.env.local`).
+- O logo exibido na tela de login pode ser customizado colocando um arquivo `logo.jpg` em `public/uploads/`.
+- O título da aba do navegador é atualizado dinamicamente pelo frontend conforme `VITE_APP_NAME`.
+
 ## Módulos principais
 - PDV: vendas, itens, pagamentos, recibos (ver `pages/POS.tsx`).
 - Caixa: abertura/fechamento, suprimento, sangria, auditoria de movimentos (ver `pages/CashManagement.tsx`).

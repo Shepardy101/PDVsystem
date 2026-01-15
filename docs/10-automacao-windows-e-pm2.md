@@ -8,8 +8,8 @@
 - `build/instalar-cyberpunk.bat`: instala backend/pm2 com mensagens estilizadas.
 - `build/criar-db-e-root.bat`: executa migrations e cria usuário root padrão.
 
-## pm2
 - Processo típico: `PDVsystem`.
+- Para evitar duplicidade de processos, os scripts .bat executam `pm2 delete PDVsystem` antes de iniciar uma nova instância.
 - Comandos úteis: `pm2 start server/dist/index.js --name PDVsystem --env production`, `pm2 restart PDVsystem`, `pm2 stop PDVsystem`, `pm2 logs PDVsystem`, `pm2 save`, `pm2 startup`.
 
 ## Quando usar

@@ -1,0 +1,81 @@
+{
+  "name": "Salvar Logs no Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "logs",
+        "options": {}
+      },
+      "id": "Webhook_Logs",
+      "name": "Webhook Receber Logs",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        420,
+        260
+      ],
+      "webhookId": "webhook-logs-import"
+    },
+    {
+      "parameters": {
+        "functionCode": "const logs = items[0].json.logs;\n\nreturn logs.map(log => ({\n  json: {\n    id: log.id,\n    time: log.time,\n    level: log.level,\n    message: log.message,\n    createdAt: log.createdAt,\n    context_json: JSON.stringify(log.context)\n  }\n}));"
+      },
+      "id": "Function_Flatten",
+      "name": "Transformar Logs para Planilha",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        700,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "",
+        "range": "A:F",
+        "key": "id",
+        "options": {}
+      },
+      "id": "GoogleSheets",
+      "name": "Salvar no Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        960,
+        260
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "",
+          "name": "Google API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Receber Logs": {
+      "main": [
+        [
+          {
+            "node": "Transformar Logs para Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transformar Logs para Planilha": {
+      "main": [
+        [
+          {
+            "node": "Salvar no Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

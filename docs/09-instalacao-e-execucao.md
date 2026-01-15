@@ -25,7 +25,6 @@
 	- `iniciar-app.bat` para abrir o app (backend já em pm2).
 	- Não rodar migrations se estiver usando o banco já provisionado do pacote.
 
-## Variáveis de ambiente
 - `PORT` (default 8787).
 - `DB_PATH` (default `data/novabev.sqlite`).
 - `ENABLE_DB_ADMIN` (habilita `/api/admin-db`; requer localhost).
@@ -34,6 +33,9 @@
 - `BACKUP_WEBHOOK_URL` / `BACKUP_WEBHOOK_TOKEN` (webhook opcional para envio de backups de logs/DB; token é Bearer opcional).
 - `LOG_EXPORT_WINDOW_HOURS` (janela de exportação de logs para webhook; default 24h).
 - `BACKUP_SEND_TIMEOUT_MS` (timeout para POST do webhook; default 5000 ms).
+- `VITE_APP_NAME` (define o nome do sistema exibido no frontend e título do navegador).
+
+> **Nota:** O arquivo `.env.local` tem prioridade sobre `.env` e é recomendado para configurações específicas de ambiente local (ex: desenvolvimento, testes). Use `.env` para valores padrão e compartilhados. Se ambos existirem, o valor de `.env.local` será usado.
 
 ## Banco de Dados
 - Local: `data/novabev.sqlite`; WAL/SHM gerados automaticamente.
