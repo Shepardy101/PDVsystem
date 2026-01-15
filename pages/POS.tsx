@@ -628,6 +628,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          }
          setLastSaleData({ ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf });
          sendTelemetry('payment', 'finalize-success', { saleId, totalCents, items: items.length, payments: paymentsPayload.map(p => p.method), clientId: payload.clientId });
+         // Exibe popup de venda finalizada
+         triggerNotification('Venda finalizada', 'A venda foi registrada com sucesso!');
          console.log('-----', { ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf })
          setIsPaymentModalOpen(false);
          sendTelemetry('receipt', 'open', { saleId });
@@ -640,7 +642,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       } finally {
          isFinalizingRef.current = false;
       }
-   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient, refreshAvailableCash, sendTelemetry]);
+   }, [cart, effectiveSubtotal, autoDiscountsTotal, manualDiscount, effectiveTotal, cashSessionId, operatorId, selectedClient, refreshAvailableCash, sendTelemetry, triggerNotification]);
 
    const applyManualDiscount = () => {
       setManualDiscount(parseFloat(tempDiscount) || 0);
@@ -992,7 +994,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
                <div className="space-y-3">
                   <h2 className="text-2xl font-bold text-white tracking-widest uppercase assemble-text">Terminal Fechado</h2>
-                  <p className="text-slate-500 text-sm font-medium tracking-tight">O caixa atual encontra-se encerrado. Realize a abertura para iniciar o fluxo transacional.</p>
+                  <p className="text-slate-500 text-sm font-medium tracking-tight">
+"Caixa encerrado. Realize a abertura para começar o atendimento.                     </p>
                </div>
 
                <div className="flex flex-col items-center gap-2">
