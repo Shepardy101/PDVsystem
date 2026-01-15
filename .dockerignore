@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+dist
+server/dist
+*.sqlite*
+*.bat
+*.cmd
+*.lnk
+*.md
+.DS_Store
+.git
+.gitignore
+.vscode
+.env
+build/
+data/*.sqlite-shm
+data/*.sqlite-wal
