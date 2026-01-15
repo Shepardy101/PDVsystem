@@ -1,1 +1,0 @@
--- NO-OP: códigos opcionais já contemplados na 0021 consolidada.
