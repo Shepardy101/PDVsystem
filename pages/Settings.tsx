@@ -577,7 +577,7 @@ const Settings: React.FC = () => {
   );
 
    return (
-      <div className="p-8 flex flex-col min-h-screen overflow-auto assemble-view bg-dark-950 bg-cyber-grid relative">
+      <div className="p-8 flex flex-col min-h-0 max-h-[calc(100vh-0px)] overflow-auto assemble-view bg-dark-950 bg-cyber-grid relative">
          
          {/* Modal DB Manager */}
          {showDbManager && (

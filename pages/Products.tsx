@@ -665,7 +665,7 @@ const Products: React.FC = () => {
 
          {/* Main Content Area */}
          <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative z-0">
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 min-h-0 max-h-[calc(100vh-160px)] overflow-y-auto pr-2 custom-scrollbar">
                {!showImages ? (
                   /* LIST VIEW */
                   <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden animate-in fade-in duration-500 mb-8">
@@ -773,9 +773,9 @@ const Products: React.FC = () => {
                                                       <Cpu className="text-accent opacity-40" size={20} />
                                                    )}
                                                 </div>
-                                                <div>
-                                                   <div className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors">{product.name}</div>
-                                                   <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{product.gtin}</div>
+                                                <div
+                                                   className={["w-full overflow-x-auto overflow-y-auto","max-h-full min-h-[420px]","[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",].join(" ")}
+                                                >
                                                 </div>
                                              </td>
                                              {/* Preço Custo - desktop only */}

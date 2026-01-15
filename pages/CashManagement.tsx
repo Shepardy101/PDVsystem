@@ -402,7 +402,7 @@ const CashManagement: React.FC = () => {
    }
 
    return (
-      <div className="p-4 md:p-8 flex flex-col min-h-screen overflow-x-hidden overflow-y-auto assemble-view bg-dark-950 bg-cyber-grid relative">
+      <div className="p-4 md:p-8 flex flex-col min-h-0 max-h-[calc(100vh-0px)] overflow-x-hidden overflow-y-auto assemble-view bg-dark-950 bg-cyber-grid relative">
          <div className="flex items-center justify-between shrink-0 mb-6 relative z-10">
             <div>
                <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-3">

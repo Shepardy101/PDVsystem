@@ -187,8 +187,8 @@ const Entities: React.FC = () => {
       </div>
 
       {/* Main Table Content */}
-       <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="overflow-y-auto flex-1 custom-scrollbar">
+      <div className="flex-1 bg-dark-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+       <div className="flex-1 min-h-0 max-h-[calc(100vh-160px)] overflow-y-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-dark-950/90 backdrop-blur-md z-20 border-b border-white/5">
               <tr className="text-slate-600 text-[10px] uppercase font-bold tracking-[0.2em]">

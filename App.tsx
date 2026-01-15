@@ -202,7 +202,7 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="flex min-h-screen w-screen bg-dark-950 text-slate-100 overflow-x-hidden font-sans selection:bg-accent/30"
+      className="flex w-screen h-screen bg-dark-950 text-slate-100 overflow-x-hidden font-sans selection:bg-accent/30"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -221,7 +221,7 @@ const App: React.FC = () => {
       />
       {/* Floating Glass Sidebar */}
       <aside
-        className={`fixed z-50 top-0 left-0 h-full flex flex-col bg-dark-900/40 backdrop-blur-xl border-r border-white/5 transition-transform duration-500 ease-in-out
+        className={`fixed z-50 top-0 left-0 h-[100vh] flex flex-col bg-dark-900/40 backdrop-blur-xl border-r border-white/5 transition-transform duration-500 ease-in-out
           ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full'}
           lg:static lg:w-64 lg:translate-x-0
         `}
@@ -273,7 +273,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-x-hidden h-full min-h-screen">
+      <main className="flex-1 flex flex-col relative overflow-x-hidden h-full min-h-0">
         {/* Minimalist Top Nav */}
         <header className="h-20 bg-dark-950/20 backdrop-blur-md border-b border-white/5 px-4 sm:px-10 flex items-center justify-between shrink-0 z-20">
           <div className="flex items-center gap-6">
