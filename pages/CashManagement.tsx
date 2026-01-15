@@ -586,7 +586,6 @@ const CashManagement: React.FC = () => {
                                           </tr>
                                        </thead>
                                        <tbody className="divide-y divide-white/5">
-                                          {console.log('Sessão atual:', session)}
                                           {(session && Array.isArray(session.transactions))
                                              ? (session.transactions as Array<SaleTransaction | MovementTransaction>)
                                                 .filter((tx: SaleTransaction | MovementTransaction) => {

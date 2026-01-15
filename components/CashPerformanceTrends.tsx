@@ -81,17 +81,11 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setData(mockPerformanceData);
-      setLoading(false);
-      setError(null);
-      onTelemetry?.('performance', 'load-mock');
-      // Definir datas padrão após carregar mock
-      const sales = mockPerformanceData.sales;
-      console.log('Vendas carregadas para CashPerformanceTrends (mock):', sales);
+    function setDefault30dRange(sales: any[]) {
       if (sales && sales.length > 0) {
         const sorted = [...sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         const end = new Date(sorted[sorted.length - 1].timestamp);
+        end.setDate(end.getDate() + 1); // adiciona 1 dia à data final
         const start = new Date(end);
         start.setDate(end.getDate() - 29); // 30d padrão
         setDateRange({
@@ -99,7 +93,15 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
           end: toLocalDateInput(end),
         });
         setActiveDays(30);
+        onTelemetry?.('performance', 'quick-range', { days: 30, start: toLocalDateInput(start), end: toLocalDateInput(end) });
       }
+    }
+    if (USE_MOCK) {
+      setData(mockPerformanceData);
+      setLoading(false);
+      setError(null);
+      onTelemetry?.('performance', 'load-mock');
+      setDefault30dRange(mockPerformanceData.sales);
     } else {
       setLoading(true);
       fetch('/api/cash/sessions-movements')
@@ -110,30 +112,16 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
         .then(apiData => {
           setData(apiData);
           onTelemetry?.('performance', 'load-success', { sales: Array.isArray(apiData?.sales) ? apiData.sales.length : 0 });
-          // Definir datas padrão após carregar API
-          const sales = apiData.sales;
-          console.log('Vendas carregadas para CashPerformanceTrends:', sales);
-          if (sales && sales.length > 0) {
-            const sorted = [...sales].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-            const end = new Date(sorted[sorted.length - 1].timestamp);
-            const start = new Date(end);
-            start.setDate(end.getDate() - 29); // 30d padrão
-            setDateRange({
-              start: toLocalDateInput(start),
-              end: toLocalDateInput(end),
-            });
-            setActiveDays(30);
-          }
+          setDefault30dRange(apiData.sales);
         })
-          .catch(e => { setError(e.message); onTelemetry?.('performance', 'load-error', { message: e.message }); })
+        .catch(e => { setError(e.message); onTelemetry?.('performance', 'load-error', { message: e.message }); })
         .finally(() => setLoading(false));
     }
-        }, [USE_MOCK, onTelemetry]);
+  }, [USE_MOCK, onTelemetry]);
 
   // Filtro de vendas por data inicial/final (para os cards)
   const filteredSalesForCards = React.useMemo(() => {
     if (!data || !Array.isArray(data.sales)) return [];
-    console.log('Filtrando vendas para cards com dataRange:', dateRange);
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
     end.setHours(23, 59, 59, 999);
@@ -146,7 +134,6 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
   // Totais por método (apenas filtro de data)
   const totals = React.useMemo(() => {
     let cash = 0, card = 0, pix = 0;
-    console.log('Calculando totais para cards a partir de vendas filtradas:', filteredSalesForCards);
     filteredSalesForCards.forEach((sale: any) => {
       if (Array.isArray(sale.payments)) {
         sale.payments.forEach((p: any) => {
@@ -174,6 +161,12 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
   // Dados para gráfico: agrupamento por período + normalização de altura + períodos sem vendas
   const chartData = React.useMemo(() => {
     if (!dateRange.start || !dateRange.end) return [];
+    const cursorTest = new Date(dateRange.start);
+    const endTest = new Date(dateRange.end);
+    if (isNaN(cursorTest.getTime()) || isNaN(endTest.getTime())) return [];
+    let cursor = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+    if (isNaN(cursor.getTime()) || isNaN(end.getTime())) return [];
     // Agrupa por data (dia, semana, mês)
     const groupKey = (d: Date) => {
       if (periodType === 'day') return d.toISOString().slice(0, 10);
@@ -187,8 +180,6 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
     };
     // Gera todos os períodos do intervalo
     const periods: string[] = [];
-    let cursor = new Date(dateRange.start);
-    const end = new Date(dateRange.end);
     if (periodType === 'day') {
       while (cursor <= end) {
         periods.push(groupKey(cursor));
@@ -284,7 +275,6 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
                       };
                       setDateRange(range);
                       setActiveDays(days);
-                      console.log(`[CashPerformanceTrends] Botão ${days}d clicado. Novo range:`, range);
                       onTelemetry?.('performance', 'quick-range', { days, ...range });
                     }
                   }}
@@ -309,7 +299,6 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
                   };
                   setDateRange(range);
                   setActiveDays(null); // Indica modo ALL
-                  console.log('[CashPerformanceTrends] Botão ALL clicado. Novo range:', range);
                   onTelemetry?.('performance', 'range-all', { ...range });
                 }
               }}
@@ -329,11 +318,55 @@ const CashPerformanceTrends: React.FC<CashPerformanceTrendsProps> = ({ onTelemet
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 mb-0.5">Inicial</label>
-              <input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs" />
+              <div className="relative">
+                <input
+                  ref={el => (window._startDateInput = el)}
+                  type="date"
+                  name="start"
+                  value={dateRange.start}
+                  onChange={handleDateChange}
+                  className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs pr-8 select-none opacity-80"
+                  style={{ colorScheme: 'dark' }}
+                  onKeyDown={e => e.preventDefault()}
+                  onPaste={e => e.preventDefault()}
+                  onDrop={e => e.preventDefault()}
+                />
+                <button
+                  type="button"
+                  aria-label="Abrir calendário inicial"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-dark-900 rounded-full p-0.5 shadow-md border border-accent/40 hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-accent"
+                  style={{background: '#0d3136', borderColor: '#22d3ee'}}
+                  onClick={() => window._startDateInput && window._startDateInput.showPicker && window._startDateInput.showPicker()}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 mb-0.5">Final</label>
-              <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs" />
+              <div className="relative">
+                <input
+                  ref={el => (window._endDateInput = el)}
+                  type="date"
+                  name="end"
+                  value={dateRange.end}
+                  onChange={handleDateChange}
+                  className="rounded-lg border border-white/10 bg-dark-900/60 text-slate-100 px-1 py-0.5 text-xs pr-8 select-none opacity-80"
+                  style={{ colorScheme: 'dark' }}
+                  onKeyDown={e => e.preventDefault()}
+                  onPaste={e => e.preventDefault()}
+                  onDrop={e => e.preventDefault()}
+                />
+                <button
+                  type="button"
+                  aria-label="Abrir calendário final"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-dark-900 rounded-full p-0.5 shadow-md border border-accent/40 hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-accent"
+                  style={{background: '#0d3136', borderColor: '#22d3ee'}}
+                  onClick={() => window._endDateInput && window._endDateInput.showPicker && window._endDateInput.showPicker()}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
