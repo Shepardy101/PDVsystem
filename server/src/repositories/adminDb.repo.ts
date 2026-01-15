@@ -22,7 +22,7 @@ export async function createRootUser() {
 			'root',
 			'Root',
 			'root',
-			'admin',
+			'manager',
 			'active',
 			'root', // Troque por hash seguro em produção
 			null
