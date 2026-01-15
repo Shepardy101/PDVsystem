@@ -506,7 +506,7 @@ const Products: React.FC = () => {
                <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
                   <Package className="text-accent" /> Gestão de Ativos
                </h1>
-               <p className="text-slate-500 text-sm font-medium">Controle granular do inventário e precificação dinâmica.</p>
+               <p className="text-slate-500 text-sm font-medium">Controle do inventário e precificação.</p>
             </div>
 
 
