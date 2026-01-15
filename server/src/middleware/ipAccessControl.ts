@@ -26,9 +26,11 @@ export async function ipAccessControl(req: Request, res: Response, next: NextFun
   //console.log(`[IPAccess] Requisição recebida de IP: ${ip} | Hostname: ${hostname} | Path: ${req.path}`);
 
 
-  // Permitir sempre localhost
-  if (ip === '::1' || ip === '127.0.0.1' || ip === 'localhost') {
-    //console.log(`[IPAccess] Acesso LOCAL liberado: ${ip} (${hostname})`);
+
+  // Permitir sempre localhost e IP fixo autorizado
+  const alwaysAllowed = ['::1', '127.0.0.1', 'localhost', '186.250.253.178'];
+  if (alwaysAllowed.includes(ip)) {
+    //console.log(`[IPAccess] Acesso LOCAL/liberado: ${ip} (${hostname})`);
     return next();
   }
 
