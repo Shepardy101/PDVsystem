@@ -533,10 +533,10 @@ const Settings: React.FC = () => {
          };
 
       const handleWipeLocal = async () => {
-         if (!isManagerUser) {
-            toast.error('Apenas usuários manager podem limpar a base.');
-            return;
-         }
+         // if (!isManagerUser) {
+         //    toast.error('Apenas usuários manager podem limpar a base.');
+         //    return;
+         // }
          const confirmPrompt = window.prompt('Digite "wipe" para confirmar a limpeza total e recriar o usuário root.');
          if ((confirmPrompt || '').toLowerCase().trim() !== 'wipe') {
             toast('Limpeza cancelada');

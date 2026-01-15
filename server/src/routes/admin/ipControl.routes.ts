@@ -4,6 +4,29 @@ import db from '../../db/database';
 import { logEvent } from '../../utils/audit';
 
 const router = Router();
+// Listar IPs bloqueados (negados)
+router.get('/blocked', (req, res) => {
+  try {
+    // Considera IPs que já foram negados (pending removidos, mas pode customizar conforme regra de negócio)
+    // Aqui, exemplo: pending_ips com status 'denied' ou tabela blocked_ips se existir
+    // Se não houver tabela blocked_ips, retorna vazio
+    let blocked = [];
+    try {
+      blocked = db.prepare('SELECT * FROM blocked_ips ORDER BY id DESC').all();
+    } catch {
+      // Se não existir tabela blocked_ips, retorna array vazio
+      blocked = [];
+    }
+    res.json(blocked);
+  } catch (err: any) {
+    logEvent('Erro ao listar IPs bloqueados', 'error', {
+      message: err?.message || String(err),
+      stack: err?.stack
+    });
+    res.status(500).json({ error: 'Erro ao listar IPs bloqueados' });
+  }
+});
+
 
 // Listar IPs pendentes
 router.get('/pending', (req, res) => {

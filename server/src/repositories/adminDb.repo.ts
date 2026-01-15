@@ -20,7 +20,7 @@ export async function createRootUser() {
 	db.prepare(`INSERT INTO users (id, name, email, role, status, password, lastLogin) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 		.run(
 			'root',
-			'Root',
+			'@Root',
 			'root',
 			'manager',
 			'active',
