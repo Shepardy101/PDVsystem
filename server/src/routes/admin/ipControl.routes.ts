@@ -10,7 +10,7 @@ router.get('/blocked', (req, res) => {
     // Considera IPs que já foram negados (pending removidos, mas pode customizar conforme regra de negócio)
     // Aqui, exemplo: pending_ips com status 'denied' ou tabela blocked_ips se existir
     // Se não houver tabela blocked_ips, retorna vazio
-    let blocked = [];
+    let blocked: any[] = [];
     try {
       blocked = db.prepare('SELECT * FROM blocked_ips ORDER BY id DESC').all();
     } catch {
