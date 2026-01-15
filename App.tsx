@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from './components/AuthContext';
 import { ShoppingCart, Package, Users, Wallet, BarChart3, LogOut, Settings as SettingsIcon, Bell, Menu, X, Command } from 'lucide-react';
@@ -10,6 +9,17 @@ import CashManagement from './pages/CashManagement';
 import Reports from './pages/Reports';
 import Entities from './pages/Entities';
 import Settings from './pages/Settings';
+
+// Declaração global para suportar import.meta.env no Vite/TypeScript
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_APP_NAME?: string;
+    // outras variáveis VITE_*
+  }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('login');
@@ -232,7 +242,9 @@ const App: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow">
              <Command size={22} className="text-dark-950" />
           </div>
-          <span className={`text-xl font-bold tracking-tight text-white ${!isSidebarOpen && 'hidden'}`}>NovaBev<span className="text-accent opacity-50">.</span></span>
+          <span className={`text-xl font-bold tracking-tight text-white ${!isSidebarOpen && 'hidden'}`}>
+            {import.meta.env.VITE_APP_NAME || 'Nome Empresa'}<span className="text-accent opacity-50">.</span>
+          </span>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 py-6 overflow-y-auto">
