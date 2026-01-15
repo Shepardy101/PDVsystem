@@ -1249,7 +1249,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
             {/* Totals Section */}
             <div className="col-span-12 xl:col-span-4 flex flex-col gap-6 h-full min-h-0">
-               <div className="flex-1 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-hidden min-h-0 ">
+               <div className="flex-1 glass-panel rounded-3xl sm:p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-y-auto min-h-0 custom-scrollbar ">
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.25em] sm:tracking-[0.35em] text-slate-600 mb-6 sm:mb-10">Consolidação Fiscal</h3>
 
                   <div className="flex-1 space-y-6">
@@ -1278,7 +1278,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                   </div>
 
 
-
+                     {/**  */}
                   <div className="pt-8 border-t border-white/5 space-y-8 shrink-0 relative z-10">
                      <div className="flex justify-between items-end gap-3 flex-wrap sm:flex-nowrap">
                         <div>

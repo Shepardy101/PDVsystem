@@ -2,6 +2,14 @@ import './CashPerformanceTrends.scrollbar.css';
 import React, { useEffect, useState } from 'react';
 import mockPerformanceData from './mockPerformanceData';
 
+// Extende o tipo Window para suportar _startDateInput e _endDateInput
+declare global {
+  interface Window {
+    _startDateInput?: HTMLInputElement | null;
+    _endDateInput?: HTMLInputElement | null;
+  }
+}
+
 type PeriodType = 'day' | 'week' | 'month';
 
 function toLocalDateInput(value: string | number | Date) {
