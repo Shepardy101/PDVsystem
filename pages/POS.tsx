@@ -1214,23 +1214,40 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                        ref={el => { qtyInputRefs.current[item.product.id] = el; }}
                                        data-role="qty-input"
                                        type="number"
-                                       min={1}
-                                       max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
-                                       className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
-                                       value={item.quantity}
-                                       onChange={e => {
-                                         const next = parseInt(e.target.value, 10);
-                                         setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
-                                       }}
-                                       onKeyDown={e => {
-                                         e.stopPropagation();
-                                         if (e.key === 'Enter') {
-                                           e.preventDefault();
-                                           inputRef.current?.focus();
-                                           inputRef.current?.select();
-                                         }
-                                       }}
-                                       onFocus={e => e.stopPropagation()}
+                                                          min={1}
+                                                          max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
+                                                          className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
+                                                          value={item.quantity === 0 ? '' : item.quantity}
+                                                          inputMode="numeric"
+                                                          pattern="[0-9]*"
+                                                          onChange={e => {
+                                                             // Permite campo vazio temporariamente
+                                                             const val = e.target.value;
+                                                             if (val === '' || val === '0') {
+                                                                setQuantity(item.product.id, 0);
+                                                             } else {
+                                                                const next = parseInt(val, 10);
+                                                                setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
+                                                             }
+                                                          }}
+                                                          onBlur={e => {
+                                                             // Se sair vazio ou zero, volta para 1
+                                                             if (!e.target.value || e.target.value === '0') {
+                                                                setQuantity(item.product.id, 1);
+                                                             }
+                                                          }}
+                                                          onKeyDown={e => {
+                                                             e.stopPropagation();
+                                                             if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                inputRef.current?.focus();
+                                                                inputRef.current?.select();
+                                                             }
+                                                          }}
+                                                          onFocus={e => {
+                                                             e.stopPropagation();
+                                                             e.target.select();
+                                                          }}
                                     />
                                   </div>
 
@@ -1248,8 +1265,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             </div>
 
             {/* Totals Section */}
-            <div className="col-span-12 xl:col-span-4 flex flex-col gap-6 h-full min-h-0">
-               <div className="flex-1 glass-panel rounded-3xl sm:p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-y-auto min-h-0 custom-scrollbar ">
+            <div className="col-span-12 xl:col-span-4 flex flex-col gap-6 h-full min-h-0 ">
+               <div className="p-4 flex-1 glass-panel rounded-3xl sm:p-8 flex flex-col border-white/5 bg-dark-900/40 shadow-2xl relative overflow-y-auto min-h-0 custom-scrollbar ">
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.25em] sm:tracking-[0.35em] text-slate-600 mb-6 sm:mb-10">Consolidação Fiscal</h3>
 
                   <div className="flex-1 space-y-6">
