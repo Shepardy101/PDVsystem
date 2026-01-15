@@ -1090,20 +1090,26 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <div className="relative z-50 max-w-3xl mx-auto w-full" ref={searchRef}>
             <div className={`gradient-border-wrapper flex items-center gap-4 transition-all duration-300 rounded-2xl p-2 bg-dark-900/60 backdrop-blur-xl border border-white/10 ${isSearchFocused ? 'border-accent/50 shadow-accent-glow' : ''
                }`}>
-               <div className="pl-4 text-slate-500">
-                  <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
-               </div>
-               <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder={isSearchFocused ? "Digite o código ou nome do produto..." : "Pressione '[SPACE]' para buscar produto ou GTIN..."}
-                  className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  onKeyDown={handleSearchKeyDown}
-               />
+                  <div className="pl-4 text-slate-500">
+                    <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
+                  </div>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder={
+                      window.innerWidth <= 640
+                        ? "Buscar produto"
+                        : isSearchFocused
+                           ? "Digite o código ou nome do produto..."
+                           : "Pressione '[SPACE]' para buscar produto ou GTIN..."
+                    }
+                    className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    onKeyDown={handleSearchKeyDown}
+                  />
                {searchTerm && (
                   <button onClick={() => { setSearchTerm(''); inputRef.current?.focus(); }} className="p-2 text-slate-500 hover:text-white">
                      <X size={18} />

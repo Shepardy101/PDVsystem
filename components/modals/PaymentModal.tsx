@@ -261,7 +261,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className={`relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-out transform ${isExiting ? 'opacity-0 translate-y-6 scale-[0.97]' : 'opacity-100 translate-y-0 scale-100'}`}
+                className={`relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto transition-all duration-200 ease-out transform ${isExiting ? 'opacity-0 translate-y-6 scale-[0.97]' : 'opacity-100 translate-y-0 scale-100'}`}
             >
                 <div className="p-6 sm:p-7 border-b border-white/10 flex items-center justify-between bg-dark-950/80 rounded-t-2xl">
                     <div className="flex items-center gap-4">
