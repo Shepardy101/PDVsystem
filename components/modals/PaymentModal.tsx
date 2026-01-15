@@ -270,7 +270,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">
-                                Liquidação de Buffer
+                               Finalizar compra 
                             </h2>
                             <p className="text-[9px] font-mono text-slate-500 uppercase flex items-center gap-2">
                                 <Zap size={10} className="text-accent" /> Selecione o Protocolo de Saída
