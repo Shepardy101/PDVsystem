@@ -234,7 +234,7 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
     }
 
     return (
-        <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl p-5 shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden">
+        <section className="relative rounded-3xl border border-white/10 bg-dark-950/40 backdrop-blur-xl p-2 shadow-[0_18px_60px_rgba(0,0,0,0.45)] overflow-hidden">
             {/* Overlay futurista */}
             <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
@@ -246,7 +246,6 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-3">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-200">Produtos Vendidos (Detalhado)</h3>
                     <div className="flex gap-1 ml-2">
                         {['30d', '60d', '90d', 'all'].map((label) => (
                             <button
@@ -359,7 +358,7 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
                                         {sortKey === 'total_value' && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
                                     </span>
                                 </th>
-                               
+
                             </tr>
                         </thead>
 
@@ -413,7 +412,7 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
                                                         {p.product_name}
                                                     </span>
                                                 </div>
-                                               
+
                                             </td>
 
                                             <td className="py-2.5 px-3 whitespace-nowrap font-mono text-center">
@@ -434,7 +433,7 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
                                                 {formatBRLFromCents(p.total_value)}
                                             </td>
 
-                                            
+
                                         </tr>
                                     );
                                 })
