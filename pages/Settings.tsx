@@ -843,7 +843,13 @@ const Settings: React.FC = () => {
                                  <p className="text-[10px] uppercase tracking-[0.3em] text-slate-300">Distribuição & Performance</p>
                               </div>
                               <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                                 {interactionCounts.length > 0 && <span>Total tipos: {interactionCounts.length}</span>}
+                                 {interactionCounts.length > 0 && (
+                                    <span>
+                                       Total tipos: {interactionCounts.length}
+                                       <span className="mx-2 text-slate-400">|</span>
+                                       Total logs: {logs.length}
+                                    </span>
+                                 )}
                                  {perfSamples.length > 0 && (
                                     <button
                                        className="px-2 py-1 rounded-full border border-white/10 text-slate-300 hover:text-accent hover:border-accent/50"

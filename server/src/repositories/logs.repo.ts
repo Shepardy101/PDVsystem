@@ -26,8 +26,14 @@ export function addLog(message: string, level: LogLevel = 'info', context?: Reco
   return entry;
 }
 
-export function listLogs(limit = 100, level?: LogLevel): LogEntry[] {
-  const safeLimit = Math.max(1, Math.min(500, limit));
+export function listLogs(limit: number | 'all' = 100000, level?: LogLevel): LogEntry[] {
+  if (limit === 'all') {
+    if (level) {
+      return db.prepare('SELECT * FROM logs WHERE level = ? ORDER BY created_at DESC').all(level) as LogEntry[];
+    }
+    return db.prepare('SELECT * FROM logs ORDER BY created_at DESC').all() as LogEntry[];
+  }
+  const safeLimit = Math.max(1, Math.min(500, typeof limit === 'number' ? limit : 100000));
   if (level) {
     return db.prepare(
       'SELECT * FROM logs WHERE level = ? ORDER BY created_at DESC LIMIT ?'
