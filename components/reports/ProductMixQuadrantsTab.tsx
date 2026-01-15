@@ -80,11 +80,11 @@ const ProductMixQuadrantsTab: React.FC<ProductMixQuadrantsTabProps> = ({ onTelem
     <div className="glass-card p-4 rounded-2xl border border-cyan-700/30 shadow-lg bg-dark-900/50 animate-in fade-in slide-in-from-bottom-6 flex flex-col flex-1 h-full min-h-0">
       {/* Intervalo de datas e botão tabela */}
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6 w-full justify-between">
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1 flex-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-900/40 scrollbar-track-transparent">
           {PRESETS.map((p, i) => (
             <button
               key={p.label}
-              className={`px-4 py-2 rounded-lg font-bold text-xs transition-all border ${preset === i ? 'bg-cyan-700/30 text-cyan-200 border-cyan-400 shadow-cyan-500/20 shadow-lg' : 'bg-dark-950/60 text-slate-400 border-cyan-900 hover:bg-cyan-900/20'}`}
+              className={`px-2 py-1 min-w-[60px] rounded-md font-semibold text-[10px] transition-all border whitespace-nowrap ${preset === i ? 'bg-cyan-700/30 text-cyan-200 border-cyan-400 shadow-cyan-500/20 shadow-lg' : 'bg-dark-950/60 text-slate-400 border-cyan-900 hover:bg-cyan-900/20'}`}
               onClick={() => {
                 setPreset(i);
                 onTelemetry?.('productMix', 'filter:preset', { preset: p.label });

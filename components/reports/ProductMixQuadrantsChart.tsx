@@ -120,23 +120,28 @@ const ProductMixQuadrantsTab: React.FC = () => {
         ctx.lineTo(chartArea.right, pyMid);
         ctx.stroke();
 
+
+
+          const isMobile = window.innerWidth <= 600;
         // Rótulos dos quadrantes
         ctx.font = "11px 'Inter', 'Roboto', 'Arial', sans-serif";
         ctx.fillStyle = "#b388ff";
         ctx.fillText(
-          "Venda pontual / oportunidade",
+          isMobile ? "Oportunidade" : "Venda pontual / oportunidade",
           chartArea.left + 10,
           chartArea.top + 16
         );
         ctx.fillText(
-          "Parados / abaixo da média",
+          isMobile ? "Parados" : "Parados / abaixo da média",
           chartArea.left + 10,
           chartArea.bottom - 8
         );
 
         ctx.fillStyle = "#66f3ff";
+        // Se for mobile, só mostra "Reposição"; senão, "Reposição prioritária"
+        
         ctx.fillText(
-          "Reposição prior.",
+          isMobile ? "Reposição" : "Reposição prioritária",
           chartArea.right - 120,
           chartArea.top + 16
         );

@@ -132,14 +132,14 @@ const Reports: React.FC = () => {
   }, [selectedViewer, sendTelemetry]);
 
   return (
-    <div className="p-8 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
+    <div className="p-2 flex flex-col h-full overflow-hidden assemble-view bg-dark-950 bg-cyber-grid relative">
 
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 shrink-0 mb-8 relative z-10">
         <div>
          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
            <Layers className="text-accent" /> Inteligência de Dados
          </h1>
-         <p className="text-slate-500 text-sm font-medium uppercase tracking-widest text-[10px]">Núcleo de Processamento Estratégico // NovaBev Analytics</p>
+         <p className="text-slate-500 text-sm font-medium uppercase tracking-widest text-[10px]">// NovaBev Analytics</p>
         </div>
       <div>
         {/* Indicador discreto de inteligência de dados */}
@@ -153,8 +153,21 @@ const Reports: React.FC = () => {
 
 
 
-      {/* Botões para alternar entre Mix(Quadrantes) e Produtos Vendidos Detalhado */}
-      <div className="flex items-center gap-2 mb-6 relative z-10 animate-in fade-in slide-in-from-top-2 duration-400 shrink-0">
+      {/* Menu de seleção responsivo: dropdown no mobile, botões no desktop */}
+      {/* Mobile: Dropdown estilizado */}
+      <div className="mb-6 relative z-10 animate-in fade-in slide-in-from-top-2 duration-400 shrink-0 w-full block sm:hidden">
+        <select
+          className="w-full bg-dark-900/40 border border-accent/30 text-accent rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
+          value={selectedViewer}
+          onChange={e => setSelectedViewer(e.target.value as any)}
+        >
+          <option value="mixQuadrants">Mix (Quadrantes)</option>
+          <option value="soldProductsDetailed">Produtos Vendidos Detalhado</option>
+          <option value="soldProductsResumo">Resumo Produtos Vendidos</option>
+        </select>
+      </div>
+      {/* Desktop: Botões */}
+      <div className="flex items-center gap-2 mb-6 relative z-10 animate-in fade-in slide-in-from-top-2 duration-400 shrink-0 flex-wrap overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-900/40 scrollbar-track-transparent max-w-full hidden sm:flex">
         <button
           onClick={() => setSelectedViewer('mixQuadrants')}
           className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
