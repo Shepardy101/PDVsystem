@@ -19,7 +19,7 @@ import { logUiEvent } from '../services/telemetry';
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
    <div className="bg-black/30 border border-white/5 rounded-lg px-3 py-2">
       <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">{label}</div>
-      <div className="text-[12px] text-slate-200 break-words leading-tight">{value || '-'}</div>
+      <div className="text-[12px] text-slate-200 wrap-break-word leading-tight">{value || '-'}</div>
    </div>
 );
 
@@ -61,6 +61,10 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
    const [blocked, setBlocked] = useState<IpEntry[]>([]);
    const [refresh, setRefresh] = useState(0);
    const [selectedIp, setSelectedIp] = useState<{ entry: IpEntry; list: 'pending' | 'allowed' | 'blocked' } | null>(null);
+
+    // State para os painéis expansíveis
+      const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+      const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
 
    useEffect(() => {
       let isMounted = true;
@@ -154,7 +158,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
    };
 
    return (
-      <div className="mt-8 rounded-3xl overflow-hidden border border-accent/20 bg-gradient-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
+      <div className="mt-8 rounded-3xl overflow-hidden border border-accent/20 bg-linear-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
          <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
             <div className="flex items-center gap-3">
                <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
@@ -319,6 +323,9 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
 };
 
 const Settings: React.FC = () => {
+      // State para os painéis expansíveis
+      const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+      const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
    const { user } = useAuth();
    const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
       logUiEvent({ userId: user?.id ?? null, page: 'settings', area, action, meta });
@@ -577,7 +584,7 @@ const Settings: React.FC = () => {
   );
 
    return (
-      <div className="p-8 flex flex-col min-h-0 max-h-[calc(100vh-0px)] overflow-auto assemble-view bg-dark-950 bg-cyber-grid relative">
+      <div className="p-2 flex flex-col min-h-0  overflow-auto assemble-view bg-dark-950 bg-cyber-grid relative">
          
          {/* Modal DB Manager */}
          {showDbManager && (
@@ -603,22 +610,27 @@ const Settings: React.FC = () => {
       <div className="flex items-center justify-between shrink-0 mb-8 relative z-10">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-             <SettingsIcon className="text-accent" /> Mission Control // Painel de Controle
+             <SettingsIcon className="text-accent" />Painel de Controle
           </h1>
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">
-             Configurações de Baixo Nível e Auditoria do Kernel v3.1
+          <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mt-1">
+             Kernel v3.1
           </p>
         </div>
             <div className="flex items-center gap-4">
                <Button variant="secondary" icon={<Database size={18} />} disabled={!isManagerUser} onClick={() => { if (isManagerUser) { sendTelemetry('settings', 'open-db-manager'); setShowDbManager(true); } }}>
                   DB Manager
                </Button>
-           <div className="flex items-center gap-2 px-4 py-2 bg-dark-900/60 border border-white/5 rounded-full backdrop-blur-md">
-              <Server size={14} className="text-accent" />
-              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Instance: US-EAST-01</span>
-           </div>
-           <Button icon={<RefreshCcw size={18} />} disabled={!isManagerUser} onClick={() => { sendTelemetry('settings', 'reload-kernel'); window.location.reload(); }}>Reiniciar Kernel</Button>
-        </div>
+          
+         <Button icon={<Terminal size={18} />} onClick={() => {
+            if (showLogsModal) {
+               closeLogsModal();
+            } else {
+               openLogsModal();
+            }
+         }}>
+            {'LOGS'}
+         </Button>
+        </div> 
       </div>
 
 
@@ -626,197 +638,204 @@ const Settings: React.FC = () => {
 
       <div className="flex-1 grid grid-cols-12 gap-8 overflow-hidden min-h-0 relative z-10">
         {/* Coluna Esquerda: Configurações */}
-      <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar min-h-0 h-full max-h-[calc(100vh-220px)]">
-        
-        
-      <div className="mt-0 rounded-3xl overflow-hidden border border-accent/20 bg-gradient-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
-            <div>
-         <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
-           <Zap size={14} className="text-accent" /> Estoque no Caixa
-         </p>
-         <p className="text-[11px] text-slate-300 font-mono">Permitir vender acima do estoque?</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-dark-900/60 border border-accent/30 rounded-2xl px-4 py-2 shadow-[0_0_18px_-8px_rgba(34,211,238,0.9)]">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
-         {allowNegativeStock ? 'Habilitado' : 'Bloqueado'}
-            </span>
-            <Switch
-         enabled={allowNegativeStock}
-         disabled={settingsLoading}
-         onChange={(value: boolean) => toggleNegativeStock(value)}
-            />
-          </div>
-        </div>
-        <div className="p-6 bg-black/10">
-          <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl font-mono">
-            Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
-          </p>
-        </div>
-      </div>
-           {/* Seção de Controle de IPs */}
-           <IPControlPanel canManage={isManagerUser} telemetry={sendTelemetry} />
-
-           {/* Seção de Segurança */}
-           {/* <div className="glass-panel rounded-3xl p-8 border-white/5 space-y-8">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                 <Shield size={14} className="text-accent" /> Protocolos de Segurança
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div className="space-y-4">
-                    <Input label="Nível de Criptografia" defaultValue="AES-256-GCM" icon={<Lock size={14} />} disabled />
-                    <Input label="Intervalo de Auto-Logout (Segundos)" defaultValue="3600" type="number" icon={<Clock size={14} />} />
-                 </div>
-                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                       <div>
-                          <p className="text-xs font-bold text-slate-200">Backups Automáticos</p>
-                          <p className="text-[9px] text-slate-500 uppercase">A cada 12 horas</p>
-                       </div>
-                       <Switch enabled={true} onChange={() => {}} />
-                    </div>
-                    <Button variant="secondary" className="w-full py-3" icon={<Cloud size={16} />}>Configurar Cloud Sync</Button>
-                 </div>
-              </div>
-           </div> */}
-        </div>
-
-        {/* Coluna Direita: Logs Técnicos */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
-           <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
-              <Terminal size={14} className="text-accent" /> Audit Trail // Real-time
-           </h3>
-         <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative cursor-pointer" role="button" onClick={openLogsModal}>
-            <div className="absolute inset-0 pointer-events-none opacity-40 bg-gradient-to-br from-accent/10 via-transparent to-purple-500/10" />
-            <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-slate-500 mb-3 relative z-10">
-               <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Packet Stream
-               </span>
-               <div className="flex items-center gap-2">
-                  {[30, 100, 1000, 'all'].map(option => (
-                     <button
-                        key={option}
-                        onClick={(e) => { e.stopPropagation(); setLogLimit(option as 30 | 100 | 1000 | 'all'); sendTelemetry('logs', 'change-limit', { limit: option }); }}
-                        className={`px-2 py-1 rounded-full border text-[9px] tracking-[0.25em] ${logLimit === option ? 'border-accent text-accent bg-accent/10' : 'border-white/10 text-slate-500 hover:text-accent'}`}
-                     >
-                        {option === 'all' ? 'ALL' : option}
-                     </button>
-                  ))}
-               </div>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10">
-               {logs.map((log) => (
-                  <div
-                     key={log.id}
-                     className="text-[10px] flex gap-3 items-start animate-in fade-in slide-in-from-right-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2 shadow-[0_0_12px_-8px_rgba(34,211,238,0.8)]"
-                  >
-                     <span className="text-emerald-300 shrink-0">
-                        [{log.time}]
-                     </span>
-                     <span
-                        className={
-                           log.level === 'warn'
-                              ? 'text-amber-400'
-                              : log.level === 'error'
-                              ? 'text-rose-400'
-                              : 'text-slate-300'
-                        }
-                     >
-                        <span className="text-accent mr-2 opacity-60">{'>>'}</span>
-                          {log.message}
-                     </span>
-                  </div>
-               ))}
-               {logs.length === 0 && (
-                  <div className="flex items-center justify-center h-full opacity-10">
-                     <Activity size={64} className="animate-pulse" />
-                  </div>
-               )}
-            </div>
-            <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-widest relative z-10">
-               <span className="flex items-center gap-2">
-                  <Wifi size={10} className="text-accent" /> Listening to stream...
-               </span>
-            </div>
-         </div>
-
-         {/* Painel de Manutenção Rápida */}
-         <div className="rounded-3xl overflow-hidden border border-accent/25 bg-gradient-to-br from-[#0b1420] via-[#0b1f2e] to-[#04090f] shadow-[0_0_28px_-14px_rgba(34,211,238,0.9)] relative">
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.08),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.08),transparent_40%)]" />
-            <div className="flex items-center justify-between px-5 py-4 border-b border-accent/20 bg-black/40 relative z-10">
-               <div className="flex items-center gap-3">
-                  <div className="h-8 w-1 bg-accent shadow-[0_0_14px_rgba(34,211,238,0.7)]" />
+         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 min-h-0">
+            <div className="rounded-3xl overflow-hidden border border-accent/20 bg-linear-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)] max-h-[480px] min-h-[220px] flex flex-col">
+               <div className="flex-1 overflow-y-auto custom-scrollbar-thin">
+                  {/* Estoque no Caixa */}
                   <div>
-                     <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-400 flex items-center gap-2">
-                        <Cpu size={14} className="text-accent" /> Maintenance // Quick Ops
-                     </p>
-                     <p className="text-[11px] text-slate-500 font-mono">Ferramentas de reparo e limpeza instantânea</p>
+                     <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
+                        <div className="flex items-center gap-3">
+                           <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
+                           <div>
+                              <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
+                                 <Zap size={14} className="text-accent" /> Estoque no Caixa
+                              </p>
+                              <p className="text-[11px] text-slate-300 font-mono">Permitir vender acima do estoque?</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-dark-900/60 border border-accent/30 rounded-2xl px-4 py-2 shadow-[0_0_18px_-8px_rgba(34,211,238,0.9)]">
+                           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                              {allowNegativeStock ? 'Habilitado' : 'Bloqueado'}
+                           </span>
+                           <Switch
+                              enabled={allowNegativeStock}
+                              disabled={settingsLoading}
+                              onChange={(value: boolean) => toggleNegativeStock(value)}
+                           />
+                        </div>
+                     </div>
+                     <div className="p-6 bg-black/10">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl font-mono">
+                           Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
+                        </p>
+                     </div>
+                  </div>
+                  {/* Seção de Controle de IPs */}
+                  <div className="border-t border-accent/15">
+                     <IPControlPanel canManage={isManagerUser} telemetry={sendTelemetry} />
                   </div>
                </div>
-               <Badge variant="secondary" className="uppercase tracking-[0.3em]">Safe</Badge>
             </div>
-            <div className="p-5 grid grid-cols-2 gap-3 relative z-10">
-               <Button
-                  variant="secondary"
-                  className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
-                  icon={<RefreshCcw size={12} className="text-accent" />}
-                  onClick={handlePurgeCache}
-               >
-                  Purge Cache
-               </Button>
-               <Button
-                  variant="secondary"
-                  className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
-                  icon={<Activity size={12} className="text-emerald-300" />}
-                  onClick={() => { sendTelemetry('maintenance', 'open-performance-modal'); setShowPerformanceModal(true); }}
-               >
-                  Monitorar Performance
-               </Button>
-               <Button
-                  variant="danger"
-                  className="text-[9px] py-3 col-span-2 w-full bg-[#1f0b12]/70 border border-rose-400/40 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
-                  icon={<Trash2 size={12} className="text-rose-300" />}
-                  disabled={!isManagerUser}
-                  onClick={handleWipeLocal}
-               >
-                  Wipe Local Storage
-               </Button>
-            </div>
-         </div>
+
+                {/* Botões expansíveis para Protocolos de Segurança e Maintenance */}
+                <div className="flex flex-col gap-4">
+                   {/* Protocolos de Segurança */}
+                   <div className="rounded-3xl border border-white/10 bg-dark-900/40">
+                      <Button
+                         className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
+                         variant="secondary"
+                         onClick={() => setShowSecurityPanel(v => !v)}
+                         icon={<Shield size={16} className="text-accent" />}
+                      >
+                         Protocolos de Segurança
+                         <span>{showSecurityPanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
+                      </Button>
+                      {showSecurityPanel && (
+                         <div className="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/10">
+                            <div className="space-y-4">
+                               <Input label="Nível de Criptografia" defaultValue="AES-256-GCM" icon={<Lock size={14} />} disabled />
+                               <Input label="Intervalo de Auto-Logout (Segundos)" defaultValue="3600" type="number" icon={<Clock size={14} />} />
+                            </div>
+                            <div className="space-y-4">
+                               <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
+                                  <div>
+                                     <p className="text-xs font-bold text-slate-200">Backups Automáticos</p>
+                                     <p className="text-[9px] text-slate-500 uppercase">A cada 12 horas</p>
+                                  </div>
+                                  <Switch enabled={true} onChange={() => {}} />
+                               </div>
+                               <Button variant="secondary" className="w-full py-3" icon={<Cloud size={16} />}>Configurar Cloud Sync</Button>
+                            </div>
+                         </div>
+                      )}
+                   </div>
+                   {/* Maintenance // Quick Ops */}
+                   <div className="rounded-3xl border border-accent/25 bg-linear-to-br from-[#0b1420] via-[#0b1f2e] to-[#04090f] shadow-[0_0_28px_-14px_rgba(34,211,238,0.9)] relative">
+                      <Button
+                         className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
+                         variant="secondary"
+                         onClick={() => setShowMaintenancePanel(v => !v)}
+                         icon={<Cpu size={16} className="text-accent" />}
+                      >
+                         Maintenance // Quick Ops
+                         <span>{showMaintenancePanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
+                      </Button>
+                      {showMaintenancePanel && (
+                         <div className="p-5 grid grid-cols-2 gap-3 border-t border-accent/20">
+                            <Button
+                               variant="secondary"
+                               className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
+                               icon={<RefreshCcw size={12} className="text-accent" />}
+                               onClick={handlePurgeCache}
+                            >
+                               Purge Cache
+                            </Button>
+                            <Button
+                               variant="secondary"
+                               className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
+                               icon={<Activity size={12} className="text-emerald-300" />}
+                               onClick={() => { sendTelemetry('maintenance', 'open-performance-modal'); setShowPerformanceModal(true); }}
+                            >
+                               Monitorar Performance
+                            </Button>
+                            <Button
+                               variant="danger"
+                               className="text-[9px] py-3 col-span-2 w-full bg-[#1f0b12]/70 border border-rose-400/40 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
+                               icon={<Trash2 size={12} className="text-rose-300" />}
+                               disabled={!isManagerUser}
+                               onClick={handleWipeLocal}
+                            >
+                               Wipe Local Storage
+                            </Button>
+                         </div>
+                      )}
+                   </div>
+                </div>
+     
         </div>
+
+      <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden md:block hidden">
+         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
+            <Terminal size={14} className="text-accent" /> Audit Trail // Real-time.
+         </h3>
+       <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative cursor-pointer" role="button" onClick={openLogsModal}>
+          <div className="absolute inset-0 pointer-events-none opacity-40 bg-linear-to-br from-accent/10 via-transparent to-purple-500/10" />
+          <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-slate-500 mb-3 relative z-10">
+             <span className="flex items-center gap-2">
+           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+           Live Packet Stream
+             </span>
+          </div>
+         <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10 max-h-screen">
+             {logs.map((log) => (
+           <div
+              key={log.id}
+              className="text-[10px] flex gap-3 items-start animate-in fade-in slide-in-from-right-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2 shadow-[0_0_12px_-8px_rgba(34,211,238,0.8)]"
+           >
+              <span className="text-emerald-300 shrink-0">
+            [{log.time}]
+              </span>
+              <span
+            className={
+               log.level === 'warn'
+                  ? 'text-amber-400'
+                  : log.level === 'error'
+                  ? 'text-rose-400'
+                  : 'text-slate-300'
+            }
+              >
+            <span className="text-accent mr-2 opacity-60">{'>>'}</span>
+              {log.message}
+              </span>
+           </div>
+             ))}
+             {logs.length === 0 && (
+           <div className="flex items-center justify-center h-full opacity-10">
+              <Activity size={64} className="animate-pulse" />
+           </div>
+             )}
+          </div>
+       </div>
+      </div>
       </div>
 
          {showLogsModal && (
             <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={closeLogsModal}>
                <div className="bg-dark-950 border border-accent/40 rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/70">
-                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
-                           <Terminal size={14} className="text-accent" /> Logs detalhados
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-3 border-b border-white/10 bg-black/70">
+                     <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500 flex items-center gap-2">
+                           <Terminal size={13} className="text-accent" /> Logs detalhados
                         </p>
-                        <p className="text-[11px] text-slate-400 font-mono">Clique em uma linha para expandir e ver o contexto completo</p>
+                        <p className="text-[10px] text-slate-400 font-mono truncate">Clique em uma linha para expandir e ver o contexto completo</p>
                      </div>
-                     <div className="flex items-center gap-2">
+                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                         {[30, 100, 1000, 'all'].map(option => (
                            <Button
                               key={option}
-                              size="sm"
+                              size="xs"
+                              className="min-w-[56px] px-2"
                               variant={logLimit === option ? 'primary' : 'secondary'}
                               onClick={() => { setLogLimit(option as 30 | 100 | 1000 | 'all'); sendTelemetry('logs', 'change-limit', { limit: option }); }}
                            >
-                              {option === 'all' ? 'All' : `Últimas ${option}`}
+                              {option === 'all' ? 'All' : `Últ. ${option}`}
                            </Button>
                         ))}
-                        <Button size="sm" variant="secondary" onClick={closeLogsModal}>Fechar</Button>
+                        <Button
+                           size="xs"
+                           className="px-2"
+                           variant="danger"
+                           onClick={closeLogsModal}
+                           aria-label="Fechar"
+                           title="Fechar"
+                        >
+                           Fechar
+                        </Button>
                      </div>
                   </div>
                   <div className="p-4 overflow-auto max-h-[78vh] space-y-4">
                      {(interactionCounts.length > 0 || perfSamples.length > 0) && (
-                        <div className="bg-gradient-to-br from-[#0a1b2a] via-[#0c2233] to-[#050b15] border border-accent/30 rounded-2xl p-4 shadow-[0_15px_45px_-20px_rgba(34,211,238,0.7)] relative overflow-hidden">
+                        <div className="bg-linear-to-br from-[#0a1b2a] via-[#0c2233] to-[#050b15] border border-accent/30 rounded-2xl p-4 shadow-[0_15px_45px_-20px_rgba(34,211,238,0.7)] relative overflow-hidden">
                            <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(168,85,247,0.12),transparent_40%)]" />
                            <div className="flex items-center justify-between mb-3 relative z-10 flex-wrap gap-2">
                               <div className="flex items-center gap-2">
@@ -984,13 +1003,11 @@ const Settings: React.FC = () => {
             </div>
          )}
 
-      {/* Rodapé de Ações Globais */}
-      <div className="mt-8 pt-6 border-t border-white/5 flex justify-end gap-4 relative z-10 shrink-0">
-         <Button variant="secondary" className="px-8 py-3 uppercase text-[10px] font-bold tracking-widest">Descartar Alterações</Button>
-         <Button className="px-10 py-3 uppercase text-[10px] font-bold tracking-widest shadow-accent-glow" icon={<Save size={18} />}>Commit Changes</Button>
-      </div>
-    </div>
-  );
+     
+
+  
+   </div>
+   );
 };
 
 export default Settings;
