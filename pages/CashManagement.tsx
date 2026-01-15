@@ -402,7 +402,7 @@ const CashManagement: React.FC = () => {
    }
 
    return (
-      <div className="p-4 md:p-8 flex flex-col min-h-0 max-h-[calc(100vh-0px)] overflow-x-hidden overflow-y-auto assemble-view bg-dark-950 bg-cyber-grid relative">
+      <div className="flex-1 flex flex-col min-h-0 max-h-[calc(100vh-0px)] overflow-y-auto assemble-view bg-dark-950 bg-cyber-grid p-4 md:p-8 relative">
          <div className="flex items-center justify-between shrink-0 mb-6 relative z-10">
             <div>
                <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -866,7 +866,7 @@ const CashManagement: React.FC = () => {
                   <div className="flex items-center gap-1 border-b border-white/5 shrink-0 px-2 -mx-8 -mt-8  bg-dark-950/40">
                      <button
                         onClick={() => setHistoryModalTab('resumo')}
-                        className={`px-6  text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'resumo' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
+                        className={`px-3 py-6 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'resumo' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
                         Consolidado Financeiro
@@ -874,7 +874,7 @@ const CashManagement: React.FC = () => {
                      </button>
                      <button
                         onClick={() => setHistoryModalTab('movimentacoes')}
-                        className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'movimentacoes' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
+                        className={`px-3 py-6 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'movimentacoes' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
                         Detalhamento de Movimentos
@@ -882,7 +882,7 @@ const CashManagement: React.FC = () => {
                      </button>
                      <button
                         onClick={() => setHistoryModalTab('vendas')}
-                        className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'vendas' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
+                        className={`px-3 py-6 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'vendas' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
                         Detalhamento de Vendas
@@ -1406,7 +1406,7 @@ const CashManagement: React.FC = () => {
                                     selectedTx.type === 'suprimento'
                                        ? ((selectedTx.amount || 0) / 100).toFixed(2)
                                        : selectedTx.items && Array.isArray(selectedTx.items)
-                                          ? (selectedTx.items.reduce((sum: number, item: any) => sum + (typeof item.line_total === 'number' ? item.line_total : 0), 0) / 100).toFixed(2)
+                                          ? (selectedTx.items.reduce((sum: number, item: any) => sum + (item.line_total || 0), 0) / 100).toFixed(2)
                                           : '0.00'
                                  }
                               </span>
