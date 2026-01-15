@@ -239,9 +239,14 @@ const App: React.FC = () => {
         style={sidebarStyle}
       >
         <div className="p-8 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow">
-             <Command size={22} className="text-dark-950" />
-          </div>
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow overflow-hidden">
+            <img
+              src="/uploads/logo.jpg"
+              alt="Logo"
+              className="object-cover w-full h-full"
+              draggable={false}
+            />
+            </div>
           <span className={`text-xl font-bold tracking-tight text-white ${!isSidebarOpen && 'hidden'}`}>
             {import.meta.env.VITE_APP_NAME || 'Nome Empresa'}<span className="text-accent opacity-50">.</span>
           </span>

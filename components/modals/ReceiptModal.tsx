@@ -33,7 +33,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
       <div className="flex flex-col items-center gap-6" >
         <div className="bg-white text-black p-8 rounded shadow-2xl w-full max-w-[80mm] font-mono receipt-assemble" id="thermal-receipt">
           <div className="text-center mb-4">
-            <h2 className="text-lg font-bold">NOVABEV POS</h2>
+            <h2 className="text-lg font-bold">{import.meta.env.VITE_APP_NAME || 'Nome Empresa'}</h2>
             <p className="text-[10px]">DISTRIBUIDORA DE BEBIDAS LTDA</p>
             <div className="border-b border-black border-dashed my-2"></div>
             <p className="text-[10px] font-bold">CUPOM FISCAL VIRTUAL</p>

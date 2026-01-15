@@ -1381,7 +1381,7 @@ const CashManagement: React.FC = () => {
                      <>
                         {console.log('selectedTx:', selectedTx)}
                         <div className="text-center mb-4">
-                           <h2 className="text-lg font-bold tracking-tighter">NOVABEV POS</h2>
+                           <h2 className="text-lg font-bold tracking-tighter">{import.meta.env.VITE_APP_NAME || 'Nome Empresa'}</h2>
                            <p className="text-[10px]">DISTRIBUIDORA DE BEBIDAS LTDA</p>
                            <div className="border-b border-black border-dashed my-2"></div>
                            <p className="text-[10px] font-bold uppercase">{selectedTx.type === 'sale' ? 'CUPOM FISCAL VIRTUAL' : 'VALE DE CAIXA'}</p>
