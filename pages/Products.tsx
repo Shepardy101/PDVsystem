@@ -1226,7 +1226,7 @@ const Products: React.FC = () => {
                                                 stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
                                                 minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
                                                 imageUrl: data.imageUrl,
-                                                type: p.type || 'product'
+                                                type: p.type || 'product',
                                               };
                                               // Só adiciona categoryId e supplierId se existirem e não forem vazios
                                               const catId = p.category_id || p.category;
@@ -1359,46 +1359,46 @@ const Products: React.FC = () => {
 
          {/* MODAL IMPORTAÇÃO (DRAG & DROP) */}
          {isImportModalOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-               <div className="absolute inset-0 bg-dark-950/90 backdrop-blur-xl" onClick={() => !isUploading && setIsImportModalOpen(false)} />
-               <div className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden">
-                  <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/50">
-                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
-                           <UploadCloud className="text-accent" size={20} />
-                        </div>
-                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">Importar Dados</h2>
-                     </div>
-                     {!isUploading && (
-                        <button onClick={() => setIsImportModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
-                     )}
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+              <div className="absolute inset-0 bg-dark-950/90 backdrop-blur-xl" onClick={() => !isUploading && setIsImportModalOpen(false)} />
+              <div className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden max-h-[95vh]">
+                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
+                      <UploadCloud className="text-accent" size={20} />
+                    </div>
+                    <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">Importar Dados</h2>
                   </div>
-                  <div className="p-10 flex flex-col items-center justify-center text-center space-y-8">
-                     {isUploading ? (
-                        <div className="flex flex-col items-center space-y-6 py-12">
-                           <div className="relative w-16 h-16">
-                              <div className="absolute inset-0 border-4 border-accent/20 rounded-full"></div>
-                              <div className="absolute inset-0 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-                           </div>
-                           <p className="text-accent font-mono text-xs font-bold tracking-[0.2em] uppercase">Processando Arquivo...</p>
-                        </div>
-                     ) : (
-                        <div
-                           onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                           onDrop={handleDrop}
-                           className="w-full p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4"
-                           onClick={() => fileInputRef.current?.click()}
-                        >
-                           <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt,.xlsx" onChange={handleImportFile} />
-                           <FileSpreadsheet className="text-accent opacity-50 group-hover:opacity-100 transition-all" size={48} />
-                           <div>
-                              <p className="text-sm font-bold text-slate-300">Solte o arquivo aqui ou clique</p>
-                              <p className="text-[10px] text-slate-500 uppercase mt-2">Suporta .TXT, .CSV, .XLSX</p>
-                           </div>
-                        </div>
-                     )}
-                  </div>
-               </div>
+                  {!isUploading && (
+                    <button onClick={() => setIsImportModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
+                  )}
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 sm:p-10 flex flex-col items-center justify-center text-center space-y-8">
+                  {isUploading ? (
+                    <div className="flex flex-col items-center space-y-6 py-12">
+                      <div className="relative w-16 h-16">
+                        <div className="absolute inset-0 border-4 border-accent/20 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <p className="text-accent font-mono text-xs font-bold tracking-[0.2em] uppercase">Processando Arquivo...</p>
+                    </div>
+                  ) : (
+                    <div
+                      onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={handleDrop}
+                      className="w-full p-8 sm:p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt,.xlsx" onChange={handleImportFile} />
+                      <FileSpreadsheet className="text-accent opacity-50 group-hover:opacity-100 transition-all" size={48} />
+                      <div>
+                        <p className="text-sm font-bold text-slate-300">Solte o arquivo aqui ou clique</p>
+                        <p className="text-[10px] text-slate-500 uppercase mt-2">Suporta .TXT, .CSV, .XLSX</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
          )}
 
@@ -1440,177 +1440,191 @@ const Products: React.FC = () => {
                   </div>
                   <div className="p-6 border-t border-white/10 bg-dark-950/80 flex justify-end gap-4">
                      <Button variant="secondary" onClick={() => setIsPreviewModalOpen(false)}>Cancelar</Button>
-                     <Button icon={<Check size={18} />} onClick={async () => {
-                        // Filtra apenas produtos válidos e não duplicados
-                        const validProducts = importResults.filter((item: any) => item.status === 'valid');
-                        if (validProducts.length === 0) {
-                           showPopup('error', 'Importação inválida', 'Nenhum produto válido para importar.');
-                           sendTelemetry('import', 'preview-empty');
-                           return;
-                        }
-                        sendTelemetry('import', 'preview-confirm', { validCount: validProducts.length, invalidCount: importResults.length - validProducts.length });
-                        let importedCount = 0;
-                        const normalize = (val: string) => (val || '').trim().toLowerCase();
+                               <Button
+                                    icon={isUploading ? <span className="animate-spin inline-block mr-2 align-middle"><RefreshCcw size={18} /></span> : <Check size={18} />}
+                                    disabled={isUploading}
+                                    onClick={async () => {
+                                       if (isUploading) return;
+                                       setIsUploading(true);
+                                       try {
+                                          // Filtra apenas produtos válidos e não duplicados
+                                          const validProducts = importResults.filter((item: any) => item.status === 'valid');
+                                          if (validProducts.length === 0) {
+                                             showPopup('error', 'Importação inválida', 'Nenhum produto válido para importar.');
+                                             sendTelemetry('import', 'preview-empty');
+                                             setIsUploading(false);
+                                             return;
+                                          }
+                                          sendTelemetry('import', 'preview-confirm', { validCount: validProducts.length, invalidCount: importResults.length - validProducts.length });
+                                          let importedCount = 0;
+                                          const normalize = (val: string) => (val || '').trim().toLowerCase();
 
-                        // Buscar categorias e fornecedores existentes do backend
-                        let allCategories = [...categories];
-                        let allSuppliers: { id: string, name: string, category?: string }[] = [];
-                        try {
-                           const res = await fetch('/api/suppliers');
-                           if (res.ok) {
-                              const data = await res.json();
-                              allSuppliers = data.items || [];
-                           }
-                        } catch { }
+                                          // Buscar categorias e fornecedores existentes do backend
+                                          let allCategories = [...categories];
+                                          let allSuppliers: { id: string, name: string, category?: string }[] = [];
+                                          try {
+                                             const res = await fetch('/api/suppliers');
+                                             if (res.ok) {
+                                                const data = await res.json();
+                                                allSuppliers = data.items || [];
+                                             }
+                                          } catch { }
 
-                        // 1) Criar categorias faltantes (se coluna existir e tiver dados)
-                        const categorySet = new Map<string, string>(); // normalized -> original
-                        validProducts.forEach((item: any) => {
-                           if (item.category && item.category !== 'sem categoria') {
-                              const norm = normalize(item.category);
-                              if (norm) categorySet.set(norm, item.category.trim());
-                           }
-                        });
+                                          // 1) Criar categorias faltantes (se coluna existir e tiver dados)
+                                          const categorySet = new Map<string, string>(); // normalized -> original
+                                          validProducts.forEach((item: any) => {
+                                             if (item.category && item.category !== 'sem categoria') {
+                                                const norm = normalize(item.category);
+                                                if (norm) categorySet.set(norm, item.category.trim());
+                                             }
+                                          });
 
-                        // Mapa de categorias existentes (normalized -> id)
-                        const categoryIdMap = new Map<string, string>();
-                        allCategories.forEach(c => {
-                           categoryIdMap.set(normalize(c.name), c.id);
-                        });
+                                          // Mapa de categorias existentes (normalized -> id)
+                                          const categoryIdMap = new Map<string, string>();
+                                          allCategories.forEach(c => {
+                                             categoryIdMap.set(normalize(c.name), c.id);
+                                          });
 
-                        for (const [normName, originalName] of categorySet.entries()) {
-                           if (categoryIdMap.has(normName)) continue;
-                           try {
-                              const res = await fetch('/api/categories', {
-                                 method: 'POST',
-                                 headers: { 'Content-Type': 'application/json' },
-                                 body: JSON.stringify({ name: originalName })
-                              });
-                              if (res.ok) {
-                                 const data = await res.json();
-                                 const catId = data.category?.id;
-                                 if (catId) {
-                                    categoryIdMap.set(normName, catId);
-                                    allCategories.push(data.category);
-                                    setCategories(prev => [...prev, data.category]);
-                                 }
-                              }
-                           } catch { }
-                        }
+                                          for (const [normName, originalName] of categorySet.entries()) {
+                                             if (categoryIdMap.has(normName)) continue;
+                                             try {
+                                                const res = await fetch('/api/categories', {
+                                                   method: 'POST',
+                                                   headers: { 'Content-Type': 'application/json' },
+                                                   body: JSON.stringify({ name: originalName })
+                                                });
+                                                if (res.ok) {
+                                                   const data = await res.json();
+                                                   const catId = data.category?.id;
+                                                   if (catId) {
+                                                      categoryIdMap.set(normName, catId);
+                                                      allCategories.push(data.category);
+                                                      setCategories(prev => [...prev, data.category]);
+                                                   }
+                                                }
+                                             } catch { }
+                                          }
 
-                        // 2) Criar fornecedores faltantes e associar texto de categoria se houver
-                        const supplierMap = new Map<string, { name: string, category?: string }>(); // normalized -> payload
-                        validProducts.forEach((item: any) => {
-                           if (item.supplier && item.supplier !== 'sem fornecedor') {
-                              const normSup = normalize(item.supplier);
-                              if (!normSup) return;
-                              // prioriza categoria do próprio item, se existir
-                              const catText = item.category && item.category !== 'sem categoria' ? item.category.trim() : undefined;
-                              if (!supplierMap.has(normSup)) {
-                                 supplierMap.set(normSup, { name: item.supplier.trim(), category: catText });
-                              } else {
-                                 const current = supplierMap.get(normSup);
-                                 if (!current?.category && catText) {
-                                    supplierMap.set(normSup, { name: current?.name || item.supplier.trim(), category: catText });
-                                 }
-                              }
-                           }
-                        });
+                                          // 2) Criar fornecedores faltantes e associar texto de categoria se houver
+                                          const supplierMap = new Map<string, { name: string, category?: string }>(); // normalized -> payload
+                                          validProducts.forEach((item: any) => {
+                                             if (item.supplier && item.supplier !== 'sem fornecedor') {
+                                                const normSup = normalize(item.supplier);
+                                                if (!normSup) return;
+                                                // prioriza categoria do próprio item, se existir
+                                                const catText = item.category && item.category !== 'sem categoria' ? item.category.trim() : undefined;
+                                                if (!supplierMap.has(normSup)) {
+                                                   supplierMap.set(normSup, { name: item.supplier.trim(), category: catText });
+                                                } else {
+                                                   const current = supplierMap.get(normSup);
+                                                   if (!current?.category && catText) {
+                                                      supplierMap.set(normSup, { name: current?.name || item.supplier.trim(), category: catText });
+                                                   }
+                                                }
+                                             }
+                                          });
 
-                        const supplierIdMap = new Map<string, string>();
-                        allSuppliers.forEach(s => supplierIdMap.set(normalize(s.name), s.id));
+                                          const supplierIdMap = new Map<string, string>();
+                                          allSuppliers.forEach(s => supplierIdMap.set(normalize(s.name), s.id));
 
-                        for (const [normSup, payload] of supplierMap.entries()) {
-                           if (supplierIdMap.has(normSup)) continue;
-                           try {
-                              const res = await fetch('/api/suppliers', {
-                                 method: 'POST',
-                                 headers: { 'Content-Type': 'application/json' },
-                                 body: JSON.stringify({ name: payload.name, category: payload.category || '' })
-                              });
-                              if (res.ok) {
-                                 const data = await res.json();
-                                 const supId = data.supplier?.id;
-                                 if (supId) {
-                                    supplierIdMap.set(normSup, supId);
-                                    allSuppliers.push(data.supplier);
-                                 }
-                              }
-                           } catch { }
-                        }
+                                          for (const [normSup, payload] of supplierMap.entries()) {
+                                             if (supplierIdMap.has(normSup)) continue;
+                                             try {
+                                                const res = await fetch('/api/suppliers', {
+                                                   method: 'POST',
+                                                   headers: { 'Content-Type': 'application/json' },
+                                                   body: JSON.stringify({ name: payload.name, category: payload.category || '' })
+                                                });
+                                                if (res.ok) {
+                                                   const data = await res.json();
+                                                   const supId = data.supplier?.id;
+                                                   if (supId) {
+                                                      supplierIdMap.set(normSup, supId);
+                                                      allSuppliers.push(data.supplier);
+                                                   }
+                                                }
+                                             } catch { }
+                                          }
 
-                        // 3) Criar produtos usando os mapas resolvidos
-                        for (const item of validProducts) {
-                           let categoryId = null;
-                           if (item.category && item.category !== 'sem categoria') {
-                              const cid = categoryIdMap.get(normalize(item.category));
-                              if (cid) categoryId = cid;
-                           }
+                                          // 3) Criar produtos usando os mapas resolvidos
+                                          for (const item of validProducts) {
+                                             let categoryId = null;
+                                             if (item.category && item.category !== 'sem categoria') {
+                                                const cid = categoryIdMap.get(normalize(item.category));
+                                                if (cid) categoryId = cid;
+                                             }
 
-                           let supplierId = null;
-                           if (item.supplier && item.supplier !== 'sem fornecedor') {
-                              const sid = supplierIdMap.get(normalize(item.supplier));
-                              if (sid) supplierId = sid;
-                           }
+                                             let supplierId = null;
+                                             if (item.supplier && item.supplier !== 'sem fornecedor') {
+                                                const sid = supplierIdMap.get(normalize(item.supplier));
+                                                if (sid) supplierId = sid;
+                                             }
 
-                           const payload = {
-                              name: item.name,
-                              ean: item.gtin,
-                              internalCode: item.internalCode,
-                              unit: 'unit',
-                              status: 'active',
-                              costPrice: item.costPrice,
-                              salePrice: item.salePrice,
-                              stockOnHand: item.stock,
-                              minStock: 0,
-                              autoDiscountEnabled: false,
-                              autoDiscountValue: 0,
-                              imageUrl: '',
-                              categoryId,
-                              supplierId,
-                           };
-                           try {
-                              const res = await fetch('/api/products', {
-                                 method: 'POST',
-                                 headers: { 'Content-Type': 'application/json' },
-                                 body: JSON.stringify(payload)
-                              });
-                              if (res.ok) importedCount++;
-                           } catch { }
-                        }
-                                    sendTelemetry('import', 'run', { importedCount, total: validProducts.length });
-                        showPopup('success', 'Importação concluída!', `${importedCount} produtos importados com sucesso!`);
-                        setIsPreviewModalOpen(false);
-                        // Atualiza lista de produtos
-                        setLoading(true);
-                        fetch('/api/products')
-                           .then(res => res.json())
-                           .then(data => {
-                              const items = (data.items || data.products || []).map((product: any) => ({
-                                 id: product.id,
-                                 name: product.name,
-                                 gtin: product.ean || product.gtin,
-                                 internalCode: product.internal_code || product.internalCode,
-                                 unit: product.unit,
-                                 costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
-                                 salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
-                                 stock: product.stock_on_hand ?? product.stock ?? 0,
-                                 minStock: product.min_stock ?? 20,
-                                 category: product.category_id || product.category,
-                                 supplier: product.supplier_id || product.supplier || '',
-                                 status: product.status,
-                                 imageUrl: product.imageUrl || '',
-                                 autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
-                              }));
-                              setProducts(items);
-                              setError(null);
-                           })
-                           .catch(() => {
-                              setError('Erro ao carregar produtos da API.');
-                              setProducts([]);
-                           })
-                           .finally(() => setLoading(false));
-                     }}>Confirmar Importação</Button>
+                                             const payload = {
+                                                name: item.name,
+                                                ean: item.gtin,
+                                                internalCode: item.internalCode,
+                                                unit: 'unit',
+                                                status: 'active',
+                                                costPrice: item.costPrice,
+                                                salePrice: item.salePrice,
+                                                stockOnHand: item.stock,
+                                                minStock: 0,
+                                                autoDiscountEnabled: false,
+                                                autoDiscountValue: 0,
+                                                imageUrl: '',
+                                                categoryId,
+                                                supplierId,
+                                             };
+                                             try {
+                                                const res = await fetch('/api/products', {
+                                                   method: 'POST',
+                                                   headers: { 'Content-Type': 'application/json' },
+                                                   body: JSON.stringify(payload)
+                                                });
+                                                if (res.ok) importedCount++;
+                                             } catch { }
+                                          }
+                                          sendTelemetry('import', 'run', { importedCount, total: validProducts.length });
+                                          showPopup('success', 'Importação concluída!', `${importedCount} produtos importados com sucesso!`);
+                                          setIsPreviewModalOpen(false);
+                                          // Atualiza lista de produtos
+                                          setLoading(true);
+                                          fetch('/api/products')
+                                             .then(res => res.json())
+                                             .then(data => {
+                                                const items = (data.items || data.products || []).map((product: any) => ({
+                                                   id: product.id,
+                                                   name: product.name,
+                                                   gtin: product.ean || product.gtin,
+                                                   internalCode: product.internal_code || product.internalCode,
+                                                   unit: product.unit,
+                                                   costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
+                                                   salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
+                                                   stock: product.stock_on_hand ?? product.stock ?? 0,
+                                                   minStock: product.min_stock ?? 20,
+                                                   category: product.category_id || product.category,
+                                                   supplier: product.supplier_id || product.supplier || '',
+                                                   status: product.status,
+                                                   imageUrl: product.imageUrl || '',
+                                                   autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+                                                }));
+                                                setProducts(items);
+                                                setError(null);
+                                             })
+                                             .catch(() => {
+                                                setError('Erro ao carregar produtos da API.');
+                                                setProducts([]);
+                                             })
+                                             .finally(() => setLoading(false));
+                                       } catch (err) {
+                                          // Em caso de erro inesperado, libera o botão
+                                          showPopup('error', 'Erro na importação', 'Ocorreu um erro inesperado.');
+                                       } finally {
+                                          setIsUploading(false);
+                                       }
+                                    }}
+                               >Confirmar Importação</Button>
                   </div>
                </div>
             </div>
