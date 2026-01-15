@@ -291,20 +291,13 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6">
-             <div className="flex items-center gap-1">
-                <button className="p-2.5 text-slate-500 hover:text-accent transition-colors relative">
-                   <Bell size={20} />
-                   <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-accent rounded-full border-2 border-dark-950" />
-                </button>
-             </div>
+             
              <div className="flex items-center gap-4 pl-6 border-l border-white/5">
                 <div className="text-right hidden lg:block">
                    <p className="text-xs font-bold text-slate-200 tracking-tight">{user.name}</p>
                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{user.role}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl glass-card flex items-center justify-center font-bold text-xs text-accent shadow-glass border-accent/20">
-                   OA
-                </div>
+               
              </div>
           </div>
         </header>

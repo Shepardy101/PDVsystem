@@ -1259,9 +1259,13 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
                               
 
-                                 <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-slate-600 hover:text-red-500 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity justify-self-end">
+                                  <button
+                                    onClick={() => removeFromCart(item.product.id)}
+                                    className="p-2 text-slate-600 hover:text-red-500 opacity-90 sm:opacity-100 transition-opacity justify-self-end"
+                                    title="Remover item [Del]"
+                                  >
                                     <Trash2 size={14} />
-                                 </button>
+                                  </button>
                               </div>
                            ))}
                         </div>
