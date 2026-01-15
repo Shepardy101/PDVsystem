@@ -1,5 +1,6 @@
 // @ts-ignore
 import React, { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { Search, Plus, Filter, Edit2, Grid2X2, List, Info, ChevronRight, ChevronUp, ChevronDown, Package, DollarSign, Tag, TrendingUp, X, Check, Image as ImageIcon, Archive, Cpu, Zap, ShieldAlert, UploadCloud, FileSpreadsheet, FileText, AlertCircle, RefreshCcw, Layers, Hash, Activity, FolderPlus, Trash2 } from 'lucide-react';
@@ -773,10 +774,7 @@ const Products: React.FC = () => {
                                                       <Cpu className="text-accent opacity-40" size={20} />
                                                    )}
                                                 </div>
-                                                <div
-                                                   className={["w-full overflow-x-auto overflow-y-auto","max-h-full min-h-[420px]","[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",].join(" ")}
-                                                >
-                                                </div>
+                                                <span className="truncate block font-bold text-slate-100 text-xs sm:text-sm">{product.name}</span>
                                              </td>
                                              {/* Preço Custo - desktop only */}
                                              <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100 hidden md:table-cell">
@@ -920,29 +918,27 @@ const Products: React.FC = () => {
          {(isCreateModalOpen || !!selectedProduct) && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-dark-950/80 backdrop-blur-xl" onClick={() => { setIsCreateModalOpen(false); setSelectedProduct(null); }} />
-               <div className="relative w-full max-w-2xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col max-h-[90vh]">
+               <div className="relative w-full max-w-2xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col max-h-[70vh]">
                   {/* Modal Header */}
-                  <div className="p-6 border-b border-white/10 flex items-center justify-between relative z-10 bg-dark-950/80 rounded-t-2xl">
+                  <div className="p-2 border-b border-white/10 flex items-center justify-between relative z-10 bg-dark-950/80 rounded-t-2xl">
                      <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
                            <Cpu className="text-accent animate-pulse" size={20} />
                         </div>
                         <div>
                            <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">
-                              {selectedProduct ? 'Sincronizar Ativo' : 'Injetar Novo Ativo'} <span className="text-accent">PDV-SYS</span>
+                              {selectedProduct ? 'Sincronizar Ativo' : ' Novo Ativo no'} <span className="text-accent">PDV</span>
                            </h2>
                            <p className="text-[9px] font-mono text-slate-500 uppercase flex items-center gap-2">
-                              <Zap size={10} className="text-accent" /> Kernel Version 3.1.0-A // {selectedProduct?.id || 'NEW_SEQ'}
+                              <Zap size={10} className="text-accent" /> Kernel Version 3.1.0-A // {'UPDATE_SEQ'}
                            </p>
                         </div>
                      </div>
-                     <button onClick={() => { setIsCreateModalOpen(false); setSelectedProduct(null); }} className="text-slate-500 hover:text-accent transition-colors p-2">
-                        <X size={20} />
-                     </button>
+                    
                   </div>
 
                   {/* Modal Content */}
-                  <div className="p-8 overflow-y-auto custom-scrollbar space-y-8 relative z-10">
+                  <div className="p-2 overflow-y-auto custom-scrollbar space-y-8 relative z-10">
                      <form id="product-form" onSubmit={handleProductSubmit}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="space-y-2 md:col-span-1">
@@ -1169,7 +1165,7 @@ const Products: React.FC = () => {
 
                         {modalType === 'product' && (
                            <div className="space-y-4 pb-4 mt-6">
-                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Caminho da Mídia Visual</label>
+                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Mídia Visual</label>
                              <div className="flex gap-4 items-center">
                                <div className="flex-1">
                                  <Input
@@ -1348,7 +1344,7 @@ const Products: React.FC = () => {
                         icon={<Check size={18} />}
                         disabled={isOperatorUser}
                      >
-                        Confirmar {selectedProduct ? 'Atualização' : 'Injeção'}
+                        Confirmar {selectedProduct ? 'Atualização' : 'Adição'}
                      </Button>
 
                   </div>
@@ -1639,16 +1635,17 @@ const Products: React.FC = () => {
             onClose={() => setPopup(p => ({ ...p, open: false }))}
          />
 
-         {/* Botão flutuante de novo produto (mobile) */}
-                     {!isOperatorUser && (
-                        <button
-                           className="fixed bottom-4 right-4 sm:hidden bg-accent text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all border-2 border-white/10 z-[100]"
-                           title="Novo Produto"
-                           onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
-                        >
-                           <Plus size={28} />
-                        </button>
-                     )}
+             {/* Botão flutuante de novo produto (mobile) */}
+             {!isOperatorUser && typeof window !== 'undefined' && !isCreateModalOpen && createPortal(
+                <button
+                   className="fixed bottom-4 right-4 sm:hidden bg-accent text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all border-2 border-white/10 z-[100]"
+                   title="Novo Produto"
+                   onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
+                >
+                   <Plus size={28} />
+                </button>,
+                document.body
+             )}
       </div>
    );
 };
