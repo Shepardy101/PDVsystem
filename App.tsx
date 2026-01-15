@@ -293,7 +293,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-6">
              
              <div className="flex items-center gap-4 pl-6 border-l border-white/5">
-                <div className="text-right hidden lg:block">
+                <div className="text-right ">
                    <p className="text-xs font-bold text-slate-200 tracking-tight">{user.name}</p>
                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{user.role}</p>
                 </div>

@@ -1152,9 +1152,9 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <div className="flex-1 grid grid-cols-12 gap-4 sm:gap-6 lg:gap-8 min-h-0 relative z-10">
             {/* Cart Area */}
             <div className="col-span-12 xl:col-span-8 flex flex-col min-h-0 gap-4 sm:gap-6">
-               <div className="flex items-center justify-between mb-4 px-2">
+               <div className="flex items-center justify-between  px-2">
                   <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                     <ShoppingCart size={16} className="text-accent" /> Buffer de Venda.
+                     <ShoppingCart size={16} className="text-accent" /> Buffer de Venda
                   </h2>
                   <div className="flex items-center gap-3">
                      <div className="flex items-center gap-2">
