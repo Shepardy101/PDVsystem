@@ -4,6 +4,19 @@ import { logEvent } from '../utils/audit';
 
 const router = Router();
 
+// Utilitário para garantir tipagem de erro
+function getError(err: unknown): { code?: string; message?: string; stack?: string } {
+  if (typeof err === 'object' && err !== null) {
+    const anyErr = err as any;
+    return {
+      code: typeof anyErr.code === 'string' ? anyErr.code : undefined,
+      message: typeof anyErr.message === 'string' ? anyErr.message : undefined,
+      stack: typeof anyErr.stack === 'string' ? anyErr.stack : undefined,
+    };
+  }
+  return { message: String(err) };
+}
+
 // Listar clientes
 router.get('/', async (req, res) => {
   try {
@@ -24,15 +37,17 @@ router.post('/', async (req, res) => {
       logEvent('Cliente criado', 'info', { clientId: client.id, name, cpf });
       res.status(201).json({ client });
     } catch (err) {
-      if (err && err.code === 'CPF_DUPLICATE') {
-        logEvent('Erro ao criar cliente', 'warn', { payload: req.body, message: err.message });
-        return res.status(400).json({ error: err.message });
+      const error = getError(err);
+      if (error.code === 'CPF_DUPLICATE') {
+        logEvent('Erro ao criar cliente', 'warn', { payload: req.body, message: error.message });
+        return res.status(400).json({ error: error.message });
       }
       throw err;
     }
   } catch (e) {
-    logEvent('Erro ao criar cliente', 'error', { payload: req.body, message: e?.message || String(e), stack: e?.stack });
-    res.status(500).json({ error: 'Erro ao criar cliente', details: e && e.message ? e.message : e });
+    const error = getError(e);
+    logEvent('Erro ao criar cliente', 'error', { payload: req.body, message: error.message || String(e), stack: error.stack });
+    res.status(500).json({ error: 'Erro ao criar cliente', details: error.message });
   }
 });
 
@@ -51,15 +66,17 @@ router.put('/:id', async (req, res) => {
         res.status(404).json({ error: 'Cliente não encontrado' });
       }
     } catch (err) {
-      if (err && err.code === 'CPF_DUPLICATE') {
-        logEvent('Erro ao atualizar cliente', 'warn', { clientId: id, message: err.message });
-        return res.status(400).json({ error: err.message });
+      const error = getError(err);
+      if (error.code === 'CPF_DUPLICATE') {
+        logEvent('Erro ao atualizar cliente', 'warn', { clientId: id, message: error.message });
+        return res.status(400).json({ error: error.message });
       }
       throw err;
     }
   } catch (e) {
-    logEvent('Erro ao atualizar cliente', 'error', { clientId: req.params?.id, message: e?.message || String(e), stack: e?.stack });
-    res.status(500).json({ error: 'Erro ao atualizar cliente', details: e && e.message ? e.message : e });
+    const error = getError(e);
+    logEvent('Erro ao atualizar cliente', 'error', { clientId: req.params?.id, message: error.message || String(e), stack: error.stack });
+    res.status(500).json({ error: 'Erro ao atualizar cliente', details: error.message });
   }
 });
 
@@ -75,8 +92,9 @@ router.delete('/:id', async (req, res) => {
       res.status(404).json({ error: 'Cliente não encontrado' });
     }
   } catch (e) {
-    logEvent('Erro ao deletar cliente', 'error', { clientId: req.params?.id, message: e?.message || String(e), stack: e?.stack });
-    res.status(500).json({ error: 'Erro ao deletar cliente', details: e && e.message ? e.message : e });
+    const error = getError(e);
+    logEvent('Erro ao deletar cliente', 'error', { clientId: req.params?.id, message: error.message || String(e), stack: error.stack });
+    res.status(500).json({ error: 'Erro ao deletar cliente', details: error.message });
   }
 });
 
