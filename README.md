@@ -19,6 +19,10 @@ PDVsystem  é um ponto de venda para distribuidores de bebidas: frontend React/V
 - Pacote para cliente: `package-app.bat` → gera `build/PDVsystem-release.zip`
 - Instalação no cliente (após extrair o zip): `instalar-app.bat` (npm ci --production, pm2) e depois `iniciar-app.bat`
 
+ $env:ENABLE_DB_ADMIN="true"; npm run dev
+
+$env:ENABLE_DB_ADMIN="true"; npm run start:prod
+
 ## Pastas importantes
 - `dist/` SPA frontend
 - `server/dist/` backend compilado
