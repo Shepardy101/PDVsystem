@@ -36,6 +36,8 @@ const App: React.FC = () => {
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
   const dragPointerIdRef = useRef<number | null>(null);
+  // Ref para aside da sidebar
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const sidebarWidth = 256; // match lg sidebar width (w-64)
   const canUseGestures = useMemo(() => isMobile, [isMobile]);
@@ -152,6 +154,39 @@ const App: React.FC = () => {
     resetDrag();
   }, [isSidebarOpen]);
 
+  // Delay para exibir/ocultar o nome da empresa ao expandir/recolher a sidebar
+  const [showCompanyName, setShowCompanyName] = useState(false);
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (isSidebarOpen) {
+      timeout = setTimeout(() => setShowCompanyName(true), 200);
+    } else {
+      timeout = setTimeout(() => setShowCompanyName(false), 200);
+    }
+    return () => clearTimeout(timeout);
+  }, [isSidebarOpen]);
+
+  // Expansão automática da sidebar ao passar mouse (corrigido para desktop apenas)
+  useEffect(() => {
+    if (isMobile) return; // só ativa em desktop
+    const sidebarEl = sidebarRef.current;
+    if (!sidebarEl) return;
+    let timer: NodeJS.Timeout | null = null;
+    const handleMouseEnter = () => {
+      setIsSidebarOpen(true);
+    };
+    const handleMouseLeave = () => {
+      timer = setTimeout(() => setIsSidebarOpen(false), 100);
+    };
+    sidebarEl.addEventListener('mouseenter', handleMouseEnter);
+    sidebarEl.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      sidebarEl.removeEventListener('mouseenter', handleMouseEnter);
+      sidebarEl.removeEventListener('mouseleave', handleMouseLeave);
+      if (timer) clearTimeout(timer);
+    };
+  }, [isMobile]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-950">
@@ -232,11 +267,12 @@ const App: React.FC = () => {
       />
       {/* Floating Glass Sidebar */}
       <aside
+        ref={sidebarRef}
         className={
           `h-screen flex flex-col bg-dark-900/40 backdrop-blur-xl border-r border-white/5 transition-all duration-500 ease-in-out z-50 ` +
           // Mobile: fixed, animado
           `fixed top-0 left-0 ` +
-          (isSidebarOpen ? 'w-64 translate-x-0 ' : 'w-64 -translate-x-full ') +
+          (isSidebarOpen ? 'w-64 translate-x-0 ' : 'w-16 -translate-x-0 ') +
           // Desktop: static, só alterna largura
           'lg:static lg:top-auto lg:left-auto lg:translate-x-0 ' +
           (isSidebarOpen ? 'lg:w-64 ' : 'lg:w-16 ')
@@ -244,7 +280,7 @@ const App: React.FC = () => {
         aria-label="Navegação lateral"
         style={!isMobile ? undefined : sidebarStyle}
       >
-        {/* Botão para recolher/expandir sidebar (sempre visível) */}
+        {/* Botão para recolher/expandir sidebar manualmente */}
         <button
           onClick={() => setIsSidebarOpen(v => !v)}
           className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-accent transition-all z-50"
@@ -252,18 +288,37 @@ const App: React.FC = () => {
         >
           {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
         </button>
-        <div className="p-8 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow overflow-hidden">
+
+        {/* Botão para recolher/expandir sidebar (removido, logo permanece) */}
+        <div className={`p-8 flex flex-col items-center ${isSidebarOpen ? 'gap-4' : 'gap-2'} ${isSidebarOpen ? 'items-center' : 'items-center justify-center'}`}>
+          
+          <div className="w-10 h-10 rounded-xl  flex items-center justify-center overflow-hidden">
             <img
-              src="/uploads/logo.jpg"
+              src="/uploads/logo.png"
               alt="Logo"
               className="object-cover w-full h-full"
               draggable={false}
             />
           </div>
-          <span className={`text-xl font-bold tracking-tight text-white transition-all duration-200 ${!isSidebarOpen ? 'opacity-0 w-0 overflow-hidden' : ''} ${isSidebarOpen ? '' : 'lg:hidden'}`}>
-            {import.meta.env.VITE_APP_NAME || 'Nome Empresa'}<span className="text-accent opacity-50">.</span>
-          </span>
+
+
+
+          {isSidebarOpen && (
+            <div
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${
+                !showCompanyName ? 'opacity-0 w-0 overflow-hidden' : ''
+              }`}
+            >
+              <span className="text-lg font-bold tracking-tight text-white leading-tight">
+                {import.meta.env.VITE_APP_NAME?.split(' ')[0] || 'Chaveiro'}
+              </span>
+              <span className="text-xl font-bold tracking-tight text-accent opacity-80 leading-tight">
+                {import.meta.env.VITE_APP_NAME?.split(' ').slice(1).join(' ') || 'Mega Chave'}
+              </span>
+            </div>
+          )}
+
+
         </div>
 
       

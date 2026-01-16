@@ -21,7 +21,7 @@ echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%temp%\makeShortcut.vbs"
 echo oLink.TargetPath = "%CHROME_PATH%" >> "%temp%\makeShortcut.vbs"
 echo oLink.Arguments = "--app=http://%IP%:8787" >> "%temp%\makeShortcut.vbs"
 echo oLink.Description = "Atalho para Chrome no IP %IP% porta 8787" >> "%temp%\makeShortcut.vbs"
-echo oLink.IconLocation = "C:\PDVsystem\public\uploads\logo.jpg" >> "%temp%\makeShortcut.vbs"
+echo oLink.IconLocation = "C:\PDVsystem\public\uploads\logo.png" >> "%temp%\makeShortcut.vbs"
 echo oLink.Save >> "%temp%\makeShortcut.vbs"
 
 REM Executa o VBScript para criar o atalho

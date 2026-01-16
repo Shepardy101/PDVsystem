@@ -10,7 +10,7 @@ PDVsystem (NovaBev POS) é um sistema de ponto de venda e gestão para distribui
 
 ## Branding e Personalização
 - O nome do sistema exibido na sidebar, login e título do navegador é definido pela variável de ambiente `VITE_APP_NAME` (em `.env` ou `.env.local`).
-- O logo exibido na tela de login pode ser customizado colocando um arquivo `logo.jpg` em `public/uploads/`.
+- O logo exibido na tela de login pode ser customizado colocando um arquivo `logo.png` em `public/uploads/`.
 - O título da aba do navegador é atualizado dinamicamente pelo frontend conforme `VITE_APP_NAME`.
 
 ## Módulos principais

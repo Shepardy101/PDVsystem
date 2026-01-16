@@ -43,7 +43,7 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-dark-900 border border-slate-800 shadow-neon mb-4 overflow-hidden">
             <img
-              src="/uploads/logo.jpg"
+              src="/uploads/logo.png"
               alt="Logo"
               className="object-contain w-full h-full"
               style={{ maxWidth: '100%', maxHeight: '100%' }}

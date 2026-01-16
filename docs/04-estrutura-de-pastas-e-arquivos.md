@@ -1,6 +1,6 @@
 # 04 - Estrutura de Pastas e Arquivos
 
-- `/public/uploads/`: uploads servidos pelo backend. O arquivo `logo.jpg` é usado como logo customizável na tela de login.
+- `/public/uploads/`: uploads servidos pelo backend. O arquivo `logo.png` é usado como logo customizável na tela de login.
 - `/server/src/index.ts`: configura Express, CORS, JSON, IP control, estáticos de `dist/`, registra rotas.
 - `/server/src/config.ts`: porta e caminho do DB (quando usado).
 - `/server/src/db/database.ts`: abre SQLite em `data/novabev.sqlite`, aplica PRAGMAs WAL e foreign_keys.
