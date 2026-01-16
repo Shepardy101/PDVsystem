@@ -618,7 +618,18 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
          });
-         if (!res.ok) throw new Error('Erro ao registrar venda');
+         if (!res.ok) {
+            let errorMsg = 'Erro ao registrar venda. Tente novamente.';
+            try {
+               const errData = await res.json();
+               if (errData && (errData.message || errData.error)) {
+                  errorMsg = errData.message || errData.error;
+               }
+            } catch {}
+            sendTelemetry('payment', 'finalize-error', { message: errorMsg });
+            triggerNotification('Erro ao finalizar venda', errorMsg);
+            return;
+         }
          const { saleId } = await res.json();
          // Adiciona dados do cliente ao recibo, se houver
          let clientName = null, clientCpf = null;
@@ -637,8 +648,9 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          setSelectedClient(null);
          refreshAvailableCash();
       } catch (err) {
-         sendTelemetry('payment', 'finalize-error', { message: err instanceof Error ? err.message : 'Erro desconhecido' });
-         alert('Erro ao registrar venda. Tente novamente.');
+         const msg = err instanceof Error ? err.message : 'Erro desconhecido ao finalizar venda.';
+         sendTelemetry('payment', 'finalize-error', { message: msg });
+         triggerNotification('Erro ao finalizar venda', msg);
       } finally {
          isFinalizingRef.current = false;
       }
@@ -1104,7 +1116,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                         ? "Buscar produto"
                         : isSearchFocused
                            ? "Digite o código ou nome do produto..."
-                           : "Pressione '[SPACE]' para buscar produto ou GTIN..."
+                           : "Pressione '[SPACE]' para buscar produto ou EAN..."
                     }
                     className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
                     value={searchTerm}

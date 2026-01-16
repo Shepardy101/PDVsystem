@@ -9,7 +9,16 @@ export async function createSupplier({ name, cnpj, address, phone, email, catego
   const id = randomUUID();
   const now = Date.now();
   const stmt = db.prepare('INSERT INTO suppliers (id, name, cnpj, address, phone, email, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  stmt.run(id, name, cnpj, address, phone, email, category, now, now);
+  try {
+    stmt.run(id, name, cnpj, address, phone, email, category, now, now);
+  } catch (e: any) {
+    if (e && typeof e.message === 'string' && e.message.includes('UNIQUE constraint failed: suppliers.cnpj')) {
+      const err: any = new Error('Já existe fornecedor com este CNPJ.');
+      err.code = 'CNPJ_DUPLICATE';
+      throw err;
+    }
+    throw e;
+  }
   return { id, name, cnpj, address, phone, email, category, created_at: now, updated_at: now };
 }
 

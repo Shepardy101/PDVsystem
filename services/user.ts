@@ -34,7 +34,16 @@ export async function updateUser(id, user) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user)
   });
-  if (!res.ok) throw new Error('Erro ao atualizar usuário');
+  if (!res.ok) {
+    let msg = 'Erro ao atualizar usuário';
+    try {
+      const err = await res.json();
+      if (err && (err.message || err.error)) {
+        msg = err.message || err.error;
+      }
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 // services/user.ts
@@ -44,7 +53,16 @@ export async function createUser(user) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user)
   });
-  if (!res.ok) throw new Error('Erro ao criar usuário');
+  if (!res.ok) {
+    let msg = 'Erro ao criar usuário';
+    try {
+      const err = await res.json();
+      if (err && (err.message || err.error)) {
+        msg = err.message || err.error;
+      }
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 

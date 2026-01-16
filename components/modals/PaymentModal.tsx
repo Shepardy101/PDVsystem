@@ -498,7 +498,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, total, multiMode, s
                                 }}
                             >{isSubmitting ? 'Processando...' : 'Finalizar Venda'}</Button>
                             <div className="text-center mt-4">
-                                <span className="text-xs text-slate-400">TAB para voltar ao modo rápido</span>
+                                <span className="text-xs text-slate-400">ESC para voltar ao modo rápido</span>
                             </div>
                         </div>
                     )}

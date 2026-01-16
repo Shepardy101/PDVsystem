@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from './components/AuthContext';
 import { ShoppingCart, Package, Users, Wallet, BarChart3, LogOut, Settings as SettingsIcon, Bell, Menu, X, Command } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppView } from './types';
 import Login from './pages/Login';
 import POS from './pages/POS';
@@ -174,15 +175,15 @@ const App: React.FC = () => {
           setView(target);
           if (isMobile) setIsSidebarOpen(false);
         }}
-        className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 group relative ${
+        className={`w-full flex items-center ${isSidebarOpen ? 'gap-4 px-5 justify-start' : 'gap-0 px-0 justify-center'} py-4 rounded-xl transition-all duration-300 group relative ${
           isActive 
             ? 'bg-accent/10 text-accent shadow-accent-glow' 
             : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
         }`}
       >
-        <Icon size={18} className={`${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'} transition-opacity`} />
-        <span className={`text-[11px] font-bold uppercase tracking-[0.15em] ${!isSidebarOpen && 'hidden'}`}>{label}</span>
-        {isActive && (
+        <Icon size={22} className={`${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'} transition-opacity`} />
+        <span className={`text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-200 ${!isSidebarOpen ? 'sr-only' : ''}`}>{label}</span>
+        {isActive && isSidebarOpen && (
           <div className="absolute left-0 w-1 h-6 bg-accent rounded-r-full" />
         )}
       </button>
@@ -231,28 +232,42 @@ const App: React.FC = () => {
       />
       {/* Floating Glass Sidebar */}
       <aside
-        className={`fixed z-50 top-0 left-0 h-[100vh] flex flex-col bg-dark-900/40 backdrop-blur-xl border-r border-white/5 transition-transform duration-500 ease-in-out
-          ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full'}
-          lg:static lg:w-64 lg:translate-x-0
-        `}
+        className={
+          `h-screen flex flex-col bg-dark-900/40 backdrop-blur-xl border-r border-white/5 transition-all duration-500 ease-in-out z-50 ` +
+          // Mobile: fixed, animado
+          `fixed top-0 left-0 ` +
+          (isSidebarOpen ? 'w-64 translate-x-0 ' : 'w-64 -translate-x-full ') +
+          // Desktop: static, só alterna largura
+          'lg:static lg:top-auto lg:left-auto lg:translate-x-0 ' +
+          (isSidebarOpen ? 'lg:w-64 ' : 'lg:w-16 ')
+        }
         aria-label="Navegação lateral"
-        style={sidebarStyle}
+        style={!isMobile ? undefined : sidebarStyle}
       >
+        {/* Botão para recolher/expandir sidebar (sempre visível) */}
+        <button
+          onClick={() => setIsSidebarOpen(v => !v)}
+          className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-accent transition-all z-50"
+          aria-label={isSidebarOpen ? 'Recolher menu' : 'Expandir menu'}
+        >
+          {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+        </button>
         <div className="p-8 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow overflow-hidden">
+          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-accent-glow overflow-hidden">
             <img
               src="/uploads/logo.jpg"
               alt="Logo"
               className="object-cover w-full h-full"
               draggable={false}
             />
-            </div>
-          <span className={`text-xl font-bold tracking-tight text-white ${!isSidebarOpen && 'hidden'}`}>
+          </div>
+          <span className={`text-xl font-bold tracking-tight text-white transition-all duration-200 ${!isSidebarOpen ? 'opacity-0 w-0 overflow-hidden' : ''} ${isSidebarOpen ? '' : 'lg:hidden'}`}>
             {import.meta.env.VITE_APP_NAME || 'Nome Empresa'}<span className="text-accent opacity-50">.</span>
           </span>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 py-6 overflow-y-auto">
+      
+        <nav className={`flex-1 ${isSidebarOpen ? 'px-4' : 'px-1'} space-y-2 py-6 overflow-y-auto`}>
           <NavItem target="pos" icon={ShoppingCart} label="Terminal" />
           <NavItem target="products" icon={Package} label="Inventário" />
           <NavItem target="entities" icon={Users} label="Entidades" />
@@ -270,21 +285,21 @@ const App: React.FC = () => {
                 setView('settings');
               }
             }}
-            className={`w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 ${
+            className={`w-full flex items-center ${isSidebarOpen ? 'gap-4 px-5 justify-start' : 'gap-0 px-0 justify-center'} py-3 rounded-xl transition-all duration-300 ${
               view === 'settings'
                 ? 'bg-accent/10 text-accent border border-accent/20'
                 : 'text-slate-500 hover:text-slate-200'
             }`}
           >
-            <SettingsIcon size={18} />
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Painel de Controle</span>
+            <SettingsIcon size={22} />
+            <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${!isSidebarOpen ? 'sr-only' : ''}`}>Painel de Controle</span>
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 px-5 py-3 text-red-400/60 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all"
+            className={`w-full flex items-center ${isSidebarOpen ? 'gap-4 px-5 justify-start' : 'gap-0 px-0 justify-center'} py-3 text-red-400/60 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all`}
           >
-            <LogOut size={18} />
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Encerrar</span>
+            <LogOut size={22} />
+            <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${!isSidebarOpen ? 'sr-only' : ''}`}>Encerrar</span>
           </button>
         </div>
       </aside>

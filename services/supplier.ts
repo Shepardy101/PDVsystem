@@ -4,7 +4,14 @@ export async function createSupplier(supplier) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(supplier)
   });
-  if (!res.ok) throw new Error('Erro ao criar fornecedor');
+  if (!res.ok) {
+    let msg = 'Erro ao criar fornecedor';
+    try {
+      const err = await res.json();
+      msg = err?.error || err?.message || msg;
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -14,7 +21,14 @@ export async function updateSupplier(id, supplier) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(supplier)
   });
-  if (!res.ok) throw new Error('Erro ao atualizar fornecedor');
+  if (!res.ok) {
+    let msg = 'Erro ao atualizar fornecedor';
+    try {
+      const err = await res.json();
+      msg = err?.error || err?.message || msg;
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 

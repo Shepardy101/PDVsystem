@@ -353,7 +353,11 @@ const Products: React.FC = () => {
             stock: mappedProduct.stock
          });
       } catch (err) {
-         showPopup('error', 'Erro ao salvar produto/serviço', 'Verifique os campos e tente novamente.');
+         let msg = 'Verifique os campos e tente novamente.';
+         if (err instanceof Error && err.message) {
+            msg = err.message;
+         }
+         showPopup('error', 'Erro ao salvar produto/serviço', msg);
          sendTelemetry('product', 'submit-error', { mode: selectedProduct ? 'update' : 'create', message: err instanceof Error ? err.message : 'unknown' });
       }
    }
@@ -563,7 +567,10 @@ const Products: React.FC = () => {
                         <ChevronRight size={16} className={`ml-2 transition-transform ${showCategoryList ? 'rotate-90' : ''}`} />
                       </button>
                       {showCategoryList && (
-                        <div className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50">
+                                    <div
+                                       className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50"
+                                       style={{ maxHeight: 320, overflowY: 'auto' }}
+                                    >
                            {categories.length === 0 && (
                              <div className="px-4 py-2 text-slate-500 text-xs">Nenhuma categoria cadastrada</div>
                            )}

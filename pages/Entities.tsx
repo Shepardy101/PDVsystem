@@ -471,8 +471,12 @@ const Entities: React.FC = () => {
                    const updated = await listUsers();
                    setUsers(updated);
                  } catch (e) {
-                   setPopup({open: true, type: 'error', title: editingItem ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário', message: 'Tente novamente.'});
-                   sendTelemetry('user', 'submit-error', { mode: editingItem ? 'update' : 'create', userId: editingItem?.id || null });
+                   let msg = 'Tente novamente.';
+                   if (e instanceof Error && e.message) {
+                     msg = e.message;
+                   }
+                   setPopup({open: true, type: 'error', title: editingItem ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário', message: msg});
+                   sendTelemetry('user', 'submit-error', { mode: editingItem ? 'update' : 'create', userId: editingItem?.id || null, error: msg });
                  }
                }}>Confirmar Vínculo</Button>
             </div>
@@ -522,8 +526,12 @@ const Entities: React.FC = () => {
                const updated = await listClients();
                setClients(updated);
               } catch (e) {
-               setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar cliente' : 'Erro ao criar cliente', message: 'Tente novamente.'});
-               sendTelemetry('client', 'submit-error', { mode: editingItem?.id ? 'update' : 'create', clientId: editingItem?.id || null });
+               let msg = 'Tente novamente.';
+               if (e instanceof Error && e.message) {
+                 msg = e.message;
+               }
+               setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar cliente' : 'Erro ao criar cliente', message: msg});
+               sendTelemetry('client', 'submit-error', { mode: editingItem?.id ? 'update' : 'create', clientId: editingItem?.id || null, error: msg });
               }
             }}>Efetuar Registro</Button>
           </div>
@@ -573,8 +581,12 @@ const Entities: React.FC = () => {
                const updated = await listSuppliers();
                setSuppliers(updated);
               } catch (e) {
-               setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar fornecedor' : 'Erro ao criar fornecedor', message: 'Tente novamente.'});
-               sendTelemetry('supplier', 'submit-error', { mode: editingItem?.id ? 'update' : 'create', supplierId: editingItem?.id || null });
+               let msg = 'Tente novamente.';
+               if (e instanceof Error && e.message) {
+                 msg = e.message;
+               }
+               setPopup({open: true, type: 'error', title: editingItem?.id ? 'Erro ao atualizar fornecedor' : 'Erro ao criar fornecedor', message: msg});
+               sendTelemetry('supplier', 'submit-error', { mode: editingItem?.id ? 'update' : 'create', supplierId: editingItem?.id || null, error: msg });
               }
             }}>Salvar Cadastro</Button>
           </div>

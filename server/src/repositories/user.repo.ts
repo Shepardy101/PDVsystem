@@ -15,7 +15,16 @@ export async function createUser({ name, email, role, status, password }: any) {
   // Gera id string (UUID)
   const id = randomUUID();
   const stmt = db.prepare('INSERT INTO users (id, name, email, role, status, password) VALUES (?, ?, ?, ?, ?, ?)');
-  stmt.run(id, name, email, role, status ? 'active' : 'inactive', password);
+  try {
+    stmt.run(id, name, email, role, status ? 'active' : 'inactive', password);
+  } catch (e: any) {
+    if (e && typeof e.message === 'string' && e.message.includes('UNIQUE constraint failed: users.email')) {
+      const err: any = new Error('Já existe um usuário com este e-mail.');
+      err.code = 'EMAIL_DUPLICATE';
+      throw err;
+    }
+    throw e;
+  }
   return { id, name, email, role, status: status ? 'active' : 'inactive' };
 }
 

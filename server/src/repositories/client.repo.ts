@@ -22,7 +22,16 @@ export async function createClient({ name, cpf, address, phone, email }: any) {
   const id = randomUUID();
   const now = Date.now();
   const stmt = db.prepare('INSERT INTO clients (id, name, cpf, address, phone, email, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  stmt.run(id, name, cpf, address, phone, email, now, now);
+  try {
+    stmt.run(id, name, cpf, address, phone, email, now, now);
+  } catch (e: any) {
+    if (e && typeof e.message === 'string' && e.message.includes('UNIQUE constraint failed: clients.cpf')) {
+      const err: any = new Error('Já existe um cliente com este CPF.');
+      err.code = 'CPF_DUPLICATE';
+      throw err;
+    }
+    throw e;
+  }
   return { id, name, cpf, address, phone, email, created_at: now, updated_at: now };
 }
 

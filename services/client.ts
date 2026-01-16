@@ -11,7 +11,14 @@ export async function createClient(client) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(client)
   });
-  if (!res.ok) throw new Error('Erro ao criar cliente');
+  if (!res.ok) {
+    let msg = 'Erro ao criar cliente';
+    try {
+      const err = await res.json();
+      msg = err?.error || err?.message || msg;
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -21,7 +28,14 @@ export async function updateClient(id, client) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(client)
   });
-  if (!res.ok) throw new Error('Erro ao atualizar cliente');
+  if (!res.ok) {
+    let msg = 'Erro ao atualizar cliente';
+    try {
+      const err = await res.json();
+      msg = err?.error || err?.message || msg;
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 

@@ -876,7 +876,7 @@ const CashManagement: React.FC = () => {
                         className={`px-3 py-6 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'movimentacoes' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
-                        Detalhamento de Movimentos
+                        Relatório de Caixa
                         {historyModalTab === 'movimentacoes' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-accent-glow" />}
                      </button>
                      <button
@@ -884,7 +884,7 @@ const CashManagement: React.FC = () => {
                         className={`px-3 py-6 text-[10px] font-bold uppercase tracking-widest transition-all relative ${historyModalTab === 'vendas' ? 'text-accent' : 'text-slate-500 hover:text-slate-300'
                            }`}
                      >
-                        Detalhamento de Vendas
+                        Desempenho do Dia
                         {historyModalTab === 'vendas' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-accent-glow" />}
                      </button>
                   </div>

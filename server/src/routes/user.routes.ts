@@ -99,10 +99,18 @@ userRouter.post('/', async (req, res) => {
       console.warn('[POST /api/users] Campos obrigatórios ausentes:', req.body);
       return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
     }
-    const user = await createUser({ name, email, role, status, password });
-    console.log('[POST /api/users] Usuário criado:', user);
-    logEvent('Usuário criado', 'info', { userId: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
-    res.status(201).json(user);
+    try {
+      const user = await createUser({ name, email, role, status, password });
+      console.log('[POST /api/users] Usuário criado:', user);
+      logEvent('Usuário criado', 'info', { userId: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
+      res.status(201).json(user);
+    } catch (err: any) {
+      if (err && err.code === 'EMAIL_DUPLICATE') {
+        logEvent('Erro ao criar usuário', 'warn', { payload: req.body, message: err.message });
+        return res.status(400).json({ error: err.message });
+      }
+      throw err;
+    }
   } catch (e: any) {
     logEvent('Erro ao criar usuário', 'error', {
       payload: req.body,
