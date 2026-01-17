@@ -1,4 +1,11 @@
 @media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    width: 100vw !important;
+    height: 100vh !important;
+  }
   body * {
     visibility: hidden !important;
   }
@@ -6,17 +13,19 @@
     visibility: visible !important;
   }
   #thermal-receipt {
-    position: absolute !important;
-    left: 0;
-    top: 0;
-    width: 100vw !important;
-    min-width: 0 !important;
-    max-width: none !important;
+    position: static !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    min-width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: white !important;
     color: black !important;
     box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    border-radius: 0 !important;
+    page-break-after: avoid !important;
   }
   .no-print {
     display: none !important;
