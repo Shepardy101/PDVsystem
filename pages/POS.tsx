@@ -637,7 +637,23 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             clientName = selectedClient.name;
             clientCpf = selectedClient.cpf;
          }
-         setLastSaleData({ ...payload, id: saleId, payments: paymentsPayload, clientName, clientCpf });
+             // Monta array de itens para o recibo (nome, quantidade, preço unitário, subtotal)
+             const receiptItems = cart.map(item => ({
+                productName: item.product.name,
+                quantity: item.quantity,
+                unitPrice: Math.round(item.product.salePrice * 100),
+                subtotal: Math.round(item.product.salePrice * item.quantity * 100),
+                unit: item.product.unit
+             }));
+             setLastSaleData({
+                ...payload,
+                id: saleId,
+                payments: paymentsPayload,
+                clientName,
+                clientCpf,
+                items: receiptItems,
+                discountCents: Math.round((autoDiscountsTotal + manualDiscount) * 100)
+             });
          sendTelemetry('payment', 'finalize-success', { saleId, totalCents, items: items.length, payments: paymentsPayload.map(p => p.method), clientId: payload.clientId });
          // Exibe popup de venda finalizada
          triggerNotification('Venda finalizada', 'A venda foi registrada com sucesso!');

@@ -39,25 +39,53 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
             <p className="text-[10px] font-bold">CUPOM FISCAL VIRTUAL</p>
             <p className="text-[9px]">{new Date().toLocaleString()}</p>
           </div>
+          {/* Produtos vendidos */}
           <div className="text-[9px] space-y-1 mb-4 border-b border-black border-dashed pb-2">
             <div className="flex justify-between font-bold">
               <span>ITEM</span>
-              <span>TOTAL</span>
+              <span>QTD</span>
+              <span>UN</span>
+              <span>SUBTOTAL</span>
             </div>
             {lastSaleData?.items?.map((item: any, idx: number) => (
               <div key={idx} className="flex justify-between">
-                <span>{item.quantity}x {item.productName}</span>
-                <span>{((item.unitPrice / 100) * item.quantity).toFixed(2)}</span>
+                <span className="truncate max-w-[60px]">{item.productName}</span>
+                <span>{item.quantity}</span>
+                <span>R$ {(item.unitPrice / 100).toFixed(2)}</span>
+                <span>R$ {((item.unitPrice * item.quantity) / 100).toFixed(2)}</span>
               </div>
             ))}
           </div>
-          <div className="text-right text-xs font-bold uppercase">
-            Total: R$ {lastSaleData?.total ? (lastSaleData.total / 100).toFixed(2) : '0.00'}
+          {/* Totais e descontos */}
+          <div className="text-[10px] mt-2 mb-1">
+            {lastSaleData?.discountCents > 0 && (
+              <div className="flex justify-between">
+                <span>Desconto:</span>
+                <span>- R$ {(lastSaleData.discountCents / 100).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold border-t border-black border-dashed pt-1 mt-1">
+              <span>Total:</span>
+              <span>R$ {lastSaleData?.total ? (lastSaleData.total / 100).toFixed(2) : '0.00'}</span>
+            </div>
           </div>
-          {lastSaleData?.clientName && lastSaleData?.clientCpf && (
+          {/* Pagamentos */}
+          {lastSaleData?.payments && lastSaleData.payments.length > 0 && (
+            <div className="text-[9px] mt-2 mb-1">
+              <div className="font-bold mb-1">Pagamentos:</div>
+              {lastSaleData.payments.map((p: any, idx: number) => (
+                <div key={idx} className="flex justify-between">
+                  <span>{p.method}</span>
+                  <span>R$ {(p.amount / 100).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Cliente */}
+          {lastSaleData?.clientName && (
             <div className="mt-2 text-[9px] text-right text-black/80 opacity-80">
               <span>Cliente: {lastSaleData.clientName}</span><br />
-              <span>CPF: {lastSaleData.clientCpf}</span>
+              {lastSaleData?.clientCpf && <span>CPF: {lastSaleData.clientCpf}</span>}
             </div>
           )}
         </div>
