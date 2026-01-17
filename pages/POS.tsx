@@ -3,7 +3,7 @@ import { useAutoFocus } from '../hooks/useAutoFocus';
 import { useAuth } from '../components/AuthContext';
 import { ShoppingCart, CreditCard, DollarSign, Zap, Ticket, Command, X, ArrowRight, Minus, Plus, Trash2, Printer, CheckCircle2, ShieldCheck, Cpu, Wallet, Lock, Unlock, AlertTriangle, Calculator, BarChart3, TrendingUp, Clock, Target, Users } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { Button, Badge, Modal, Input } from '../components/UI';
+import { Button, Badge, Modal, Input, InputNumber } from '../components/UI';
 import { Product, CartItem, Client, CashSession } from '../types';
 import { listClients } from '../services/client';
 import PaymentModal from '../components/modals/PaymentModal';
@@ -1049,7 +1049,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                         <button onClick={() => setIsOpeningModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
                      </div>
                      <div className="p-8 space-y-6">
-                        <Input
+                        <InputNumber
                            label="Saldo Inicial (R$)"
                            autoFocus={true}
                            value={initialBalance}

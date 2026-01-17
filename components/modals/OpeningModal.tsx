@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input } from '../UI';
+import { Button, InputNumber } from '../UI';
 import { Unlock, X } from 'lucide-react';
 
 export interface OpeningModalProps {
@@ -49,8 +49,8 @@ const OpeningModal: React.FC<OpeningModalProps> = ({ isOpen, initialBalance, onC
           <button onClick={onClose} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
         </div>
         <div className="p-6 sm:p-8 space-y-6">
-          <Input
-            label="Saldo Inicial (R$)"
+          <InputNumber
+            label="Saldo Inicial (R$)x "
             value={initialBalance}
             onChange={e => onChange(e.target.value)}
             placeholder="0.00"

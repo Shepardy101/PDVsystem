@@ -391,20 +391,41 @@ const App: React.FC = () => {
         </header>
 
         {/* View Layout Container */}
-        <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-dark-950 min-h-0">
-          <div className="h-full relative z-10 flex flex-col min-h-0">
+        <div className="flex-1 min-h-0 h-full relative overflow-y-auto overflow-x-hidden bg-dark-950">
+          <div className="flex flex-col min-h-full h-full relative z-10">
             {view === 'pos' && (
-              <POS 
-                cashOpen={cashOpen}
-                onOpenCash={handleOpenCash}
-                
-              />
+              <div className="flex-1 flex flex-col min-h-0 h-full">
+                <POS 
+                  cashOpen={cashOpen}
+                  onOpenCash={handleOpenCash}
+                />
+              </div>
             )}
-            {view === 'products' && <Products />}
-            {view === 'entities' && <Entities />}
-            {view === 'cash' && <CashManagement />}
-            {view === 'reports' && <Reports />}
-            {view === 'settings' && <Settings />}
+            {view === 'products' && (
+              <div className="flex-1 flex flex-col min-h-0 h-full">
+                <Products />
+              </div>
+            )}
+            {view === 'entities' && (
+              <div className="flex-1 flex flex-col min-h-0 h-full">
+                <Entities />
+              </div>
+            )}
+            {view === 'cash' && (
+              <div className="flex-1 flex flex-col min-h-0 h-full">
+                <CashManagement />
+              </div>
+            )}
+            {view === 'reports' && (
+              <div className="flex-1 flex flex-col min-h-0 h-full">
+                <Reports />
+              </div>
+            )}
+            {view === 'settings' && (
+              <div className="flex-1 flex flex-col min-h-0 h-full">
+                <Settings />
+              </div>
+            )}
           </div>
         </div>
       </main>

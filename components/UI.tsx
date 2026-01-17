@@ -1,5 +1,43 @@
-
 import React, { forwardRef } from 'react';
+
+
+// Input numérico estilizado para valores monetários
+interface InputNumberProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  icon?: React.ReactNode;
+}
+
+export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(
+  ({ label, icon, className = '', ...props }, ref) => {
+    return (
+      <div className="w-full space-y-2">
+        {label && (
+          <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">
+            {label}
+          </label>
+        )}
+        <div className="relative group">
+          {icon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-accent transition-colors">
+              {icon}
+            </div>
+          )}
+          <input
+            ref={ref}
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            className={`w-full bg-dark-900/40 border border-white/5 rounded-lg py-3 ${icon ? 'pl-10' : 'px-4'} pr-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all font-sans ${className}`}
+            {...props}
+          />
+        </div>
+      </div>
+    );
+  }
+);
+InputNumber.displayName = 'InputNumber';
+
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
