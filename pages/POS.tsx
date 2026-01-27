@@ -933,7 +933,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       setCart(prev => prev.map(item => {
          if (item.product.id === productId) {
             let desired = Math.max(1, item.quantity + delta);
-            if (!allowNegativeStock) {
+            // Serviços não têm validação de estoque
+            if (!allowNegativeStock && item.product.type !== 'service') {
                const limit = item.product.stock ?? 0;
                desired = Math.min(desired, limit);
                if (desired === item.quantity && delta > 0) {
@@ -957,7 +958,8 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
       setCart(prev => prev.map(item => {
          if (item.product.id === productId) {
             let desired = Math.max(1, qty);
-            if (!allowNegativeStock) {
+            // Serviços não têm validação de estoque
+            if (!allowNegativeStock && item.product.type !== 'service') {
                const limit = item.product.stock ?? 0;
                desired = Math.min(desired, limit);
                if (desired < qty) {

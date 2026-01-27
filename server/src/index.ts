@@ -38,9 +38,9 @@ app.use('/api/admin/maintenance', maintenanceRouter);
 app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
 
 
-// Middleware de controle de IPs (aplica em todas as rotas exceto admin-db, health, ip-control, uploads)
+// Middleware de controle de IPs (aplica em todas as rotas exceto admin-db, health, ip-control, maintenance, uploads)
 app.use((req, res, next) => {
-  const skip = req.path.startsWith('/api/health') || req.path.startsWith('/api/admin-db') || req.path.startsWith('/api/admin/ip-control') || req.path.startsWith('/uploads');
+  const skip = req.path.startsWith('/api/health') || req.path.startsWith('/api/admin-db') || req.path.startsWith('/api/admin/ip-control') || req.path.startsWith('/api/admin/maintenance') || req.path.startsWith('/uploads');
   if (skip) return next();
   return ipAccessControl(req, res, next);
 });
