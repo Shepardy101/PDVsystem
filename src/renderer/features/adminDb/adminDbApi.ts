@@ -8,6 +8,15 @@ export async function resetDatabase() {
 	return res.json();
 }
 
+export async function seedDemoDatabase() {
+	const res = await fetch(BASE + '/seed-demo', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' }
+	});
+	if (!res.ok) throw new Error('Erro ao popular dados de demo');
+	return res.json();
+}
+
 
 const BASE = '/api/admin-db';
 

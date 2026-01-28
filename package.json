@@ -36,15 +36,17 @@
     "vite": "^6.2.0"
   },
   "scripts": {
-    "dev:api": "tsx watch server/src/index.ts",
+    "dev:api": "tsx watch --env-file=.env server/src/index.ts",
     "dev": "concurrently \"npm run dev:api\" \"vite --port 3000\"",
     "build:client": "vite build",
     "build:server": "tsc --project server/tsconfig.json",
     "build": "npm run build:client && npm run build:server",
-    "start:prod": "cross-env NODE_ENV=production node server/dist/index.js",
-    "start:local": "NODE_ENV=production node server/src/index.js",
-    "migrate": "ts-node server/src/db/migrate.ts",
+    "start:prod": "cross-env NODE_ENV=production node --env-file=.env server/dist/index.js",
+    "start:local": "NODE_ENV=production node --env-file=.env server/src/index.js",
+    "migrate": "tsx --env-file=.env server/src/db/migrate.ts",
     "docs:check": "node scripts/docs-check.mjs",
-    "docs:setup-hooks": "node scripts/setup-githooks.mjs"
+    "docs:setup-hooks": "node scripts/setup-githooks.mjs",
+    "tunnel": "node server/Ngrox/server.js",
+    "tunnel:auth": "ngrok config add-authtoken"
   }
 }

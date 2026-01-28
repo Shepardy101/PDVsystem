@@ -33,8 +33,13 @@ copy /y ".env" "%STAGEDIR%" >nul
 copy /y "README.md" "%STAGEDIR%" >nul
 copy /y "instalar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-app.bat" "%STAGEDIR%" >nul
+copy /y "iniciar-tunel.bat" "%STAGEDIR%" >nul
 copy /y "criar-atalho-app.bat" "%STAGEDIR%" >nul
 copy /y "INSTALACAO-CLIENTE.txt" "%STAGEDIR%" >nul
+
+echo Copiando servidor de tunel (Ngrox)...
+if not exist "%STAGEDIR%\server\Ngrox" mkdir "%STAGEDIR%\server\Ngrox"
+copy /y "server\Ngrox\server.js" "%STAGEDIR%\server\Ngrox\server.js" >nul
 
 echo Copiando migrations (referencia)...
 xcopy /e /i /y "server\src\db\migrations" "%STAGEDIR%\server\src\db\migrations" >nul

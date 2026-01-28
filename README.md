@@ -1,4 +1,4 @@
-PDVsystem  é um ponto de venda para distribuidores de bebidas: frontend React/Vite (SPA) servido pelo backend Node/Express na porta 8787, com banco SQLite único em `data/novabev.sqlite` e controle de acesso por whitelist de IP.
+PDVsystem é um ponto de venda para distribuidores de bebidas: frontend React/Vite (SPA) servido pelo backend Node/Express na porta 8787, com banco SQLite único em `data/novabev.sqlite` e controle de acesso por whitelist de IP.
 
 ## Visão rápida
 - Módulos: PDV (vendas/pagamentos), Caixa (sessões e movimentos), Produtos/Categorias, Entidades (usuários/clientes/fornecedores), Relatórios/BI, Settings, Admin DB/Manutenção.
@@ -39,6 +39,12 @@ Para gerar um pacote pronto para o cliente final:
 - Prod local: `npm run start:prod` ou `pm2 start server/dist/index.js --name PDVsystem --env production`
 - Pacote para cliente: `package-app.bat` → gera `build/PDVsystem-release.zip`
 - Instalação no cliente (após extrair o zip): `instalar-app.bat` (npm ci --production, pm2) e depois `iniciar-app.bat`
+
+### 🌐 Acesso Remoto (Opcional)
+Se precisar acessar o sistema de qualquer lugar via internet:
+1. Certifique-se de que o backend está rodando.
+2. Execute o arquivo `iniciar-tunel.bat`.
+3. Utilize a URL `Forwarding` gerada pelo Ngrok (ex: `https://abcd-123.ngrok-free.app`).
 
  $env:ENABLE_DB_ADMIN="true"; npm run dev
 

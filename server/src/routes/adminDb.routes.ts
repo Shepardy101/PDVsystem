@@ -1,10 +1,20 @@
 import { Router } from 'express';
 import * as adminDbService from '../services/adminDb.service';
+import { seedDemoData } from '../services/seeder.service';
 
 const router = Router();
 
 // Guard: all routes
 router.use(adminDbService.guardAdminDb);
+
+router.post('/seed-demo', async (req, res) => {
+    try {
+        const result = await seedDemoData();
+        res.json(result);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // List tables
 router.get('/tables', adminDbService.getTables);

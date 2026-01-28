@@ -625,7 +625,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                if (errData && (errData.message || errData.error)) {
                   errorMsg = errData.message || errData.error;
                }
-            } catch {}
+            } catch { }
             sendTelemetry('payment', 'finalize-error', { message: errorMsg });
             triggerNotification('Erro ao finalizar venda', errorMsg);
             return;
@@ -637,23 +637,23 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
             clientName = selectedClient.name;
             clientCpf = selectedClient.cpf;
          }
-             // Monta array de itens para o recibo (nome, quantidade, preço unitário, subtotal)
-             const receiptItems = cart.map(item => ({
-                productName: item.product.name,
-                quantity: item.quantity,
-                unitPrice: Math.round(item.product.salePrice * 100),
-                subtotal: Math.round(item.product.salePrice * item.quantity * 100),
-                unit: item.product.unit
-             }));
-             setLastSaleData({
-                ...payload,
-                id: saleId,
-                payments: paymentsPayload,
-                clientName,
-                clientCpf,
-                items: receiptItems,
-                discountCents: Math.round((autoDiscountsTotal + manualDiscount) * 100)
-             });
+         // Monta array de itens para o recibo (nome, quantidade, preço unitário, subtotal)
+         const receiptItems = cart.map(item => ({
+            productName: item.product.name,
+            quantity: item.quantity,
+            unitPrice: Math.round(item.product.salePrice * 100),
+            subtotal: Math.round(item.product.salePrice * item.quantity * 100),
+            unit: item.product.unit
+         }));
+         setLastSaleData({
+            ...payload,
+            id: saleId,
+            payments: paymentsPayload,
+            clientName,
+            clientCpf,
+            items: receiptItems,
+            discountCents: Math.round((autoDiscountsTotal + manualDiscount) * 100)
+         });
          sendTelemetry('payment', 'finalize-success', { saleId, totalCents, items: items.length, payments: paymentsPayload.map(p => p.method), clientId: payload.clientId });
          // Exibe popup de venda finalizada
          triggerNotification('Venda finalizada', 'A venda foi registrada com sucesso!');
@@ -1025,7 +1025,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                <div className="space-y-3">
                   <h2 className="text-2xl font-bold text-white tracking-widest uppercase assemble-text">Terminal Fechado</h2>
                   <p className="text-slate-500 text-sm font-medium tracking-tight">
-"Caixa encerrado. Realize a abertura para começar o atendimento.                     </p>
+                     Caixa encerrado. Realize a abertura para começar o atendimento.                     </p>
                </div>
 
                <div className="flex flex-col items-center gap-2">
@@ -1123,26 +1123,26 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
          <div className="relative z-50 max-w-3xl mx-auto w-full" ref={searchRef}>
             <div className={`gradient-border-wrapper flex items-center gap-4 transition-all duration-300 rounded-2xl p-2 bg-dark-900/60 backdrop-blur-xl border border-white/10 ${isSearchFocused ? 'border-accent/50 shadow-accent-glow' : ''
                }`}>
-                  <div className="pl-4 text-slate-500">
-                    <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
-                  </div>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder={
-                      window.innerWidth <= 640
+               <div className="pl-4 text-slate-500">
+                  <Command size={20} className={isSearchFocused ? 'text-accent' : ''} />
+               </div>
+               <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder={
+                     window.innerWidth <= 640
                         ? "Buscar produto"
                         : isSearchFocused
                            ? "Digite o código ou nome do produto..."
                            : "Pressione '[SPACE]' para buscar produto ou EAN..."
-                    }
-                    className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    onKeyDown={handleSearchKeyDown}
-                  />
+                  }
+                  className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder-slate-600 font-medium"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  onKeyDown={handleSearchKeyDown}
+               />
                {searchTerm && (
                   <button onClick={() => { setSearchTerm(''); inputRef.current?.focus(); }} className="p-2 text-slate-500 hover:text-white">
                      <X size={18} />
@@ -1244,61 +1244,61 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                     </div>
                                  </div>
 
-                                  <div className="text-right whitespace-nowrap text-sm sm:text-base font-pdv font-bold text-white leading-tight">
+                                 <div className="text-right whitespace-nowrap text-sm sm:text-base font-pdv font-bold text-white leading-tight">
                                     R$ {((item.product.salePrice - item.appliedDiscount) * item.quantity).toFixed(2)}
-                                  </div>
+                                 </div>
 
-                                  <div className="flex items-center bg-dark-950/80 rounded-lg px-2 py-1 border border-white/10">
+                                 <div className="flex items-center bg-dark-950/80 rounded-lg px-2 py-1 border border-white/10">
                                     <input
                                        ref={el => { qtyInputRefs.current[item.product.id] = el; }}
                                        data-role="qty-input"
                                        type="number"
-                                                          min={1}
-                                                          max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
-                                                          className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
-                                                          value={item.quantity === 0 ? '' : item.quantity}
-                                                          inputMode="numeric"
-                                                          pattern="[0-9]*"
-                                                          onChange={e => {
-                                                             // Permite campo vazio temporariamente
-                                                             const val = e.target.value;
-                                                             if (val === '' || val === '0') {
-                                                                setQuantity(item.product.id, 0);
-                                                             } else {
-                                                                const next = parseInt(val, 10);
-                                                                setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
-                                                             }
-                                                          }}
-                                                          onBlur={e => {
-                                                             // Se sair vazio ou zero, volta para 1
-                                                             if (!e.target.value || e.target.value === '0') {
-                                                                setQuantity(item.product.id, 1);
-                                                             }
-                                                          }}
-                                                          onKeyDown={e => {
-                                                             e.stopPropagation();
-                                                             if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                inputRef.current?.focus();
-                                                                inputRef.current?.select();
-                                                             }
-                                                          }}
-                                                          onFocus={e => {
-                                                             e.stopPropagation();
-                                                             e.target.select();
-                                                          }}
+                                       min={1}
+                                       max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
+                                       className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
+                                       value={item.quantity === 0 ? '' : item.quantity}
+                                       inputMode="numeric"
+                                       pattern="[0-9]*"
+                                       onChange={e => {
+                                          // Permite campo vazio temporariamente
+                                          const val = e.target.value;
+                                          if (val === '' || val === '0') {
+                                             setQuantity(item.product.id, 0);
+                                          } else {
+                                             const next = parseInt(val, 10);
+                                             setQuantity(item.product.id, Number.isNaN(next) ? 1 : next);
+                                          }
+                                       }}
+                                       onBlur={e => {
+                                          // Se sair vazio ou zero, volta para 1
+                                          if (!e.target.value || e.target.value === '0') {
+                                             setQuantity(item.product.id, 1);
+                                          }
+                                       }}
+                                       onKeyDown={e => {
+                                          e.stopPropagation();
+                                          if (e.key === 'Enter') {
+                                             e.preventDefault();
+                                             inputRef.current?.focus();
+                                             inputRef.current?.select();
+                                          }
+                                       }}
+                                       onFocus={e => {
+                                          e.stopPropagation();
+                                          e.target.select();
+                                       }}
                                     />
-                                  </div>
+                                 </div>
 
-                              
 
-                                  <button
+
+                                 <button
                                     onClick={() => removeFromCart(item.product.id)}
                                     className="p-2 text-slate-600 hover:text-red-500 opacity-90 sm:opacity-100 transition-opacity justify-self-end"
                                     title="Remover item [Del]"
-                                  >
+                                 >
                                     <Trash2 size={14} />
-                                  </button>
+                                 </button>
                               </div>
                            ))}
                         </div>
@@ -1338,7 +1338,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                   </div>
 
 
-                     {/**  */}
+                  {/**  */}
                   <div className="pt-8 border-t border-white/5 space-y-8 shrink-0 relative z-10">
                      <div className="flex justify-between items-end gap-3 flex-wrap sm:flex-nowrap">
                         <div>
