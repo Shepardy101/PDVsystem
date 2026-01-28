@@ -22,6 +22,8 @@ import ipControlRouter from './routes/admin/ipControl.routes';
 import maintenanceRouter from './routes/admin/maintenance.routes';
 import { scheduleLogRetention } from './services/logRetention';
 import { startPerformanceLogger } from './services/performanceLogger';
+import { updateService } from './services/update.service';
+import updateRouter from './routes/update.routes';
 
 import { ipAccessControl } from './middleware/ipAccessControl';
 const app = express();
@@ -77,6 +79,7 @@ app.use('/api/pos', posRouter);
 app.use('/api/report', reportRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/sys', sysRouter);
+app.use('/api/update', updateRouter);
 
 
 // SPA: qualquer rota não-API retorna index.html (depois do middleware de IP)
@@ -96,3 +99,17 @@ app.listen(PORT, '0.0.0.0', () => {
 scheduleLogRetention();
 // Logger periódico de performance (CPU/RAM/loop)
 startPerformanceLogger();
+
+// Verificação de atualização automática (opcional: a cada 1 hora)
+setInterval(() => {
+  updateService.checkUpdate().then(async (config) => {
+    if (config) {
+      await updateService.downloadAndPrepare(config.url);
+      // Aqui você poderia notificar o admin via socket ou flag no DB
+      // updateService.triggerUpdateScript(); // CUIDADO: Isso fecharia o sistema automaticamente
+    }
+  });
+}, 1000 * 60 * 60);
+
+// Verificação inicial na subida do sistema
+updateService.checkUpdate();
