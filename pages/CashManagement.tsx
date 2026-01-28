@@ -469,7 +469,7 @@ const CashManagement: React.FC = () => {
                                  </div>
                                  <div className="text-right">
                                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Total de vendas</p>
-                                    <h3 className="text-base sm:text-lg font-mono font-bold text-accent leading-tight">
+                                    <h3 className="text-base sm:text-lg font-num font-bold text-accent leading-tight">
                                        R$ {
                                           (() => {
                                              if (!session || !Array.isArray(session.transactions)) return '0.00';
@@ -504,7 +504,7 @@ const CashManagement: React.FC = () => {
                                  </div>
                                  <div className="text-right">
                                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Injeções</p>
-                                    <h3 className="text-sm sm:text-base font-mono font-bold text-blue-400 leading-tight">
+                                    <h3 className="text-sm sm:text-base font-num font-bold text-blue-400 leading-tight">
                                        + R$ {
                                           (() => {
                                              if (!session || !Array.isArray(session.transactions)) return '0.00';
@@ -525,13 +525,13 @@ const CashManagement: React.FC = () => {
 
                            <Card className="bg-dark-900/60 border-white/5 p-2 sm:p-3">
                               <div className="flex items-center justify-between gap-3">
-                                 
+
                                  <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30">
                                     <ArrowUpRight size={14} />
                                  </div>
                                  <div className="text-right">
                                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Deduções</p>
-                                    <h3 className="text-sm sm:text-base font-mono font-bold text-red-400 leading-tight">
+                                    <h3 className="text-sm sm:text-base font-num font-bold text-red-400 leading-tight">
                                        - R$ {
                                           (() => {
                                              if (!session || !Array.isArray(session.transactions)) return '0.00';
@@ -557,7 +557,7 @@ const CashManagement: React.FC = () => {
                                  </div>
                                  <div className="text-right">
                                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Dinheiro em Caixa</p>
-                                    <h3 className="text-sm sm:text-base font-mono font-bold text-slate-200 leading-tight">
+                                    <h3 className="text-sm sm:text-base font-num font-bold text-slate-200 leading-tight">
                                        R$ {calculateCashBalance(session)}
                                     </h3>
                                  </div>
@@ -614,8 +614,8 @@ const CashManagement: React.FC = () => {
                                                                </div>
                                                             </td>
                                                             <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description.toString().slice(0, 15)}</td>
-                                                            <td className={`px-6 py-4 font-mono text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                            <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                            <td className={`px-6 py-4 font-num text-[11px] font-bold text-accent`}>+ R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                            <td className="px-6 py-4 text-right text-slate-600 font-num text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                          </tr>
                                                       );
                                                    } else if ('type' in tx) {
@@ -632,8 +632,8 @@ const CashManagement: React.FC = () => {
                                                                </div>
                                                             </td>
                                                             <td className="px-6 py-4 text-[11px] text-slate-500 group-hover:text-slate-300 transition-colors font-medium truncate max-w-[150px]">{description}</td>
-                                                            <td className={`px-6 py-4 font-mono text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
-                                                            <td className="px-6 py-4 text-right text-slate-600 font-mono text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                            <td className={`px-6 py-4 font-num text-[11px] font-bold ${type === 'sangria' || type === 'pagamento' ? 'text-red-400' : 'text-accent'}`}>{type === 'sangria' || type === 'pagamento' ? '-' : '+'} R$ {total ? (total / 100).toFixed(2) : '0.00'}</td>
+                                                            <td className="px-6 py-4 text-right text-slate-600 font-num text-[9px] group-hover:text-slate-400">{new Date(tx.timestamp || tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                          </tr>
                                                       );
                                                    }
@@ -662,7 +662,7 @@ const CashManagement: React.FC = () => {
                               <div className="mt-auto lg:mt-6 pt-4 border-t border-white/5 shrink-0">
                                  <div className="bg-dark-900/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center shadow-inner">
                                     <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mb-1">Abertura do Caixa</p>
-                                    <h3 className="text-lg md:text-xl font-mono font-bold text-accent">
+                                    <h3 className="text-lg md:text-xl font-num font-bold text-accent">
                                        {session && session.opened_at
                                           ? new Date(session.opened_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
                                           : '--'}
@@ -816,13 +816,13 @@ const CashManagement: React.FC = () => {
                                              <span className="text-[11px] font-medium text-slate-400">{operatorNames[history.operator_id] || history.operator_id || '-'}</span>
                                           </td>
                                           <td className="px-6 py-4">
-                                             <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.initial_balance === 'number' ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
+                                             <span className="text-[11px] font-num font-bold text-slate-200">R$ {typeof history.initial_balance === 'number' ? (history.initial_balance / 100).toFixed(2) : '0,00'}</span>
                                           </td>
                                           <td className="px-6 py-4">
-                                             <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.difference_at_close === 'number' ? (history.difference_at_close / 100).toFixed(2) : '0,00'}</span>
+                                             <span className="text-[11px] font-num font-bold text-slate-200">R$ {typeof history.difference_at_close === 'number' ? (history.difference_at_close / 100).toFixed(2) : '0,00'}</span>
                                           </td>
                                           <td className="px-6 py-4">
-                                             <span className="text-[11px] font-mono font-bold text-slate-200">R$ {typeof history.sales_total === 'number' ? (history.sales_total / 100).toFixed(2) : '0,00'}</span>
+                                             <span className="text-[11px] font-num font-bold text-slate-200">R$ {typeof history.sales_total === 'number' ? (history.sales_total / 100).toFixed(2) : '0,00'}</span>
                                           </td>
                                           <td className="px-6 py-4">
                                              {history.closed_at ? (
@@ -898,7 +898,7 @@ const CashManagement: React.FC = () => {
                                  {selectedHistory.status === 'success' ? <CheckCircle2 size={32} /> : <Shield size={32} />}
                               </div>
                               <div>
-                                 <h3 className="text-xl font-bold text-slate-100 font-mono tracking-tighter uppercase">{selectedHistory.is_open === 0 ? 'Caixa Fechado' : 'Caixa Aberto'}</h3>
+                                 <h3 className="text-xl font-bold text-slate-100 font-num tracking-tighter uppercase">{selectedHistory.is_open === 0 ? 'Caixa Fechado' : 'Caixa Aberto'}</h3>
                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Operador: {operatorNameHistory || '-'}</p>
 
 
@@ -906,7 +906,7 @@ const CashManagement: React.FC = () => {
                            </div>
                            <div className="text-right relative z-10 w-full md:w-auto">
                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Fechamento</p>
-                              <h3 className="text-3xl font-mono font-bold text-accent ">
+                              <h3 className="text-3xl font-num font-bold text-accent ">
                                  R$ {
                                     typeof selectedHistory.initial_balance === 'number' &&
                                        typeof selectedHistory.sales_total === 'number' &&
@@ -923,26 +923,26 @@ const CashManagement: React.FC = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1">
                               <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Abertura</p>
-                              <p className="text-xs font-mono font-bold text-slate-300">{selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                              <p className="text-xs font-num font-bold text-slate-300">{selectedHistory.opened_at ? new Date(selectedHistory.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
                            </div>
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1">
                               <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Encerramento</p>
-                              <p className="text-xs font-mono font-bold text-slate-300">{selectedHistory.closed_at ? new Date(selectedHistory.closed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                              <p className="text-xs font-num font-bold text-slate-300">{selectedHistory.closed_at ? new Date(selectedHistory.closed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
                            </div>
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1 text-emerald-500/80">
                               <p className="text-[8px] font-bold uppercase tracking-widest">Vendas Totais</p>
-                              <p className="text-xs font-mono font-bold">R$ {typeof selectedHistory.sales_total === 'number' ? (selectedHistory.sales_total / 100).toFixed(2) : '0.00'}</p>
+                              <p className="text-xs font-num font-bold">R$ {typeof selectedHistory.sales_total === 'number' ? (selectedHistory.sales_total / 100).toFixed(2) : '0.00'}</p>
                            </div>
                            <div className="p-4 bg-dark-950/50 rounded-xl border border-white/5 space-y-1 text-red-500/80">
                               <p className="text-[8px] font-bold uppercase tracking-widest">Sangrias</p>
-                              <p className="text-xs font-mono font-bold">R$ {typeof selectedHistory.sangrias_total === 'number' ? (selectedHistory.sangrias_total / 100).toFixed(2) : '0.00'}</p>
+                              <p className="text-xs font-num font-bold">R$ {typeof selectedHistory.sangrias_total === 'number' ? (selectedHistory.sangrias_total / 100).toFixed(2) : '0.00'}</p>
                            </div>
                         </div>
                         {/* Exibe valor contado apenas se caixa estiver fechado e houver valor, como card destacado abaixo */}
                         {selectedHistory.is_open === 0 && typeof selectedHistory.physical_count_at_close === 'number' && (
                            <div className="mt-4 p-4 bg-dark-950/50 border border-white/5 rounded-xl flex flex-col items-start">
                               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">Valor Contado no Fechamento</p>
-                              <span className="text-lg font-mono font-bold text-slate-400">R$ {(selectedHistory.physical_count_at_close / 100).toFixed(2)}</span>
+                              <span className="text-lg font-num font-bold text-slate-400">R$ {(selectedHistory.physical_count_at_close / 100).toFixed(2)}</span>
                            </div>
                         )}
 
@@ -952,7 +952,7 @@ const CashManagement: React.FC = () => {
                                  <Calculator size={18} className="text-accent" />
                                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Auditoria de Lastro Esperado</span>
                               </div>
-                              <span className="font-mono text-sm font-bold text-slate-100">
+                              <span className="font-num text-sm font-bold text-slate-100">
 
                                  {
                                     (() => {
@@ -990,7 +990,7 @@ const CashManagement: React.FC = () => {
                               </span>
                               <div>
                                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Diferença de Caixa</p>
-                                 <h5 className={`text-xl font-mono font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                 <h5 className={`text-xl font-num font-bold ${selectedHistory.status === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
                                     {selectedHistory.difference_at_close ? `R$ ${(selectedHistory.difference_at_close / 100).toFixed(2)}` : 'R$ 0.00'}
                                  </h5>
                               </div>

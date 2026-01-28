@@ -12,33 +12,33 @@ import { isOperator } from '../types';
 import { logUiEvent } from '../services/telemetry';
 
 const Products: React.FC = () => {
-      // SSE: Atualização em tempo real dos produtos
-      React.useEffect(() => {
-         const evtSource = new EventSource('/api/products/events');
-         evtSource.addEventListener('created', (e: any) => {
-            try {
-               const product = JSON.parse(e.data);
-               setProducts(prev => {
-                  // Evita duplicidade
-                  if (prev.some(p => p.id === product.id)) return prev;
-                  return [...prev, product];
-               });
-            } catch {}
-         });
-         evtSource.addEventListener('updated', (e: any) => {
-            try {
-               const product = JSON.parse(e.data);
-               setProducts(prev => prev.map(p => p.id === product.id ? product : p));
-            } catch {}
-         });
-         evtSource.addEventListener('deleted', (e: any) => {
-            try {
-               const { id } = JSON.parse(e.data);
-               setProducts(prev => prev.filter(p => p.id !== id));
-            } catch {}
-         });
-         return () => { evtSource.close(); };
-      }, []);
+   // SSE: Atualização em tempo real dos produtos
+   React.useEffect(() => {
+      const evtSource = new EventSource('/api/products/events');
+      evtSource.addEventListener('created', (e: any) => {
+         try {
+            const product = JSON.parse(e.data);
+            setProducts(prev => {
+               // Evita duplicidade
+               if (prev.some(p => p.id === product.id)) return prev;
+               return [...prev, product];
+            });
+         } catch { }
+      });
+      evtSource.addEventListener('updated', (e: any) => {
+         try {
+            const product = JSON.parse(e.data);
+            setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+         } catch { }
+      });
+      evtSource.addEventListener('deleted', (e: any) => {
+         try {
+            const { id } = JSON.parse(e.data);
+            setProducts(prev => prev.filter(p => p.id !== id));
+         } catch { }
+      });
+      return () => { evtSource.close(); };
+   }, []);
    const { user } = useAuth();
    const isOperatorUser = isOperator(user);
    const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
@@ -488,6 +488,41 @@ const Products: React.FC = () => {
       }
    };
 
+   // Função para exportar os produtos para XLSX
+   const handleExportFile = () => {
+      try {
+         sendTelemetry('export', 'start', { count: filtered.length });
+
+         const dataToExport = filtered.map(p => ({
+            'Código Interno': p.internalCode || '',
+            'GTIN (EAN)': p.gtin || '',
+            'Nome': p.name || '',
+            'Unidade': p.unit || '',
+            'Preço Custo': p.costPrice || 0,
+            'Preço Venda': p.salePrice || 0,
+            'Estoque': p.stock || 0,
+            'Categoria': categories.find(c => c.id === p.category)?.name || '',
+            'Fornecedor': suppliers.find(s => s.id === p.supplier)?.name || p.supplier || '',
+            'Status': p.status === 'active' ? 'Ativo' : 'Inativo',
+            'Tipo': p.type === 'service' ? 'Serviço' : 'Produto'
+         }));
+
+         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+         const workbook = XLSX.utils.book_new();
+         XLSX.utils.book_append_sheet(workbook, worksheet, "Produtos");
+
+         // Gerar arquivo e baixar
+         XLSX.writeFile(workbook, `exportacao_produtos_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+         sendTelemetry('export', 'success', { count: filtered.length });
+         showPopup('success', 'Sucesso!', 'Os dados foram exportados com sucesso.');
+      } catch (error) {
+         console.error('Erro ao exportar:', error);
+         sendTelemetry('export', 'error', { message: error instanceof Error ? error.message : 'unknown' });
+         showPopup('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo Excel.');
+      }
+   };
+
    React.useEffect(() => {
       // Reset autoActive e tipo do modal ao abrir/fechar
       if (isCreateModalOpen && !selectedProduct) {
@@ -536,17 +571,20 @@ const Products: React.FC = () => {
                <Button variant="secondary" onClick={() => { const next = !showFilters; setShowFilters(next); sendTelemetry('filters', next ? 'open' : 'close'); }} icon={<Filter size={18} />} className={showFilters ? 'border-accent text-accent' : ''}>Filtros</Button>
                {!isOperatorUser && (
                   <>
-                    <Button variant="secondary" onClick={() => { setIsImportModalOpen(true); sendTelemetry('modal', 'open', { entity: 'product-import' }); }} icon={<UploadCloud size={18} />}>
+                     <Button variant="secondary" onClick={() => { setIsImportModalOpen(true); sendTelemetry('modal', 'open', { entity: 'product-import' }); }} icon={<UploadCloud size={18} />}>
                         Importar
                      </Button>
-                    <Button
-                      className="hidden sm:inline-flex"
-                      onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
-                      icon={<Plus size={18} />}
-                    >Novo Produto</Button>
+                     <Button variant="secondary" onClick={handleExportFile} icon={<FileSpreadsheet size={18} />}>
+                        Exportar
+                     </Button>
+                     <Button
+                        className="hidden sm:inline-flex"
+                        onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
+                        icon={<Plus size={18} />}
+                     >Novo Produto</Button>
                   </>
                )}
-                     
+
             </div>
          </div>
 
@@ -555,81 +593,81 @@ const Products: React.FC = () => {
                <div className="md:col-span-4">
                   <Input label="Pesquisa Global" placeholder="Busca por nome ou GTIN..." icon={<Search size={18} />} value={searchTerm} onChange={e => { const value = e.target.value; setSearchTerm(value); sendTelemetry('search', 'type', { length: value.length, hasDigits: /\d/.test(value) }); }} />
                </div>
-                  <div className="md:col-span-3 space-y-2">
-                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Filtro por Categoria</label>
-                    <div className="relative" id="category-filter-menu">
-                      <button
+               <div className="md:col-span-3 space-y-2">
+                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1">Filtro por Categoria</label>
+                  <div className="relative" id="category-filter-menu">
+                     <button
                         className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${selectedCategory === 'all' ? 'bg-accent/20 border-accent text-accent' : 'bg-dark-950/50 border-white/10 text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
                         onClick={() => { setShowCategoryList(prev => { const next = !prev; if (next) sendTelemetry('filters', 'open-category'); return next; }); }}
                         style={{ minWidth: 180 }}
-                      >
+                     >
                         {selectedCategory === 'all' ? 'Todas Categorias' : (categories.find(c => c.id === selectedCategory)?.name || 'Categoria')}
                         <ChevronRight size={16} className={`ml-2 transition-transform ${showCategoryList ? 'rotate-90' : ''}`} />
-                      </button>
-                      {showCategoryList && (
-                                    <div
-                                       className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50"
-                                       style={{ maxHeight: 320, overflowY: 'auto' }}
-                                    >
+                     </button>
+                     {showCategoryList && (
+                        <div
+                           className="absolute left-0 mt-2 w-full bg-dark-950 border border-white/10 rounded-xl shadow-2xl z-50"
+                           style={{ maxHeight: 320, overflowY: 'auto' }}
+                        >
                            {categories.length === 0 && (
-                             <div className="px-4 py-2 text-slate-500 text-xs">Nenhuma categoria cadastrada</div>
+                              <div className="px-4 py-2 text-slate-500 text-xs">Nenhuma categoria cadastrada</div>
                            )}
                            <button
-                             className={`w-full text-left px-4 py-2 text-xs font-semibold ${selectedCategory === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
-                             onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); sendTelemetry('filters', 'select-category', { category: 'all' }); }}
+                              className={`w-full text-left px-4 py-2 text-xs font-semibold ${selectedCategory === 'all' ? 'text-accent bg-accent/10' : 'text-slate-300 hover:bg-accent/10 hover:text-accent'}`}
+                              onClick={() => { setSelectedCategory('all'); setShowCategoryList(false); sendTelemetry('filters', 'select-category', { category: 'all' }); }}
                            >
-                             Todas Categorias
+                              Todas Categorias
                            </button>
                            {categories.map(c => (
-                             <div key={c.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent/10">
-                               <button
-                                 className={`truncate text-left flex-1 ${selectedCategory === c.id ? 'text-accent' : 'text-slate-300 hover:text-accent'}`}
-                                 onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); sendTelemetry('filters', 'select-category', { category: c.id }); }}
-                                 title={c.name}
-                               >
-                                 {c.name}
-                               </button>
-                               {!isOperatorUser && (
+                              <div key={c.id} className="flex items-center justify-between px-4 py-2 hover:bg-accent/10">
                                  <button
-                                    className="ml-2 p-1 text-red-500 hover:bg-red-500/10 rounded"
-                                    title="Excluir categoria"
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (!window.confirm(`Excluir categoria \"${c.name}\"?`)) return;
-                                                         sendTelemetry('category', 'delete-start', { categoryId: c.id });
-                                      try {
-                                        const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
-                                        if (res.ok) {
-                                          setCategories(prev => prev.filter(cat => cat.id !== c.id));
-                                          if (selectedCategory === c.id) setSelectedCategory('all');
-                                                               sendTelemetry('category', 'delete-success', { categoryId: c.id });
-                                        } else {
-                                          alert('Erro ao excluir categoria.');
-                                                               sendTelemetry('category', 'delete-error', { categoryId: c.id, reason: 'response' });
-                                        }
-                                      } catch {
-                                        alert('Erro ao excluir categoria.');
-                                                            sendTelemetry('category', 'delete-error', { categoryId: c.id, reason: 'exception' });
-                                      }
-                                    }}
+                                    className={`truncate text-left flex-1 ${selectedCategory === c.id ? 'text-accent' : 'text-slate-300 hover:text-accent'}`}
+                                    onClick={() => { setSelectedCategory(c.id); setShowCategoryList(false); sendTelemetry('filters', 'select-category', { category: c.id }); }}
+                                    title={c.name}
                                  >
-                                    <Trash2 size={14} />
+                                    {c.name}
                                  </button>
-                               )}
-                             </div>
+                                 {!isOperatorUser && (
+                                    <button
+                                       className="ml-2 p-1 text-red-500 hover:bg-red-500/10 rounded"
+                                       title="Excluir categoria"
+                                       onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (!window.confirm(`Excluir categoria \"${c.name}\"?`)) return;
+                                          sendTelemetry('category', 'delete-start', { categoryId: c.id });
+                                          try {
+                                             const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
+                                             if (res.ok) {
+                                                setCategories(prev => prev.filter(cat => cat.id !== c.id));
+                                                if (selectedCategory === c.id) setSelectedCategory('all');
+                                                sendTelemetry('category', 'delete-success', { categoryId: c.id });
+                                             } else {
+                                                alert('Erro ao excluir categoria.');
+                                                sendTelemetry('category', 'delete-error', { categoryId: c.id, reason: 'response' });
+                                             }
+                                          } catch {
+                                             alert('Erro ao excluir categoria.');
+                                             sendTelemetry('category', 'delete-error', { categoryId: c.id, reason: 'exception' });
+                                          }
+                                       }}
+                                    >
+                                       <Trash2 size={14} />
+                                    </button>
+                                 )}
+                              </div>
                            ))}
                            {!isOperatorUser && (
-                             <button
-                               onClick={() => { setIsCategoryModalOpen(true); setShowCategoryList(false); }}
-                               className="w-full flex items-center gap-2 px-4 py-2 text-accent hover:bg-accent/10 text-xs font-semibold border-t border-white/10"
-                             >
-                               <FolderPlus size={16} /> Nova Categoria
-                             </button>
+                              <button
+                                 onClick={() => { setIsCategoryModalOpen(true); setShowCategoryList(false); }}
+                                 className="w-full flex items-center gap-2 px-4 py-2 text-accent hover:bg-accent/10 text-xs font-semibold border-t border-white/10"
+                              >
+                                 <FolderPlus size={16} /> Nova Categoria
+                              </button>
                            )}
                         </div>
-                      )}
-                    </div>
+                     )}
                   </div>
+               </div>
                <div className="md:col-span-3">
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-slate-500 ml-1 mb-2">Estado do Estoque</label>
                   <div className="relative" id="stock-filter-menu">
@@ -784,16 +822,16 @@ const Products: React.FC = () => {
                                                 <span className="truncate block font-bold text-slate-100 text-xs sm:text-sm">{product.name}</span>
                                              </td>
                                              {/* Preço Custo - desktop only */}
-                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100 hidden md:table-cell">
+                                             <td className="py-4 px-3 whitespace-nowrap font-num text-slate-100 hidden md:table-cell">
                                                 {product.costPrice ? product.costPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
                                              </td>
                                              {/* Preço Venda - desktop only */}
-                                             <td className="py-4 px-3 whitespace-nowrap font-mono text-slate-100 hidden md:table-cell">
+                                             <td className="py-4 px-3 whitespace-nowrap font-num text-slate-100 hidden md:table-cell">
                                                 {product.salePrice ? product.salePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
                                              </td>
                                              {/* Estoque - always visible */}
                                              <td className={[
-                                                "py-4 px-3 whitespace-nowrap font-mono",
+                                                "py-4 px-3 whitespace-nowrap font-num",
                                                 isLowStock ? "text-rose-300" : "text-emerald-300"
                                              ].join(" ")}>
                                                 {product.unit === 'serv' ? '-' : `${product.stock} ${product.unit}`}
@@ -839,7 +877,7 @@ const Products: React.FC = () => {
                      {filtered.map(product => (
                         <div
                            key={product.id}
-                              onClick={() => { setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }}
+                           onClick={() => { setSelectedProduct(product); sendTelemetry('modal', 'open', { entity: 'product', mode: 'edit', id: product.id }); }}
                            className="glass-card group relative p-5 rounded-3xl border border-white/5 hover:border-accent/40 hover:bg-accent/5 transition-all cursor-pointer overflow-hidden flex flex-col gap-4 shadow-xl"
                         >
                            <div className="absolute top-3 right-3 z-10">
@@ -859,13 +897,13 @@ const Products: React.FC = () => {
 
                            <div className="space-y-1">
                               <h4 className="text-sm font-bold text-slate-200 group-hover:text-accent transition-colors line-clamp-1 uppercase tracking-tight">{product.name}</h4>
-                              <p className="text-[9px] font-mono text-slate-500 tracking-widest uppercase">{product.gtin}</p>
+                              <p className="text-[9px] font-num text-slate-500 tracking-widest uppercase">{product.gtin}</p>
                            </div>
 
                            <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-4">
                               <div>
                                  <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Preço Sugerido</p>
-                                 <p className="text-lg font-mono font-bold text-accent">R$ {product.salePrice.toFixed(2)}</p>
+                                 <p className="text-lg font-num font-bold text-accent">R$ {product.salePrice.toFixed(2)}</p>
                               </div>
                               <div className="text-right">
                                  <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Saldo Atual</p>
@@ -941,7 +979,7 @@ const Products: React.FC = () => {
                            </p>
                         </div>
                      </div>
-                    
+
                   </div>
 
                   {/* Modal Content */}
@@ -968,7 +1006,7 @@ const Products: React.FC = () => {
                                  <select
                                     name="type"
                                     value={modalType}
-                                       onChange={e => { const nextType = e.target.value as 'product' | 'service'; setModalType(nextType); sendTelemetry('product', 'change-type', { type: nextType }); }}
+                                    onChange={e => { const nextType = e.target.value as 'product' | 'service'; setModalType(nextType); sendTelemetry('product', 'change-type', { type: nextType }); }}
                                     className="w-full bg-dark-950/50 border border-accent/20 rounded-xl p-3 text-sm text-slate-200 focus:border-accent outline-none transition-all h-[46px]"
                                  >
                                     <option value="product">Produto</option>
@@ -1172,163 +1210,163 @@ const Products: React.FC = () => {
 
                         {modalType === 'product' && (
                            <div className="space-y-4 pb-4 mt-6">
-                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Mídia Visual</label>
-                             <div className="flex gap-4 items-center">
-                               <div className="flex-1">
-                                 <Input
-                                    name="imageUrl"
-                                    value={selectedProduct?.imageUrl || ''}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)}
-                                    placeholder="Selecione ou faça upload..."
-                                    icon={<ImageIcon size={14} />}
-                                    readOnly
-                                    disabled
-                                 />
-                                  {!isOperatorUser && (
-                                    <>
-                                      <input
-                                       type="file"
-                                       accept="image/*"
-                                       style={{ display: 'none' }}
-                                       id="product-image-upload"
-                                       onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
-                                         const file = e.target.files?.[0];
-                                         if (!file) return;
-                                                             sendTelemetry('image', 'upload-start', { productId: selectedProduct?.id || null, name: file.name, size: file.size, type: file.type });
-                                         const ean = selectedProduct?.gtin || selectedProduct?.ean ||
-                                          (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
-                                          (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
-                                         const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
-                                         const formData = new FormData();
-                                         formData.append('image', file);
-                                         formData.append('ean', ean);
-                                         formData.append('description', name);
-                                         try {
-                                          console.log('[UPLOAD] Enviando imagem:', { file, ean, name });
-                                          const res = await fetch('/api/products/upload-image', {
-                                             method: 'POST',
-                                             body: formData
-                                          });
-                                          const data = await res.json();
-                                          console.log('[UPLOAD] Resposta do backend:', data);
-                                          if (data.imageUrl) {
-                                             // Envie todos os campos obrigatórios do produto junto com o novo imageUrl
-                                             const p = selectedProduct;
-                                             if (p) {
-                                              // Monta o objeto exatamente com os nomes esperados pelo backend (camelCase)
-                                              const updateData: Record<string, any> = {
-                                                name: p.name || 'Produto',
-                                                ean: p.ean || p.gtin || '0000000000000',
-                                                internalCode: p.internal_code || p.internalCode || 'SEM-COD',
-                                                unit: p.unit || 'unit',
-                                                costPrice: typeof p.cost_price === 'number' ? p.cost_price : (typeof p.costPrice === 'number' ? p.costPrice : 0),
-                                                salePrice: typeof p.sale_price === 'number' ? p.sale_price : (typeof p.salePrice === 'number' ? p.salePrice : 0),
-                                                autoDiscountEnabled: p.auto_discount_enabled ?? p.autoDiscountEnabled ?? false,
-                                                autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
-                                                status: p.status || 'active',
-                                                stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
-                                                minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
-                                                imageUrl: data.imageUrl,
-                                                type: p.type || 'product',
-                                              };
-                                              // Só adiciona categoryId e supplierId se existirem e não forem vazios
-                                              const catId = p.category_id || p.category;
-                                              if (catId) updateData.categoryId = catId;
-                                              const supId = p.supplier_id || p.supplier;
-                                              if (supId) updateData.supplierId = supId;
-                                              console.log('[UPLOAD] Payload FINAL para update:', JSON.stringify(updateData, null, 2));
-                                              const updateRes = await fetch(`/api/products/${p.id}`, {
-                                                method: 'PUT',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify(updateData)
-                                              });
-                                              const updateText = await updateRes.text();
-                                              let parsedUpdateData: any;
-                                              try {
-                                                parsedUpdateData = JSON.parse(updateText);
-                                              } catch {
-                                                parsedUpdateData = { raw: updateText };
-                                              }
-                                              console.log('[UPLOAD] Resposta do update (raw):', updateText);
-                                              console.log('[UPLOAD] Resposta do update (parsed):', parsedUpdateData);
-                                              // Após update, buscar o produto atualizado do backend
-                                              try {
-                                                const fetchRes = await fetch(`/api/products/${p.id}`);
-                                                const fetchData = await fetchRes.json();
-                                                console.log('[UPLOAD] Produto após update (GET):', fetchData);
-                                                if (fetchData && fetchData.imageUrl) {
-                                                 setSelectedProduct({ ...p, imageUrl: fetchData.imageUrl });
-                                                } else {
-                                                 setSelectedProduct({ ...p, imageUrl: data.imageUrl });
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text" style={{ animationDelay: '0.6s' }}>Mídia Visual</label>
+                              <div className="flex gap-4 items-center">
+                                 <div className="flex-1">
+                                    <Input
+                                       name="imageUrl"
+                                       value={selectedProduct?.imageUrl || ''}
+                                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedProduct(p => p ? { ...p, imageUrl: e.target.value } : null)}
+                                       placeholder="Selecione ou faça upload..."
+                                       icon={<ImageIcon size={14} />}
+                                       readOnly
+                                       disabled
+                                    />
+                                    {!isOperatorUser && (
+                                       <>
+                                          <input
+                                             type="file"
+                                             accept="image/*"
+                                             style={{ display: 'none' }}
+                                             id="product-image-upload"
+                                             onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                sendTelemetry('image', 'upload-start', { productId: selectedProduct?.id || null, name: file.name, size: file.size, type: file.type });
+                                                const ean = selectedProduct?.gtin || selectedProduct?.ean ||
+                                                   (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
+                                                   (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
+                                                const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
+                                                const formData = new FormData();
+                                                formData.append('image', file);
+                                                formData.append('ean', ean);
+                                                formData.append('description', name);
+                                                try {
+                                                   console.log('[UPLOAD] Enviando imagem:', { file, ean, name });
+                                                   const res = await fetch('/api/products/upload-image', {
+                                                      method: 'POST',
+                                                      body: formData
+                                                   });
+                                                   const data = await res.json();
+                                                   console.log('[UPLOAD] Resposta do backend:', data);
+                                                   if (data.imageUrl) {
+                                                      // Envie todos os campos obrigatórios do produto junto com o novo imageUrl
+                                                      const p = selectedProduct;
+                                                      if (p) {
+                                                         // Monta o objeto exatamente com os nomes esperados pelo backend (camelCase)
+                                                         const updateData: Record<string, any> = {
+                                                            name: p.name || 'Produto',
+                                                            ean: p.ean || p.gtin || '0000000000000',
+                                                            internalCode: p.internal_code || p.internalCode || 'SEM-COD',
+                                                            unit: p.unit || 'unit',
+                                                            costPrice: typeof p.cost_price === 'number' ? p.cost_price : (typeof p.costPrice === 'number' ? p.costPrice : 0),
+                                                            salePrice: typeof p.sale_price === 'number' ? p.sale_price : (typeof p.salePrice === 'number' ? p.salePrice : 0),
+                                                            autoDiscountEnabled: p.auto_discount_enabled ?? p.autoDiscountEnabled ?? false,
+                                                            autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
+                                                            status: p.status || 'active',
+                                                            stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
+                                                            minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
+                                                            imageUrl: data.imageUrl,
+                                                            type: p.type || 'product',
+                                                         };
+                                                         // Só adiciona categoryId e supplierId se existirem e não forem vazios
+                                                         const catId = p.category_id || p.category;
+                                                         if (catId) updateData.categoryId = catId;
+                                                         const supId = p.supplier_id || p.supplier;
+                                                         if (supId) updateData.supplierId = supId;
+                                                         console.log('[UPLOAD] Payload FINAL para update:', JSON.stringify(updateData, null, 2));
+                                                         const updateRes = await fetch(`/api/products/${p.id}`, {
+                                                            method: 'PUT',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify(updateData)
+                                                         });
+                                                         const updateText = await updateRes.text();
+                                                         let parsedUpdateData: any;
+                                                         try {
+                                                            parsedUpdateData = JSON.parse(updateText);
+                                                         } catch {
+                                                            parsedUpdateData = { raw: updateText };
+                                                         }
+                                                         console.log('[UPLOAD] Resposta do update (raw):', updateText);
+                                                         console.log('[UPLOAD] Resposta do update (parsed):', parsedUpdateData);
+                                                         // Após update, buscar o produto atualizado do backend
+                                                         try {
+                                                            const fetchRes = await fetch(`/api/products/${p.id}`);
+                                                            const fetchData = await fetchRes.json();
+                                                            console.log('[UPLOAD] Produto após update (GET):', fetchData);
+                                                            if (fetchData && fetchData.imageUrl) {
+                                                               setSelectedProduct({ ...p, imageUrl: fetchData.imageUrl });
+                                                            } else {
+                                                               setSelectedProduct({ ...p, imageUrl: data.imageUrl });
+                                                            }
+                                                         } catch (fetchErr) {
+                                                            console.error('[UPLOAD] Erro ao buscar produto atualizado:', fetchErr);
+                                                            setSelectedProduct({ ...p, imageUrl: data.imageUrl });
+                                                         }
+                                                         // Atualiza a lista de produtos se necessário
+                                                         if (typeof setProducts === 'function') {
+                                                            setProducts((prev: Product[]) => prev.map((prod: Product) => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
+                                                         }
+                                                         sendTelemetry('image', 'upload-success', { productId: p.id, imageUrl: data.imageUrl });
+                                                         showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
+                                                      }
+                                                   } else {
+                                                      showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
+                                                      sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: 'no-imageUrl' });
+                                                   }
+                                                } catch (err) {
+                                                   console.error('[UPLOAD] Erro ao enviar imagem:', err);
+                                                   showPopup('error', 'Erro', 'Erro ao enviar imagem.');
+                                                   sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: err instanceof Error ? err.message : 'unknown' });
                                                 }
-                                              } catch (fetchErr) {
-                                                console.error('[UPLOAD] Erro ao buscar produto atualizado:', fetchErr);
-                                                setSelectedProduct({ ...p, imageUrl: data.imageUrl });
-                                              }
-                                              // Atualiza a lista de produtos se necessário
-                                              if (typeof setProducts === 'function') {
-                                                setProducts((prev: Product[]) => prev.map((prod: Product) => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
-                                              }
-                                              sendTelemetry('image', 'upload-success', { productId: p.id, imageUrl: data.imageUrl });
-                                              showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
-                                             }
-                                          } else {
-                                             showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
-                                             sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: 'no-imageUrl' });
-                                          }
-                                         } catch (err) {
-                                          console.error('[UPLOAD] Erro ao enviar imagem:', err);
-                                          showPopup('error', 'Erro', 'Erro ao enviar imagem.');
-                                          sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: err instanceof Error ? err.message : 'unknown' });
-                                         }
-                                       }}
-                                      />
-                                      <Button
-                                       type="button"
-                                       variant="secondary"
-                                       size="sm"
-                                       style={{ marginTop: 8 }}
-                                       onClick={() => document.getElementById('product-image-upload')?.click()}
-                                       icon={<UploadCloud size={16} />}
-                                      >
-                                       Selecionar Foto
-                                      </Button>
-                                    </>
-                                  )}
-                               </div>
-                               <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden relative">
-                                 {selectedProduct?.imageUrl ? (
-                                    <>
-                                      <img src={selectedProduct.imageUrl?.startsWith('/uploads/') ? selectedProduct.imageUrl : `/uploads/${selectedProduct.imageUrl}`} className="w-full h-full object-cover opacity-50" />
-                                      {!isOperatorUser && (
-                                        <button
-                                          type="button"
-                                          className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all"
-                                          title="Remover imagem"
-                                          onClick={async () => {
-                                             const imagePath = selectedProduct.imageUrl;
-                                             try {
-                                               await fetch('/api/products/delete-image', {
-                                                 method: 'POST',
-                                                 headers: { 'Content-Type': 'application/json' },
-                                                 body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
-                                               });
-                                               setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
-                                               showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
-                                                                      sendTelemetry('image', 'remove-success', { productId: selectedProduct.id });
-                                             } catch {
-                                               showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
-                                                                      sendTelemetry('image', 'remove-error', { productId: selectedProduct.id });
-                                             }
-                                          }}
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      )}
-                                    </>
-                                 ) : <ImageIcon size={20} className="opacity-40" />}
-                               </div>
-                             </div>
+                                             }}
+                                          />
+                                          <Button
+                                             type="button"
+                                             variant="secondary"
+                                             size="sm"
+                                             style={{ marginTop: 8 }}
+                                             onClick={() => document.getElementById('product-image-upload')?.click()}
+                                             icon={<UploadCloud size={16} />}
+                                          >
+                                             Selecionar Foto
+                                          </Button>
+                                       </>
+                                    )}
+                                 </div>
+                                 <div className="w-14 h-14 rounded-lg bg-dark-950 border border-white/10 flex items-center justify-center overflow-hidden relative">
+                                    {selectedProduct?.imageUrl ? (
+                                       <>
+                                          <img src={selectedProduct.imageUrl?.startsWith('/uploads/') ? selectedProduct.imageUrl : `/uploads/${selectedProduct.imageUrl}`} className="w-full h-full object-cover opacity-50" />
+                                          {!isOperatorUser && (
+                                             <button
+                                                type="button"
+                                                className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 hover:bg-red-700 transition-all"
+                                                title="Remover imagem"
+                                                onClick={async () => {
+                                                   const imagePath = selectedProduct.imageUrl;
+                                                   try {
+                                                      await fetch('/api/products/delete-image', {
+                                                         method: 'POST',
+                                                         headers: { 'Content-Type': 'application/json' },
+                                                         body: JSON.stringify({ imageUrl: imagePath, productId: selectedProduct.id })
+                                                      });
+                                                      setSelectedProduct(p => p ? { ...p, imageUrl: '' } : null);
+                                                      showPopup('success', 'Imagem removida', 'A imagem foi excluída com sucesso!');
+                                                      sendTelemetry('image', 'remove-success', { productId: selectedProduct.id });
+                                                   } catch {
+                                                      showPopup('error', 'Erro ao remover', 'Não foi possível excluir a imagem.');
+                                                      sendTelemetry('image', 'remove-error', { productId: selectedProduct.id });
+                                                   }
+                                                }}
+                                             >
+                                                <Trash2 size={12} />
+                                             </button>
+                                          )}
+                                       </>
+                                    ) : <ImageIcon size={20} className="opacity-40" />}
+                                 </div>
+                              </div>
                            </div>
                         )}
                      </form>
@@ -1363,45 +1401,45 @@ const Products: React.FC = () => {
          {/* MODAL IMPORTAÇÃO (DRAG & DROP) */}
          {isImportModalOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
-              <div className="absolute inset-0 bg-dark-950/90 backdrop-blur-xl" onClick={() => !isUploading && setIsImportModalOpen(false)} />
-              <div className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden max-h-[95vh]">
-                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
-                      <UploadCloud className="text-accent" size={20} />
-                    </div>
-                    <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">Importar Dados</h2>
+               <div className="absolute inset-0 bg-dark-950/90 backdrop-blur-xl" onClick={() => !isUploading && setIsImportModalOpen(false)} />
+               <div className="relative w-full max-w-xl cyber-modal-container bg-dark-900/95 rounded-2xl border border-accent/30 shadow-2xl flex flex-col overflow-hidden max-h-[95vh]">
+                  <div className="p-6 border-b border-white/10 flex items-center justify-between bg-dark-950/50">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded bg-accent/10 border border-accent/30 flex items-center justify-center">
+                           <UploadCloud className="text-accent" size={20} />
+                        </div>
+                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em] assemble-text">Importar Dados</h2>
+                     </div>
+                     {!isUploading && (
+                        <button onClick={() => setIsImportModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
+                     )}
                   </div>
-                  {!isUploading && (
-                    <button onClick={() => setIsImportModalOpen(false)} className="text-slate-500 hover:text-accent p-2"><X size={20} /></button>
-                  )}
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 sm:p-10 flex flex-col items-center justify-center text-center space-y-8">
-                  {isUploading ? (
-                    <div className="flex flex-col items-center space-y-6 py-12">
-                      <div className="relative w-16 h-16">
-                        <div className="absolute inset-0 border-4 border-accent/20 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                      <p className="text-accent font-mono text-xs font-bold tracking-[0.2em] uppercase">Processando Arquivo...</p>
-                    </div>
-                  ) : (
-                    <div
-                      onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                      onDrop={handleDrop}
-                      className="w-full p-8 sm:p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt,.xlsx" onChange={handleImportFile} />
-                      <FileSpreadsheet className="text-accent opacity-50 group-hover:opacity-100 transition-all" size={48} />
-                      <div>
-                        <p className="text-sm font-bold text-slate-300">Solte o arquivo aqui ou clique</p>
-                        <p className="text-[10px] text-slate-500 uppercase mt-2">Suporta .TXT, .CSV, .XLSX</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-10 flex flex-col items-center justify-center text-center space-y-8">
+                     {isUploading ? (
+                        <div className="flex flex-col items-center space-y-6 py-12">
+                           <div className="relative w-16 h-16">
+                              <div className="absolute inset-0 border-4 border-accent/20 rounded-full"></div>
+                              <div className="absolute inset-0 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                           </div>
+                           <p className="text-accent font-mono text-xs font-bold tracking-[0.2em] uppercase">Processando Arquivo...</p>
+                        </div>
+                     ) : (
+                        <div
+                           onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                           onDrop={handleDrop}
+                           className="w-full p-8 sm:p-12 border-2 border-dashed border-white/5 rounded-3xl cyber-upload-zone bg-dark-950/30 group hover:border-accent/40 transition-all cursor-pointer flex flex-col items-center gap-4"
+                           onClick={() => fileInputRef.current?.click()}
+                        >
+                           <input type="file" ref={fileInputRef} className="hidden" accept=".csv,.txt,.xlsx" onChange={handleImportFile} />
+                           <FileSpreadsheet className="text-accent opacity-50 group-hover:opacity-100 transition-all" size={48} />
+                           <div>
+                              <p className="text-sm font-bold text-slate-300">Solte o arquivo aqui ou clique</p>
+                              <p className="text-[10px] text-slate-500 uppercase mt-2">Suporta .TXT, .CSV, .XLSX</p>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+               </div>
             </div>
          )}
 
@@ -1443,191 +1481,191 @@ const Products: React.FC = () => {
                   </div>
                   <div className="p-6 border-t border-white/10 bg-dark-950/80 flex justify-end gap-4">
                      <Button variant="secondary" onClick={() => setIsPreviewModalOpen(false)}>Cancelar</Button>
-                               <Button
-                                    icon={isUploading ? <span className="animate-spin inline-block mr-2 align-middle"><RefreshCcw size={18} /></span> : <Check size={18} />}
-                                    disabled={isUploading}
-                                    onClick={async () => {
-                                       if (isUploading) return;
-                                       setIsUploading(true);
-                                       try {
-                                          // Filtra apenas produtos válidos e não duplicados
-                                          const validProducts = importResults.filter((item: any) => item.status === 'valid');
-                                          if (validProducts.length === 0) {
-                                             showPopup('error', 'Importação inválida', 'Nenhum produto válido para importar.');
-                                             sendTelemetry('import', 'preview-empty');
-                                             setIsUploading(false);
-                                             return;
-                                          }
-                                          sendTelemetry('import', 'preview-confirm', { validCount: validProducts.length, invalidCount: importResults.length - validProducts.length });
-                                          let importedCount = 0;
-                                          const normalize = (val: string) => (val || '').trim().toLowerCase();
+                     <Button
+                        icon={isUploading ? <span className="animate-spin inline-block mr-2 align-middle"><RefreshCcw size={18} /></span> : <Check size={18} />}
+                        disabled={isUploading}
+                        onClick={async () => {
+                           if (isUploading) return;
+                           setIsUploading(true);
+                           try {
+                              // Filtra apenas produtos válidos e não duplicados
+                              const validProducts = importResults.filter((item: any) => item.status === 'valid');
+                              if (validProducts.length === 0) {
+                                 showPopup('error', 'Importação inválida', 'Nenhum produto válido para importar.');
+                                 sendTelemetry('import', 'preview-empty');
+                                 setIsUploading(false);
+                                 return;
+                              }
+                              sendTelemetry('import', 'preview-confirm', { validCount: validProducts.length, invalidCount: importResults.length - validProducts.length });
+                              let importedCount = 0;
+                              const normalize = (val: string) => (val || '').trim().toLowerCase();
 
-                                          // Buscar categorias e fornecedores existentes do backend
-                                          let allCategories = [...categories];
-                                          let allSuppliers: { id: string, name: string, category?: string }[] = [];
-                                          try {
-                                             const res = await fetch('/api/suppliers');
-                                             if (res.ok) {
-                                                const data = await res.json();
-                                                allSuppliers = data.items || [];
-                                             }
-                                          } catch { }
+                              // Buscar categorias e fornecedores existentes do backend
+                              let allCategories = [...categories];
+                              let allSuppliers: { id: string, name: string, category?: string }[] = [];
+                              try {
+                                 const res = await fetch('/api/suppliers');
+                                 if (res.ok) {
+                                    const data = await res.json();
+                                    allSuppliers = data.items || [];
+                                 }
+                              } catch { }
 
-                                          // 1) Criar categorias faltantes (se coluna existir e tiver dados)
-                                          const categorySet = new Map<string, string>(); // normalized -> original
-                                          validProducts.forEach((item: any) => {
-                                             if (item.category && item.category !== 'sem categoria') {
-                                                const norm = normalize(item.category);
-                                                if (norm) categorySet.set(norm, item.category.trim());
-                                             }
-                                          });
+                              // 1) Criar categorias faltantes (se coluna existir e tiver dados)
+                              const categorySet = new Map<string, string>(); // normalized -> original
+                              validProducts.forEach((item: any) => {
+                                 if (item.category && item.category !== 'sem categoria') {
+                                    const norm = normalize(item.category);
+                                    if (norm) categorySet.set(norm, item.category.trim());
+                                 }
+                              });
 
-                                          // Mapa de categorias existentes (normalized -> id)
-                                          const categoryIdMap = new Map<string, string>();
-                                          allCategories.forEach(c => {
-                                             categoryIdMap.set(normalize(c.name), c.id);
-                                          });
+                              // Mapa de categorias existentes (normalized -> id)
+                              const categoryIdMap = new Map<string, string>();
+                              allCategories.forEach(c => {
+                                 categoryIdMap.set(normalize(c.name), c.id);
+                              });
 
-                                          for (const [normName, originalName] of categorySet.entries()) {
-                                             if (categoryIdMap.has(normName)) continue;
-                                             try {
-                                                const res = await fetch('/api/categories', {
-                                                   method: 'POST',
-                                                   headers: { 'Content-Type': 'application/json' },
-                                                   body: JSON.stringify({ name: originalName })
-                                                });
-                                                if (res.ok) {
-                                                   const data = await res.json();
-                                                   const catId = data.category?.id;
-                                                   if (catId) {
-                                                      categoryIdMap.set(normName, catId);
-                                                      allCategories.push(data.category);
-                                                      setCategories(prev => [...prev, data.category]);
-                                                   }
-                                                }
-                                             } catch { }
-                                          }
-
-                                          // 2) Criar fornecedores faltantes e associar texto de categoria se houver
-                                          const supplierMap = new Map<string, { name: string, category?: string }>(); // normalized -> payload
-                                          validProducts.forEach((item: any) => {
-                                             if (item.supplier && item.supplier !== 'sem fornecedor') {
-                                                const normSup = normalize(item.supplier);
-                                                if (!normSup) return;
-                                                // prioriza categoria do próprio item, se existir
-                                                const catText = item.category && item.category !== 'sem categoria' ? item.category.trim() : undefined;
-                                                if (!supplierMap.has(normSup)) {
-                                                   supplierMap.set(normSup, { name: item.supplier.trim(), category: catText });
-                                                } else {
-                                                   const current = supplierMap.get(normSup);
-                                                   if (!current?.category && catText) {
-                                                      supplierMap.set(normSup, { name: current?.name || item.supplier.trim(), category: catText });
-                                                   }
-                                                }
-                                             }
-                                          });
-
-                                          const supplierIdMap = new Map<string, string>();
-                                          allSuppliers.forEach(s => supplierIdMap.set(normalize(s.name), s.id));
-
-                                          for (const [normSup, payload] of supplierMap.entries()) {
-                                             if (supplierIdMap.has(normSup)) continue;
-                                             try {
-                                                const res = await fetch('/api/suppliers', {
-                                                   method: 'POST',
-                                                   headers: { 'Content-Type': 'application/json' },
-                                                   body: JSON.stringify({ name: payload.name, category: payload.category || '' })
-                                                });
-                                                if (res.ok) {
-                                                   const data = await res.json();
-                                                   const supId = data.supplier?.id;
-                                                   if (supId) {
-                                                      supplierIdMap.set(normSup, supId);
-                                                      allSuppliers.push(data.supplier);
-                                                   }
-                                                }
-                                             } catch { }
-                                          }
-
-                                          // 3) Criar produtos usando os mapas resolvidos
-                                          for (const item of validProducts) {
-                                             let categoryId = null;
-                                             if (item.category && item.category !== 'sem categoria') {
-                                                const cid = categoryIdMap.get(normalize(item.category));
-                                                if (cid) categoryId = cid;
-                                             }
-
-                                             let supplierId = null;
-                                             if (item.supplier && item.supplier !== 'sem fornecedor') {
-                                                const sid = supplierIdMap.get(normalize(item.supplier));
-                                                if (sid) supplierId = sid;
-                                             }
-
-                                             const payload = {
-                                                name: item.name,
-                                                ean: item.gtin,
-                                                internalCode: item.internalCode,
-                                                unit: 'unit',
-                                                status: 'active',
-                                                costPrice: item.costPrice,
-                                                salePrice: item.salePrice,
-                                                stockOnHand: item.stock,
-                                                minStock: 0,
-                                                autoDiscountEnabled: false,
-                                                autoDiscountValue: 0,
-                                                imageUrl: '',
-                                                categoryId,
-                                                supplierId,
-                                             };
-                                             try {
-                                                const res = await fetch('/api/products', {
-                                                   method: 'POST',
-                                                   headers: { 'Content-Type': 'application/json' },
-                                                   body: JSON.stringify(payload)
-                                                });
-                                                if (res.ok) importedCount++;
-                                             } catch { }
-                                          }
-                                          sendTelemetry('import', 'run', { importedCount, total: validProducts.length });
-                                          showPopup('success', 'Importação concluída!', `${importedCount} produtos importados com sucesso!`);
-                                          setIsPreviewModalOpen(false);
-                                          // Atualiza lista de produtos
-                                          setLoading(true);
-                                          fetch('/api/products')
-                                             .then(res => res.json())
-                                             .then(data => {
-                                                const items = (data.items || data.products || []).map((product: any) => ({
-                                                   id: product.id,
-                                                   name: product.name,
-                                                   gtin: product.ean || product.gtin,
-                                                   internalCode: product.internal_code || product.internalCode,
-                                                   unit: product.unit,
-                                                   costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
-                                                   salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
-                                                   stock: product.stock_on_hand ?? product.stock ?? 0,
-                                                   minStock: product.min_stock ?? 20,
-                                                   category: product.category_id || product.category,
-                                                   supplier: product.supplier_id || product.supplier || '',
-                                                   status: product.status,
-                                                   imageUrl: product.imageUrl || '',
-                                                   autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
-                                                }));
-                                                setProducts(items);
-                                                setError(null);
-                                             })
-                                             .catch(() => {
-                                                setError('Erro ao carregar produtos da API.');
-                                                setProducts([]);
-                                             })
-                                             .finally(() => setLoading(false));
-                                       } catch (err) {
-                                          // Em caso de erro inesperado, libera o botão
-                                          showPopup('error', 'Erro na importação', 'Ocorreu um erro inesperado.');
-                                       } finally {
-                                          setIsUploading(false);
+                              for (const [normName, originalName] of categorySet.entries()) {
+                                 if (categoryIdMap.has(normName)) continue;
+                                 try {
+                                    const res = await fetch('/api/categories', {
+                                       method: 'POST',
+                                       headers: { 'Content-Type': 'application/json' },
+                                       body: JSON.stringify({ name: originalName })
+                                    });
+                                    if (res.ok) {
+                                       const data = await res.json();
+                                       const catId = data.category?.id;
+                                       if (catId) {
+                                          categoryIdMap.set(normName, catId);
+                                          allCategories.push(data.category);
+                                          setCategories(prev => [...prev, data.category]);
                                        }
-                                    }}
-                               >Confirmar Importação</Button>
+                                    }
+                                 } catch { }
+                              }
+
+                              // 2) Criar fornecedores faltantes e associar texto de categoria se houver
+                              const supplierMap = new Map<string, { name: string, category?: string }>(); // normalized -> payload
+                              validProducts.forEach((item: any) => {
+                                 if (item.supplier && item.supplier !== 'sem fornecedor') {
+                                    const normSup = normalize(item.supplier);
+                                    if (!normSup) return;
+                                    // prioriza categoria do próprio item, se existir
+                                    const catText = item.category && item.category !== 'sem categoria' ? item.category.trim() : undefined;
+                                    if (!supplierMap.has(normSup)) {
+                                       supplierMap.set(normSup, { name: item.supplier.trim(), category: catText });
+                                    } else {
+                                       const current = supplierMap.get(normSup);
+                                       if (!current?.category && catText) {
+                                          supplierMap.set(normSup, { name: current?.name || item.supplier.trim(), category: catText });
+                                       }
+                                    }
+                                 }
+                              });
+
+                              const supplierIdMap = new Map<string, string>();
+                              allSuppliers.forEach(s => supplierIdMap.set(normalize(s.name), s.id));
+
+                              for (const [normSup, payload] of supplierMap.entries()) {
+                                 if (supplierIdMap.has(normSup)) continue;
+                                 try {
+                                    const res = await fetch('/api/suppliers', {
+                                       method: 'POST',
+                                       headers: { 'Content-Type': 'application/json' },
+                                       body: JSON.stringify({ name: payload.name, category: payload.category || '' })
+                                    });
+                                    if (res.ok) {
+                                       const data = await res.json();
+                                       const supId = data.supplier?.id;
+                                       if (supId) {
+                                          supplierIdMap.set(normSup, supId);
+                                          allSuppliers.push(data.supplier);
+                                       }
+                                    }
+                                 } catch { }
+                              }
+
+                              // 3) Criar produtos usando os mapas resolvidos
+                              for (const item of validProducts) {
+                                 let categoryId = null;
+                                 if (item.category && item.category !== 'sem categoria') {
+                                    const cid = categoryIdMap.get(normalize(item.category));
+                                    if (cid) categoryId = cid;
+                                 }
+
+                                 let supplierId = null;
+                                 if (item.supplier && item.supplier !== 'sem fornecedor') {
+                                    const sid = supplierIdMap.get(normalize(item.supplier));
+                                    if (sid) supplierId = sid;
+                                 }
+
+                                 const payload = {
+                                    name: item.name,
+                                    ean: item.gtin,
+                                    internalCode: item.internalCode,
+                                    unit: 'unit',
+                                    status: 'active',
+                                    costPrice: item.costPrice,
+                                    salePrice: item.salePrice,
+                                    stockOnHand: item.stock,
+                                    minStock: 0,
+                                    autoDiscountEnabled: false,
+                                    autoDiscountValue: 0,
+                                    imageUrl: '',
+                                    categoryId,
+                                    supplierId,
+                                 };
+                                 try {
+                                    const res = await fetch('/api/products', {
+                                       method: 'POST',
+                                       headers: { 'Content-Type': 'application/json' },
+                                       body: JSON.stringify(payload)
+                                    });
+                                    if (res.ok) importedCount++;
+                                 } catch { }
+                              }
+                              sendTelemetry('import', 'run', { importedCount, total: validProducts.length });
+                              showPopup('success', 'Importação concluída!', `${importedCount} produtos importados com sucesso!`);
+                              setIsPreviewModalOpen(false);
+                              // Atualiza lista de produtos
+                              setLoading(true);
+                              fetch('/api/products')
+                                 .then(res => res.json())
+                                 .then(data => {
+                                    const items = (data.items || data.products || []).map((product: any) => ({
+                                       id: product.id,
+                                       name: product.name,
+                                       gtin: product.ean || product.gtin,
+                                       internalCode: product.internal_code || product.internalCode,
+                                       unit: product.unit,
+                                       costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
+                                       salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
+                                       stock: product.stock_on_hand ?? product.stock ?? 0,
+                                       minStock: product.min_stock ?? 20,
+                                       category: product.category_id || product.category,
+                                       supplier: product.supplier_id || product.supplier || '',
+                                       status: product.status,
+                                       imageUrl: product.imageUrl || '',
+                                       autoDiscount: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+                                    }));
+                                    setProducts(items);
+                                    setError(null);
+                                 })
+                                 .catch(() => {
+                                    setError('Erro ao carregar produtos da API.');
+                                    setProducts([]);
+                                 })
+                                 .finally(() => setLoading(false));
+                           } catch (err) {
+                              // Em caso de erro inesperado, libera o botão
+                              showPopup('error', 'Erro na importação', 'Ocorreu um erro inesperado.');
+                           } finally {
+                              setIsUploading(false);
+                           }
+                        }}
+                     >Confirmar Importação</Button>
                   </div>
                </div>
             </div>
@@ -1642,17 +1680,17 @@ const Products: React.FC = () => {
             onClose={() => setPopup(p => ({ ...p, open: false }))}
          />
 
-             {/* Botão flutuante de novo produto (mobile) */}
-             {!isOperatorUser && typeof window !== 'undefined' && !isCreateModalOpen && createPortal(
-                <button
-                   className="fixed bottom-4 right-4 sm:hidden bg-accent text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all border-2 border-white/10 z-[100]"
-                   title="Novo Produto"
-                   onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
-                >
-                   <Plus size={28} />
-                </button>,
-                document.body
-             )}
+         {/* Botão flutuante de novo produto (mobile) */}
+         {!isOperatorUser && typeof window !== 'undefined' && !isCreateModalOpen && createPortal(
+            <button
+               className="fixed bottom-4 right-4 sm:hidden bg-accent text-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all border-2 border-white/10 z-[100]"
+               title="Novo Produto"
+               onClick={() => { setIsCreateModalOpen(true); setSelectedProduct(null); sendTelemetry('modal', 'open', { entity: 'product', mode: 'create' }); }}
+            >
+               <Plus size={28} />
+            </button>,
+            document.body
+         )}
       </div>
    );
 };

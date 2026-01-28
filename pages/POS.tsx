@@ -1073,7 +1073,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                            value={initialBalance}
                            onChange={(e) => setInitialBalance(e.target.value)}
                            placeholder="0.00"
-                           className="text-center text-3xl font-pdv text-accent bg-dark-950/50"
+                           className="text-center text-3xl font-num text-accent bg-dark-950/50"
                            onKeyDown={async (e) => {
                               if (e.key === 'Enter') {
                                  const value = parseFloat(initialBalance.replace(',', '.')) || 0;
@@ -1255,7 +1255,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                                        type="number"
                                        min={1}
                                        max={!allowNegativeStock ? (item.product.stock ?? undefined) : undefined}
-                                       className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-pdv font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
+                                       className="w-11 sm:w-14 text-center text-[11px] sm:text-xs font-num font-bold text-slate-200 bg-dark-900 border border-accent/30 rounded px-1 py-0.5 outline-none"
                                        value={item.quantity === 0 ? '' : item.quantity}
                                        inputMode="numeric"
                                        pattern="[0-9]*"
@@ -1315,7 +1315,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
                   <div className="flex-1 space-y-6">
                      <div className="flex justify-between items-center text-slate-500">
                         <span className="text-[10px] font-bold uppercase tracking-widest">Soma Bruta</span>
-                        <span className="font-pdv text-sm tracking-tight">R$ {effectiveSubtotal.toFixed(2)}</span>
+                        <span className="font-num text-sm tracking-tight">R$ {effectiveSubtotal.toFixed(2)}</span>
                      </div>
 
                      {autoDiscountsTotal + manualDiscount > 0 && (
