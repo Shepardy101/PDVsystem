@@ -7,10 +7,31 @@ PDVsystem  é um ponto de venda para distribuidores de bebidas: frontend React/V
 - Auditoria: logs em `/api/logs`; limpeza rápida via `/api/admin/maintenance/purge-cache`; wipe controlado via `/api/admin/maintenance/wipe-local` (limpa dados, recria root).
 
 ## Stack
-- Frontend: React 19 + Vite → build em `dist/`
-- Backend: Node/Express + TypeScript → build em `server/dist/`
+- Backend: Node.js (v24 recomendado) + Express + better-sqlite3.
+- Frontend: React 19 + Vite + Tailwind CSS (via components UI).
+- Service: pm2 para gestão de processos e resiliência no Windows.
 - Banco: SQLite (better-sqlite3) em `data/novabev.sqlite`
 - Automação: scripts `.bat` + pm2 (Windows)
+
+## 🚀 Como Iniciar
+
+### 🛠️ Configuração Inicial (.env)
+Certifique-se de configurar o arquivo `.env` na raiz:
+```env
+VITE_APP_NAME="Nome do Seu Sistema"
+ENABLE_DB_ADMIN=true
+VITE_LOGS_WEBHOOK_URL=https://...
+```
+
+### 📦 Distribuição para Cliente
+Para gerar um pacote pronto para o cliente final:
+1. `npm run build`
+2. `.\package-app.bat` -> Gera `build/PDVsystem-release.zip`
+
+### 💻 No Cliente
+1. Extraia o ZIP.
+2. Execute `.\instalar-app.bat`.
+3. Para abrir o sistema, use o atalho criado ou `.\iniciar-app.bat`.
 
 ## Executar (resumo)
 - Dev: `npm run dev` (backend watch + Vite em 3000)

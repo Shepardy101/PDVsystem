@@ -31,7 +31,7 @@ echo [INFO] Verificando status do backend no pm2...
 call pm2 describe PDVsystem >nul 2>nul
 if %errorlevel% neq 0 (
   echo [INFO] Iniciando backend com pm2...
-  call pm2 start "%BACKEND%" --name PDVsystem --env production --node-args="--env-file=.env"
+  call pm2 start "%BACKEND%" --name PDVsystem --cwd "%SCRIPT_DIR%." --env production --node-args="--env-file=.env"
   if %errorlevel% neq 0 (
     echo [ERRO] Falha ao iniciar backend com pm2!
     pause

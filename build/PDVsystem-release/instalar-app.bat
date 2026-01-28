@@ -20,7 +20,7 @@ if %errorlevel% neq 0 call npm install -g pm2 --silent >nul 2>nul
 call powershell -Command "Write-Host 'pm2 pronto.' -ForegroundColor Green"
 
 echo [3/4] Iniciando backend com pm2 (produção)...
-call pm2 start server/dist/index.js --name PDVsystem --env production --node-args="--env-file=.env" >nul 2>nul
+call pm2 start server/dist/index.js --name PDVsystem --cwd %~dp0. --env production --node-args="--env-file=.env" >nul 2>nul
 call pm2 save >nul 2>nul
 call powershell -Command "Write-Host 'Backend iniciado com pm2.' -ForegroundColor Green"
 

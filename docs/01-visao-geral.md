@@ -9,8 +9,8 @@ PDVsystem (NovaBev POS) é um sistema de ponto de venda e gestão para distribui
 
 
 ## Branding e Personalização
-- O nome do sistema exibido na sidebar, login e título do navegador é definido pela variável de ambiente `VITE_APP_NAME` (em `.env` ou `.env.local`).
-- O logo exibido na tela de login pode ser customizado colocando um arquivo `logo.png` em `public/uploads/`.
+- O nome do sistema exibido na sidebar, login e título do navegador é definido pela variável de ambiente `VITE_APP_NAME` (em `.env`).
+- O logo exibido na tela de login e sidebar pode ser customizado colocando um arquivo `logo.png` em `public/uploads/`.
 - O título da aba do navegador é atualizado dinamicamente pelo frontend conforme `VITE_APP_NAME`.
 
 ## Módulos principais
@@ -23,7 +23,8 @@ PDVsystem (NovaBev POS) é um sistema de ponto de venda e gestão para distribui
 - DB Manager: CRUD genérico/Query Builder protegido (rotas `/api/admin-db`).
 
 ## Limitações / Assunções
-- Operação local por padrão (porta 8787); acesso condicionado a whitelist de IP.
+- Operação local por padrão (porta 8787); acesso condicionado a whitelist de IP para dispositivos na rede.
 - Banco único SQLite em `data/novabev.sqlite` (WAL + foreign_keys).
-- Valores monetários sempre em centavos; timestamps em epoch ms.
-- Admin DB Manager exige `ENABLE_DB_ADMIN=true` e acesso localhost.
+- Valores monetários sempre em centavos no banco; timestamps em epoch ms.
+- Admin DB Manager exige `ENABLE_DB_ADMIN=true` e acesso via localhost ou IP autorizado.
+- Requer Node.js v20.6.0+ (recomendado v24+) para suporte nativo a `--env-file`.

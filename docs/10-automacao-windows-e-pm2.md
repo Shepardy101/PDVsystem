@@ -10,7 +10,8 @@
 
 - Processo típico: `PDVsystem`.
 - Para evitar duplicidade de processos, os scripts .bat executam `pm2 delete PDVsystem` antes de iniciar uma nova instância.
-- Comandos úteis: `pm2 start server/dist/index.js --name PDVsystem --env production`, `pm2 restart PDVsystem`, `pm2 stop PDVsystem`, `pm2 logs PDVsystem`, `pm2 save`, `pm2 startup`.
+- Comandos úteis: `pm2 start server/dist/index.js --name PDVsystem --cwd %~dp0. --env production --node-args="--env-file=.env"`, `pm2 restart PDVsystem`, `pm2 stop PDVsystem`, `pm2 logs PDVsystem`, `pm2 save`.
+- **Importante**: Ao chamar `pm2`, `npm` ou `powershell` dentro de scripts `.bat` no Windows, é mandatório usar o prefixo `call` (ex: `call pm2 ...`) para evitar que o script chamador seja encerrado prematuramente.
 
 ## Quando usar
 - Instalação inicial: `instalar-app.bat` ou `build/instalar-app.bat`.
