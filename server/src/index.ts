@@ -100,16 +100,27 @@ scheduleLogRetention();
 // Logger periódico de performance (CPU/RAM/loop)
 startPerformanceLogger();
 
-// Verificação de atualização automática (opcional: a cada 1 hora)
-setInterval(() => {
-  updateService.checkUpdate().then(async (config) => {
+// Função unificada para verificar e baixar atualizações
+async function runUpdateCheck() {
+  try {
+    // Evita download redundante se já existe um patch pronto para aplicação
+    if (updateService.isUpdateReady()) {
+      console.log('[UpdateService] Existe uma atualização pendente de aplicação. Use o painel administrativo para aplicar.');
+      return;
+    }
+
+    const config = await updateService.checkUpdate();
     if (config) {
       await updateService.downloadAndPrepare(config.url);
-      // Aqui você poderia notificar o admin via socket ou flag no DB
-      // updateService.triggerUpdateScript(); // CUIDADO: Isso fecharia o sistema automaticamente
+      console.log('[UpdateService] Sistema preparado. No próximo reinício a atualização será aplicada (ou via painel admin).');
     }
-  });
-}, 1000 * 60 * 60);
+  } catch (err: any) {
+    console.error('[UpdateService] Falha na rotina de atualização. Consulte os logs acima para detalhes.');
+  }
+}
+
+// Verificação de atualização automática (a cada 1 hora)
+setInterval(runUpdateCheck, 1000 * 60 * 60);
 
 // Verificação inicial na subida do sistema
-updateService.checkUpdate();
+runUpdateCheck();

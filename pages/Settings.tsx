@@ -6,9 +6,9 @@ import { useAuth } from '../components/AuthContext';
 import { isAdmin } from '../types';
 import DbManager from '../src/renderer/components/adminDb/DbManager';
 import { toast } from 'react-hot-toast';
-import { 
-   Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe, 
-   Lock, RefreshCcw, Bell, HardDrive, Wifi, Terminal, Zap, 
+import {
+   Settings as SettingsIcon, Shield, Cpu, Printer, Database, Globe,
+   Lock, RefreshCcw, Bell, HardDrive, Wifi, Terminal, Zap,
    Activity, Cloud, Save, Trash2, Key, Server, Laptop, Bluetooth,
    CreditCard, Clock, ChevronDown, ChevronRight
 } from 'lucide-react';
@@ -29,20 +29,20 @@ const DetailRow = ({ label, value }: { label: string; value: string }) => (
 type IpEntry = {
    id: number;
    ip: string;
-   hostname?: string|null;
+   hostname?: string | null;
    tentado_em?: string;
    autorizado_em?: string;
-   autorizado_por?: string|null;
-   user_agent?: string|null;
-   requested_path?: string|null;
-   request_method?: string|null;
-   referer?: string|null;
-   accept_language?: string|null;
-   accept_header?: string|null;
-   accept_encoding?: string|null;
-   forwarded_for_raw?: string|null;
-   remote_port?: number|null;
-   http_version?: string|null;
+   autorizado_por?: string | null;
+   user_agent?: string | null;
+   requested_path?: string | null;
+   request_method?: string | null;
+   referer?: string | null;
+   accept_language?: string | null;
+   accept_header?: string | null;
+   accept_encoding?: string | null;
+   forwarded_for_raw?: string | null;
+   remote_port?: number | null;
+   http_version?: string | null;
 };
 type IPControlPanelProps = { canManage: boolean; telemetry: (area: string, action: string, meta?: Record<string, any>) => void };
 
@@ -59,14 +59,14 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
    const [pending, setPending] = useState<IpEntry[]>([]);
    const [allowed, setAllowed] = useState<IpEntry[]>([]);
    const [loading, setLoading] = useState(false);
-   const [error, setError] = useState<string|null>(null);
+   const [error, setError] = useState<string | null>(null);
    const [blocked, setBlocked] = useState<IpEntry[]>([]);
    const [refresh, setRefresh] = useState(0);
    const [selectedIp, setSelectedIp] = useState<{ entry: IpEntry; list: 'pending' | 'allowed' | 'blocked' } | null>(null);
 
-    // State para os painéis expansíveis
-      const [showSecurityPanel, setShowSecurityPanel] = useState(false);
-      const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
+   // State para os painéis expansíveis
+   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+   const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
 
    useEffect(() => {
       let isMounted = true;
@@ -96,7 +96,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
       return () => { isMounted = false; };
    }, [refresh]);
 
-   const handleAllow = async (ip: string, hostname?: string|null) => {
+   const handleAllow = async (ip: string, hostname?: string | null) => {
       if (!canManage) return;
       setLoading(true);
       try {
@@ -303,8 +303,8 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
                   </div>
                   <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px] text-slate-200 font-mono overflow-y-auto max-h-[75vh]">
                      <DetailRow label="Hostname" value={selectedIp.entry.hostname || '-'} />
-                     <DetailRow label="Tentado em" value={selectedIp.entry.tentado_em?.replace('T',' ').slice(0,19) || '-'} />
-                     <DetailRow label="Autorizado em" value={selectedIp.entry.autorizado_em?.replace('T',' ').slice(0,19) || '-'} />
+                     <DetailRow label="Tentado em" value={selectedIp.entry.tentado_em?.replace('T', ' ').slice(0, 19) || '-'} />
+                     <DetailRow label="Autorizado em" value={selectedIp.entry.autorizado_em?.replace('T', ' ').slice(0, 19) || '-'} />
                      <DetailRow label="Autorizado por" value={selectedIp.entry.autorizado_por || '-'} />
                      <DetailRow label="User-Agent" value={selectedIp.entry.user_agent || '-'} />
                      <DetailRow label="Accept-Language" value={selectedIp.entry.accept_language || '-'} />
@@ -325,9 +325,9 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
 };
 
 const Settings: React.FC = () => {
-      // State para os painéis expansíveis
-      const [showSecurityPanel, setShowSecurityPanel] = useState(false);
-      const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
+   // State para os painéis expansíveis
+   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+   const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
    const { user } = useAuth();
    const sendTelemetry = React.useCallback((area: string, action: string, meta?: Record<string, any>) => {
       logUiEvent({ userId: user?.id ?? null, page: 'settings', area, action, meta });
@@ -336,7 +336,7 @@ const Settings: React.FC = () => {
       return (
          <AccessDenied />
       );
-      }
+   }
    const [logs, setLogs] = useState<UiLog[]>([]);
    const [logLimit, setLogLimit] = useState<30 | 100 | 1000 | 'all'>(30);
    const [showDbManager, setShowDbManager] = useState(false);
@@ -347,6 +347,43 @@ const Settings: React.FC = () => {
    const [allowNegativeStock, setAllowNegativeStock] = useState<boolean>(true);
    const [settingsLoading, setSettingsLoading] = useState(false);
    const isManagerUser = user?.role === 'manager';
+
+   // System Update States
+   const [updateStatus, setUpdateStatus] = useState<{ currentVersion: string; isUpdateReady: boolean } | null>(null);
+   const [applyingUpdate, setApplyingUpdate] = useState(false);
+
+   const fetchUpdateStatus = async () => {
+      try {
+         const res = await fetch('/api/update/status');
+         if (res.ok) {
+            const data = await res.json();
+            setUpdateStatus(data);
+         }
+      } catch (e) {
+         console.warn('[Settings] Falha ao checar status de atualização local');
+      }
+   };
+
+   const handleApplyUpdate = async () => {
+      if (!window.confirm('Deseja aplicar a atualização agora? O sistema será fechado para processar os arquivos e reiniciado em seguida.')) return;
+      setApplyingUpdate(true);
+      try {
+         const res = await fetch('/api/update/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: 'local' })
+         });
+         if (!res.ok) throw new Error('Erro ao acionar atualizador');
+         toast.success('Atualizador acionado. O sistema vai fechar em instantes.');
+      } catch (err) {
+         toast.error('Falha ao acionar atualizador');
+         setApplyingUpdate(false);
+      }
+   };
+
+   useEffect(() => {
+      fetchUpdateStatus();
+   }, []);
 
    const interactionCounts = useMemo(() => {
       const acc: Record<string, number> = {};
@@ -435,7 +472,7 @@ const Settings: React.FC = () => {
    React.useEffect(() => {
       sendTelemetry('page', 'view');
    }, [sendTelemetry]);
-  
+
    // Polling simples do audit log real
    useEffect(() => {
       let active = true;
@@ -501,59 +538,59 @@ const Settings: React.FC = () => {
    };
 
    const handleClearLogs = () => setLogs([]);
-   
-         const handlePurgeCache = async () => {
-            sendTelemetry('maintenance', 'purge-cache');
-            // 1. Envia os logs para o webhook, se configurado
-            if (LOGS_WEBHOOK_URL && logs.length > 0) {
-               try {
-                  const res = await fetch(LOGS_WEBHOOK_URL, {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ logs })
-                  });
-                  if (!res.ok) throw new Error('Erro HTTP ao enviar logs para webhook');
-                  toast.success('Logs enviados para o webhook com sucesso');
-               } catch (err) {
-                  console.error('[Settings] Falha ao enviar logs para webhook:', err);
-                  toast.error('Falha ao enviar logs para o webhook');
-               }
-            }
-            // 2. Executa o purge normalmente
-            try {
-               const res = await fetch('/api/admin/maintenance/purge-cache', { method: 'POST' });
-               if (!res.ok) throw new Error('Erro HTTP');
-               const data = await res.json();
-               toast.success(`Cache limpo (${data.logsDeleted ?? 0} logs, ${data.pendingDeleted ?? 0} pendentes)`);
-               setLogs([]);
-            } catch (err) {
-               console.error('[Settings] Falha ao purgar cache:', err);
-               toast.error('Falha ao limpar cache');
-            }
-         };
 
-      const handleWipeLocal = async () => {
-         // if (!isManagerUser) {
-         //    toast.error('Apenas usuários manager podem limpar a base.');
-         //    return;
-         // }
-         const confirmPrompt = window.prompt('Digite "wipe" para confirmar a limpeza total e recriar o usuário root.');
-         if ((confirmPrompt || '').toLowerCase().trim() !== 'wipe') {
-            toast('Limpeza cancelada');
-            return;
-         }
-         sendTelemetry('maintenance', 'wipe-local');
+   const handlePurgeCache = async () => {
+      sendTelemetry('maintenance', 'purge-cache');
+      // 1. Envia os logs para o webhook, se configurado
+      if (LOGS_WEBHOOK_URL && logs.length > 0) {
          try {
-            const res = await fetch('/api/admin/maintenance/wipe-local', { method: 'POST' });
-            if (!res.ok) throw new Error('Erro HTTP');
-            await res.json();
-            toast.success('Base limpa e usuário root recriado');
-            setLogs([]);
+            const res = await fetch(LOGS_WEBHOOK_URL, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ logs })
+            });
+            if (!res.ok) throw new Error('Erro HTTP ao enviar logs para webhook');
+            toast.success('Logs enviados para o webhook com sucesso');
          } catch (err) {
-            console.error('[Settings] Falha ao limpar base:', err);
-            toast.error('Falha ao limpar base');
+            console.error('[Settings] Falha ao enviar logs para webhook:', err);
+            toast.error('Falha ao enviar logs para o webhook');
          }
-      };
+      }
+      // 2. Executa o purge normalmente
+      try {
+         const res = await fetch('/api/admin/maintenance/purge-cache', { method: 'POST' });
+         if (!res.ok) throw new Error('Erro HTTP');
+         const data = await res.json();
+         toast.success(`Cache limpo (${data.logsDeleted ?? 0} logs, ${data.pendingDeleted ?? 0} pendentes)`);
+         setLogs([]);
+      } catch (err) {
+         console.error('[Settings] Falha ao purgar cache:', err);
+         toast.error('Falha ao limpar cache');
+      }
+   };
+
+   const handleWipeLocal = async () => {
+      // if (!isManagerUser) {
+      //    toast.error('Apenas usuários manager podem limpar a base.');
+      //    return;
+      // }
+      const confirmPrompt = window.prompt('Digite "wipe" para confirmar a limpeza total e recriar o usuário root.');
+      if ((confirmPrompt || '').toLowerCase().trim() !== 'wipe') {
+         toast('Limpeza cancelada');
+         return;
+      }
+      sendTelemetry('maintenance', 'wipe-local');
+      try {
+         const res = await fetch('/api/admin/maintenance/wipe-local', { method: 'POST' });
+         if (!res.ok) throw new Error('Erro HTTP');
+         await res.json();
+         toast.success('Base limpa e usuário root recriado');
+         setLogs([]);
+      } catch (err) {
+         console.error('[Settings] Falha ao limpar base:', err);
+         toast.error('Falha ao limpar base');
+      }
+   };
 
    // Carrega configuração Enable_Negative_Casher
    useEffect(() => {
@@ -585,25 +622,25 @@ const Settings: React.FC = () => {
       }
    };
 
-  const TelemetryItem = ({ icon: Icon, label, value, status }: any) => (
-    <div className="p-4 bg-dark-900/40 border border-white/5 rounded-2xl space-y-3 relative overflow-hidden group">
-       <div className="flex items-center justify-between relative z-10">
-          <div className="p-2 bg-dark-950 rounded-lg text-slate-500 group-hover:text-accent transition-colors">
-             <Icon size={16} />
-          </div>
-          <Badge variant={status === 'ok' ? 'success' : 'warning'}>{status}</Badge>
-       </div>
-       <div className="relative z-10">
-          <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{label}</p>
-          <p className="text-xl font-mono font-bold text-white tracking-tighter">{value}</p>
-       </div>
-       <div className="absolute bottom-0 left-0 h-0.5 bg-accent/20 w-0 group-hover:w-full transition-all duration-500" />
-    </div>
-  );
+   const TelemetryItem = ({ icon: Icon, label, value, status }: any) => (
+      <div className="p-4 bg-dark-900/40 border border-white/5 rounded-2xl space-y-3 relative overflow-hidden group">
+         <div className="flex items-center justify-between relative z-10">
+            <div className="p-2 bg-dark-950 rounded-lg text-slate-500 group-hover:text-accent transition-colors">
+               <Icon size={16} />
+            </div>
+            <Badge variant={status === 'ok' ? 'success' : 'warning'}>{status}</Badge>
+         </div>
+         <div className="relative z-10">
+            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{label}</p>
+            <p className="text-xl font-mono font-bold text-white tracking-tighter">{value}</p>
+         </div>
+         <div className="absolute bottom-0 left-0 h-0.5 bg-accent/20 w-0 group-hover:w-full transition-all duration-500" />
+      </div>
+   );
 
    return (
       <div className="p-2 flex flex-col min-h-0  overflow-auto assemble-view bg-dark-950 bg-cyber-grid relative">
-         
+
          {/* Modal DB Manager */}
          {showDbManager && (
             <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center animate-in fade-in">
@@ -624,198 +661,231 @@ const Settings: React.FC = () => {
          {showPerformanceModal && (
             <PerformanceMetricsModal open={showPerformanceModal} onClose={() => setShowPerformanceModal(false)} />
          )}
-      {/* Header Estilo Mission Control */}
-      <div className="flex items-center justify-between shrink-0 mb-8 relative z-10">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-             <SettingsIcon className="text-accent" />Painel de Controle
-          </h1>
-          <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mt-1">
-             Kernel v3.1
-          </p>
-        </div>
+         {/* Header Estilo Mission Control */}
+         <div className="flex items-center justify-between shrink-0 mb-8 relative z-10">
+            <div>
+               <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+                  <SettingsIcon className="text-accent" />Painel de Controle
+               </h1>
+               <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mt-1">
+                  Kernel v3.1
+               </p>
+            </div>
             <div className="flex items-center gap-4">
                <Button variant="secondary" icon={<Database size={18} />} disabled={!isManagerUser} onClick={() => { if (isManagerUser) { sendTelemetry('settings', 'open-db-manager'); setShowDbManager(true); } }}>
                   DB Manager
                </Button>
-          
-         <Button icon={<Terminal size={18} />} onClick={() => {
-            if (showLogsModal) {
-               closeLogsModal();
-            } else {
-               openLogsModal();
-            }
-         }}>
-            {'LOGS'}
-         </Button>
-        </div> 
-      </div>
+
+               <Button icon={<Terminal size={18} />} onClick={() => {
+                  if (showLogsModal) {
+                     closeLogsModal();
+                  } else {
+                     openLogsModal();
+                  }
+               }}>
+                  {'LOGS'}
+               </Button>
+            </div>
+         </div>
 
 
-    
 
-      <div className="flex-1 grid grid-cols-12 gap-8 overflow-hidden min-h-0 relative z-10">
-        {/* Coluna Esquerda: Configurações */}
-         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 min-h-0">
-            <div className="rounded-3xl overflow-hidden border border-accent/20 bg-linear-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)] max-h-[480px] min-h-[220px] flex flex-col">
-               <div className="flex-1 overflow-y-auto custom-scrollbar-thin">
-                  {/* Estoque no Caixa */}
-                  <div>
-                     <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
-                        <div className="flex items-center gap-3">
-                           <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
-                           <div>
-                              <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
-                                 <Zap size={14} className="text-accent" /> Estoque no Caixa
-                              </p>
-                              <p className="text-[11px] text-slate-300 font-mono">Permitir vender acima do estoque?</p>
+
+         <div className="flex-1 grid grid-cols-12 gap-8 overflow-hidden min-h-0 relative z-10">
+            {/* Coluna Esquerda: Configurações */}
+            <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 min-h-0">
+               <div className="rounded-3xl overflow-hidden border border-accent/20 bg-linear-to-br from-[#06121a] via-[#061b24] to-[#03090f] shadow-[0_0_35px_-18px_rgba(34,211,238,0.9)] max-h-[480px] min-h-[220px] flex flex-col">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar-thin">
+                     {/* Estoque no Caixa */}
+                     <div>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-black/30">
+                           <div className="flex items-center gap-3">
+                              <div className="h-8 w-1 bg-accent shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
+                              <div>
+                                 <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
+                                    <Zap size={14} className="text-accent" /> Estoque no Caixa
+                                 </p>
+                                 <p className="text-[11px] text-slate-300 font-mono">Permitir vender acima do estoque?</p>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-3 bg-dark-900/60 border border-accent/30 rounded-2xl px-4 py-2 shadow-[0_0_18px_-8px_rgba(34,211,238,0.9)]">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                                 {allowNegativeStock ? 'Habilitado' : 'Bloqueado'}
+                              </span>
+                              <Switch
+                                 enabled={allowNegativeStock}
+                                 disabled={settingsLoading}
+                                 onChange={(value: boolean) => toggleNegativeStock(value)}
+                              />
                            </div>
                         </div>
-                        <div className="flex items-center gap-3 bg-dark-900/60 border border-accent/30 rounded-2xl px-4 py-2 shadow-[0_0_18px_-8px_rgba(34,211,238,0.9)]">
-                           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                              {allowNegativeStock ? 'Habilitado' : 'Bloqueado'}
-                           </span>
-                           <Switch
-                              enabled={allowNegativeStock}
-                              disabled={settingsLoading}
-                              onChange={(value: boolean) => toggleNegativeStock(value)}
-                           />
+                        <div className="p-6 bg-black/10">
+                           <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl font-mono">
+                              Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
+                           </p>
+                        </div>
+
+                        {/* Sistema e Atualização */}
+                        <div className="border-t border-accent/15 bg-black/5">
+                           <div className="px-6 py-4 flex items-center justify-between border-b border-white/10 bg-black/20">
+                              <div className="flex items-center gap-3">
+                                 <div className="h-8 w-1 bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.6)]" />
+                                 <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
+                                       <Server size={14} className="text-purple-400" /> Sistema // Build
+                                    </p>
+                                    <p className="text-[11px] text-slate-300 font-mono">Versão {updateStatus?.currentVersion || '0.0.0'}</p>
+                                 </div>
+                              </div>
+                              <div className="flex gap-2">
+                                 <Button size="xs" variant="secondary" onClick={fetchUpdateStatus} icon={<RefreshCcw size={12} />}>
+                                    Atualizar Status
+                                 </Button>
+                                 {updateStatus?.isUpdateReady && (
+                                    <Button size="xs" variant="success" onClick={handleApplyUpdate} disabled={applyingUpdate} icon={<Zap size={12} />}>
+                                       {applyingUpdate ? 'Aplicando...' : 'Aplicar Update'}
+                                    </Button>
+                                 )}
+                              </div>
+                           </div>
+                           {updateStatus?.isUpdateReady && (
+                              <div className="p-4 bg-purple-500/10">
+                                 <div className="flex items-center gap-2 text-purple-300 text-[10px] font-mono animate-pulse">
+                                    <span className="h-2 w-2 rounded-full bg-purple-500" />
+                                    PATCH DISPONÍVEL! CLIQUE EM APLICAR PARA REINICIAR O SISTEMA.
+                                 </div>
+                              </div>
+                           )}
                         </div>
                      </div>
-                     <div className="p-6 bg-black/10">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-tight max-w-xl font-mono">
-                           Quando desativado, o PDV bloqueia quantidades que excedam o estoque disponível no ato da venda.
-                        </p>
+                     {/* Seção de Controle de IPs */}
+                     <div className="border-t border-accent/15">
+                        <IPControlPanel canManage={isManagerUser} telemetry={sendTelemetry} />
                      </div>
                   </div>
-                  {/* Seção de Controle de IPs */}
-                  <div className="border-t border-accent/15">
-                     <IPControlPanel canManage={isManagerUser} telemetry={sendTelemetry} />
+               </div>
+
+               {/* Botões expansíveis para Protocolos de Segurança e Maintenance */}
+               <div className="flex flex-col gap-4">
+                  {/* Protocolos de Segurança */}
+                  <div className="rounded-3xl border border-white/10 bg-dark-900/40">
+                     <Button
+                        className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
+                        variant="secondary"
+                        onClick={() => setShowSecurityPanel(v => !v)}
+                        icon={<Shield size={16} className="text-accent" />}
+                     >
+                        Protocolos de Segurança
+                        <span>{showSecurityPanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
+                     </Button>
+                     {showSecurityPanel && (
+                        <div className="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/10">
+                           <div className="space-y-4">
+                              <Input label="Nível de Criptografia" defaultValue="AES-256-GCM" icon={<Lock size={14} />} disabled />
+                              <Input label="Intervalo de Auto-Logout (Segundos)" defaultValue="3600" type="number" icon={<Clock size={14} />} />
+                           </div>
+                           <div className="space-y-4">
+                              <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
+                                 <div>
+                                    <p className="text-xs font-bold text-slate-200">Backups Automáticos</p>
+                                    <p className="text-[9px] text-slate-500 uppercase">A cada 12 horas</p>
+                                 </div>
+                                 <Switch enabled={true} onChange={() => { }} />
+                              </div>
+                              <Button variant="secondary" className="w-full py-3" icon={<Cloud size={16} />}>Configurar Cloud Sync</Button>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+                  {/* Maintenance // Quick Ops */}
+                  <div className="rounded-3xl border border-accent/25 bg-linear-to-br from-[#0b1420] via-[#0b1f2e] to-[#04090f] shadow-[0_0_28px_-14px_rgba(34,211,238,0.9)] relative">
+                     <Button
+                        className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
+                        variant="secondary"
+                        onClick={() => setShowMaintenancePanel(v => !v)}
+                        icon={<Cpu size={16} className="text-accent" />}
+                     >
+                        Maintenance // Quick Ops
+                        <span>{showMaintenancePanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
+                     </Button>
+                     {showMaintenancePanel && (
+                        <div className="p-5 grid grid-cols-2 gap-3 border-t border-accent/20">
+                           <Button
+                              variant="secondary"
+                              className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
+                              icon={<RefreshCcw size={12} className="text-accent" />}
+                              onClick={handlePurgeCache}
+                           >
+                              Purge Cache
+                           </Button>
+                           <Button
+                              variant="secondary"
+                              className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
+                              icon={<Activity size={12} className="text-emerald-300" />}
+                              onClick={() => { sendTelemetry('maintenance', 'open-performance-modal'); setShowPerformanceModal(true); }}
+                           >
+                              Monitorar Performance
+                           </Button>
+                           <Button
+                              variant="danger"
+                              className="text-[9px] py-3 col-span-2 w-full bg-[#1f0b12]/70 border border-rose-400/40 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
+                              icon={<Trash2 size={12} className="text-rose-300" />}
+                              disabled={!isManagerUser}
+                              onClick={handleWipeLocal}
+                           >
+                              Wipe Local Storage
+                           </Button>
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+            </div>
+
+            <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden md:block hidden">
+               <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
+                  <Terminal size={14} className="text-accent" /> Audit Trail // Real-time.
+               </h3>
+               <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative cursor-pointer" role="button" onClick={openLogsModal}>
+                  <div className="absolute inset-0 pointer-events-none opacity-40 bg-linear-to-br from-accent/10 via-transparent to-purple-500/10" />
+                  <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-slate-500 mb-3 relative z-10">
+                     <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        Live Packet Stream
+                     </span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10 max-h-screen">
+                     {logs.map((log) => (
+                        <div
+                           key={log.id}
+                           className="text-[10px] flex gap-3 items-start animate-in fade-in slide-in-from-right-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2 shadow-[0_0_12px_-8px_rgba(34,211,238,0.8)]"
+                        >
+                           <span className="text-emerald-300 shrink-0">
+                              [{log.time}]
+                           </span>
+                           <span
+                              className={
+                                 log.level === 'warn'
+                                    ? 'text-amber-400'
+                                    : log.level === 'error'
+                                       ? 'text-rose-400'
+                                       : 'text-slate-300'
+                              }
+                           >
+                              <span className="text-accent mr-2 opacity-60">{'>>'}</span>
+                              {log.message}
+                           </span>
+                        </div>
+                     ))}
+                     {logs.length === 0 && (
+                        <div className="flex items-center justify-center h-full opacity-10">
+                           <Activity size={64} className="animate-pulse" />
+                        </div>
+                     )}
                   </div>
                </div>
             </div>
-
-                {/* Botões expansíveis para Protocolos de Segurança e Maintenance */}
-                <div className="flex flex-col gap-4">
-                   {/* Protocolos de Segurança */}
-                   <div className="rounded-3xl border border-white/10 bg-dark-900/40">
-                      <Button
-                         className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
-                         variant="secondary"
-                         onClick={() => setShowSecurityPanel(v => !v)}
-                         icon={<Shield size={16} className="text-accent" />}
-                      >
-                         Protocolos de Segurança
-                         <span>{showSecurityPanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
-                      </Button>
-                      {showSecurityPanel && (
-                         <div className="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/10">
-                            <div className="space-y-4">
-                               <Input label="Nível de Criptografia" defaultValue="AES-256-GCM" icon={<Lock size={14} />} disabled />
-                               <Input label="Intervalo de Auto-Logout (Segundos)" defaultValue="3600" type="number" icon={<Clock size={14} />} />
-                            </div>
-                            <div className="space-y-4">
-                               <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                                  <div>
-                                     <p className="text-xs font-bold text-slate-200">Backups Automáticos</p>
-                                     <p className="text-[9px] text-slate-500 uppercase">A cada 12 horas</p>
-                                  </div>
-                                  <Switch enabled={true} onChange={() => {}} />
-                               </div>
-                               <Button variant="secondary" className="w-full py-3" icon={<Cloud size={16} />}>Configurar Cloud Sync</Button>
-                            </div>
-                         </div>
-                      )}
-                   </div>
-                   {/* Maintenance // Quick Ops */}
-                   <div className="rounded-3xl border border-accent/25 bg-linear-to-br from-[#0b1420] via-[#0b1f2e] to-[#04090f] shadow-[0_0_28px_-14px_rgba(34,211,238,0.9)] relative">
-                      <Button
-                         className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
-                         variant="secondary"
-                         onClick={() => setShowMaintenancePanel(v => !v)}
-                         icon={<Cpu size={16} className="text-accent" />}
-                      >
-                         Maintenance // Quick Ops
-                         <span>{showMaintenancePanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
-                      </Button>
-                      {showMaintenancePanel && (
-                         <div className="p-5 grid grid-cols-2 gap-3 border-t border-accent/20">
-                            <Button
-                               variant="secondary"
-                               className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
-                               icon={<RefreshCcw size={12} className="text-accent" />}
-                               onClick={handlePurgeCache}
-                            >
-                               Purge Cache
-                            </Button>
-                            <Button
-                               variant="secondary"
-                               className="text-[9px] py-3 w-full bg-dark-900/60 border border-emerald-300/30 hover:shadow-[0_0_18px_-6px_rgba(16,185,129,0.9)]"
-                               icon={<Activity size={12} className="text-emerald-300" />}
-                               onClick={() => { sendTelemetry('maintenance', 'open-performance-modal'); setShowPerformanceModal(true); }}
-                            >
-                               Monitorar Performance
-                            </Button>
-                            <Button
-                               variant="danger"
-                               className="text-[9px] py-3 col-span-2 w-full bg-[#1f0b12]/70 border border-rose-400/40 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
-                               icon={<Trash2 size={12} className="text-rose-300" />}
-                               disabled={!isManagerUser}
-                               onClick={handleWipeLocal}
-                            >
-                               Wipe Local Storage
-                            </Button>
-                         </div>
-                      )}
-                   </div>
-                </div>
-     
-        </div>
-
-      <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden md:block hidden">
-         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
-            <Terminal size={14} className="text-accent" /> Audit Trail // Real-time.
-         </h3>
-       <div className="flex-1 bg-[#050b11] border border-accent/30 rounded-3xl p-6 font-mono overflow-hidden flex flex-col shadow-[0_0_25px_-12px_rgba(34,211,238,0.9)] relative cursor-pointer" role="button" onClick={openLogsModal}>
-          <div className="absolute inset-0 pointer-events-none opacity-40 bg-linear-to-br from-accent/10 via-transparent to-purple-500/10" />
-          <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.35em] text-slate-500 mb-3 relative z-10">
-             <span className="flex items-center gap-2">
-           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-           Live Packet Stream
-             </span>
-          </div>
-         <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar-thin relative z-10 max-h-screen">
-             {logs.map((log) => (
-           <div
-              key={log.id}
-              className="text-[10px] flex gap-3 items-start animate-in fade-in slide-in-from-right-2 bg-black/40 border border-white/5 rounded-xl px-3 py-2 shadow-[0_0_12px_-8px_rgba(34,211,238,0.8)]"
-           >
-              <span className="text-emerald-300 shrink-0">
-            [{log.time}]
-              </span>
-              <span
-            className={
-               log.level === 'warn'
-                  ? 'text-amber-400'
-                  : log.level === 'error'
-                  ? 'text-rose-400'
-                  : 'text-slate-300'
-            }
-              >
-            <span className="text-accent mr-2 opacity-60">{'>>'}</span>
-              {log.message}
-              </span>
-           </div>
-             ))}
-             {logs.length === 0 && (
-           <div className="flex items-center justify-center h-full opacity-10">
-              <Activity size={64} className="animate-pulse" />
-           </div>
-             )}
-          </div>
-       </div>
-      </div>
-      </div>
+         </div>
 
          {showLogsModal && (
             <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={closeLogsModal}>
@@ -1027,10 +1097,10 @@ const Settings: React.FC = () => {
             </div>
          )}
 
-     
 
-  
-   </div>
+
+
+      </div>
    );
 };
 
