@@ -29,6 +29,7 @@ xcopy /e /i /y "public\uploads" "%STAGEDIR%\public\uploads" >nul
 echo Copiando manifestos e scripts...
 copy /y "package.json" "%STAGEDIR%" >nul
 copy /y "package-lock.json" "%STAGEDIR%" >nul
+copy /y ".env" "%STAGEDIR%" >nul
 copy /y "README.md" "%STAGEDIR%" >nul
 copy /y "instalar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-app.bat" "%STAGEDIR%" >nul

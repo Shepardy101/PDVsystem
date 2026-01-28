@@ -12,7 +12,7 @@ if not exist "%CHROME_PATH%" (
   exit /b 1
 )
 set SHORTCUT_PATH=%~dp0%SHORTCUT_NAME%
-powershell $s=(New-Object -COM WScript.Shell).CreateShortcut('%SHORTCUT_PATH%');$s.TargetPath='%CHROME_PATH%';$s.Arguments='--app=%APP_URL%';$s.Save()
+call powershell $s=(New-Object -COM WScript.Shell).CreateShortcut('%SHORTCUT_PATH%');$s.TargetPath='%CHROME_PATH%';$s.Arguments='--app=%APP_URL%';$s.Save()
 
 echo Atalho criado em %SHORTCUT_PATH%
 pause

@@ -1,3 +1,6 @@
+/* index.css gerado automaticamente para build Vite */
+@import './styles/fonts.css';
+
 @media print {
   html, body {
     margin: 0 !important;
@@ -31,8 +34,7 @@
     display: none !important;
   }
 }
-/* index.css gerado automaticamente para build Vite */
-@import './styles/fonts.css';
+
 body {
   font-family: 'Inter', Arial, sans-serif;
   background: #18181b;

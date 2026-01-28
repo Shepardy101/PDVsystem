@@ -19,9 +19,16 @@ import * as adminDbRepo from '../repositories/adminDb.repo';
 const SENSITIVE_TABLES = ['users', 'audit_trail', 'user', 'admin', 'sessions'];
 
 export function guardAdminDb(req: Request, res: Response, next: NextFunction) {
-	if (process.env.ENABLE_DB_ADMIN !== 'true') return res.status(404).send('Not found');
+	if (process.env.ENABLE_DB_ADMIN !== 'true') {
+		console.warn(`[AdminDB] Tentativa de acesso bloqueada: ENABLE_DB_ADMIN não está como 'true'`);
+		return res.status(404).json({ error: 'Funcionalidade administrativa desativada no ambiente.' });
+	}
 	const ip = (req.ip || req.connection.remoteAddress) ?? '';
-	if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) return res.status(403).send('Forbidden');
+	const allowedIps = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
+	if (!allowedIps.includes(ip)) {
+		console.warn(`[AdminDB] Acesso negado para o IP: ${ip}. Somente localhost permitido.`);
+		return res.status(403).json({ error: 'Acesso restrito ao servidor local.', yourIp: ip });
+	}
 	next();
 }
 
