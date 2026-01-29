@@ -92,6 +92,22 @@ $env:ENABLE_DB_ADMIN="true"; npm run start:prod
 > **Comentário:**  
 > A variável de ambiente `ENABLE_DB_ADMIN` permite acesso ao Admin DB Manager, que só deve ser usado localmente para manutenção ou testes. Nunca habilite em produção real.
 
+
+### 🗄️ Inicializando o banco de dados manualmente
+
+Se precisar criar o banco do zero (apenas para desenvolvedores ou ambientes de teste):
+
+```sh
+sqlite3 data/novabev.sqlite ".read server/src/db/migrations/0001_init.sql"
+npm run migrate
+```
+
+- O primeiro comando cria o arquivo do banco e aplica a migration inicial.
+- O segundo comando executa todas as migrations pendentes via script oficial.
+
+> **Atenção:**  
+> Não execute essas etapas em ambientes já provisionados ou em produção, pois pode sobrescrever dados existentes.
+
 #### 🔎 Verificando se a porta 8787 está em uso
 
 Para checar se o backend está rodando corretamente ou identificar conflitos de porta:

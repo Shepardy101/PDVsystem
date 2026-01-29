@@ -20,12 +20,20 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [INFO] Copiando arquivos extraídos para a raiz do projeto...
-xcopy /e /i /y /c "%EXTRACT_DIR%\*" "%ROOT_DIR%"
+
+echo [INFO] Copiando arquivos extraídos para a raiz do projeto (exceto banco de dados)...
+REM Copia tudo, exceto o banco de dados
+xcopy /e /i /y /c "%EXTRACT_DIR%\*" "%ROOT_DIR%" /EXCLUDE:%ROOT_DIR%exclude_db.txt
+
+REM Cria arquivo de exclusão temporário
+echo data\novabev.sqlite>"%ROOT_DIR%exclude_db.txt"
+echo data/novabev.sqlite>>"%ROOT_DIR%exclude_db.txt"
+
 
 echo [INFO] Limpeza de arquivos temporários...
 rmdir /s /q "%EXTRACT_DIR%"
 del /f /q "%TEMP_ZIP%"
+del /f /q "%ROOT_DIR%exclude_db.txt"
 
 echo ========================================
 echo   ATUALIZAÇÃO EXTRAÍDA E APLICADA
