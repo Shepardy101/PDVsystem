@@ -76,6 +76,8 @@ export function getProductByInternalCode(internal_code: string): Product | undef
 export function createProduct(data: any) {
   // Validação
   const isService = data.type === 'service';
+  // Converte string vazia para null em campos opcionais
+  const normalize = (v: any) => (v === '' ? null : v);
   if (!data.name || !data.unit || (!isService && (!data.ean || !data.internalCode))) {
     console.error('[createProduct] Campos obrigatórios ausentes:', data);
     throw { code: 'VALIDATION_ERROR', message: 'Campos obrigatórios ausentes.' };
@@ -96,15 +98,15 @@ export function createProduct(data: any) {
   const product: Product = {
     id: uuidv4(),
     name: data.name,
-    ean: isService ? null : data.ean,
-    internal_code: isService ? null : data.internalCode,
+    ean: isService ? null : normalize(data.ean),
+    internal_code: isService ? null : normalize(data.internalCode),
     unit: data.unit,
     cost_price: Math.round((data.costPrice || 0) * 100),
     sale_price: Math.round((data.salePrice || 0) * 100),
     auto_discount_enabled: data.autoDiscountEnabled ? 1 : 0,
     auto_discount_value: Math.round((data.autoDiscountValue || 0) * 100),
-    category_id: data.categoryId || null,
-    supplier_id: isService ? null : (data.supplierId || null),
+    category_id: normalize(data.categoryId),
+    supplier_id: isService ? null : normalize(data.supplierId),
     status: data.status || 'active',
     stock_on_hand: isService ? 0 : (data.stockOnHand || 0),
     min_stock: typeof data.minStock === 'number' ? data.minStock : (typeof data.min_stock === 'number' ? data.min_stock : 20),
