@@ -16,15 +16,35 @@ export interface ClosingModalProps {
 const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, closeError, closeLoading, closeResult, onClose, onInputChange, onConfirm }) => {
     // Estado para expandir/recolher vendas
     const [expandedSale, setExpandedSale] = React.useState<string | null>(null);
+  // Estado para mini modal de confirmação
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const confirmBtnRef = React.useRef<HTMLButtonElement>(null);
+  const cashInputRef = React.useRef<HTMLInputElement>(null);
+
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (showConfirmModal) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          setShowConfirmModal(false);
+          onConfirm();
+        } else if (e.key === 'Escape' || e.key === 'Esc') {
+          e.preventDefault();
+          setShowConfirmModal(false);
+          setTimeout(() => {
+            cashInputRef.current?.focus();
+            cashInputRef.current?.select();
+          }, 50);
+        }
+        return;
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
         if (closeResult) {
           onClose();
         } else {
-          onConfirm();
+          setShowConfirmModal(true);
         }
       }
       if (e.key === 'Escape' || e.key === 'Esc') {
@@ -34,7 +54,13 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onConfirm, onClose, closeResult]);
+  }, [isOpen, onConfirm, onClose, closeResult, showConfirmModal]);
+
+  React.useEffect(() => {
+    if (showConfirmModal) {
+      setTimeout(() => { confirmBtnRef.current?.focus(); }, 10);
+    }
+  }, [showConfirmModal]);
  
   // Abas: 0 = Resumo, 1 = Vendas
   const [tab, setTab] = React.useState(0);
@@ -106,15 +132,46 @@ const ClosingModal: React.FC<ClosingModalProps> = ({ isOpen, physicalCashInput, 
                 placeholder="0.00"
                 className="text-center text-4xl font-mono text-accent bg-dark-950/50 border-2 border-accent/30 rounded-xl py-6"
                 autoFocus
+                ref={cashInputRef}
               />
               {closeError && <div className="text-red-500 text-base text-center font-bold animate-pulse">{closeError}</div>}
               <Button
-                onClick={onConfirm}
+                onClick={() => setShowConfirmModal(true)}
                 className="w-full py-5 sm:py-6 text-base sm:text-lg font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase shadow-accent-glow rounded-xl"
                 disabled={closeLoading}
               >
                 {closeLoading ? 'Processando...' : 'Confirmar Fechamento'}
               </Button>
+
+              {/* Mini modal de confirmação */}
+              {showConfirmModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
+                  <div className="bg-dark-950 border-2 border-accent/40 rounded-2xl p-8 shadow-2xl flex flex-col items-center animate-in fade-in zoom-in-95 duration-200 min-w-[320px]">
+                    <div className="text-lg font-bold text-accent mb-4">Confirmar fechamento do caixa?</div>
+                    <div className="text-base text-slate-200 mb-2">Valor inserido: <span className="font-mono text-accent">R$ {Number(physicalCashInput || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                    <div className="flex gap-4 mt-2">
+                      <Button
+                        ref={confirmBtnRef}
+                        variant="primary"
+                        className="px-6 py-2 text-base font-bold"
+                        onClick={() => { setShowConfirmModal(false); onConfirm(); }}
+                      >Confirmar [ENTER]</Button>
+                      <Button
+                        variant="secondary"
+                        className="px-6 py-2 text-base font-bold"
+                        onClick={() => {
+                          setShowConfirmModal(false);
+                          setTimeout(() => {
+                            cashInputRef.current?.focus();
+                            cashInputRef.current?.select();
+                          }, 50);
+                        }}
+                      >Cancelar [ESC]</Button>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-3">Pressione [ENTER] para confirmar ou [ESC] para cancelar</div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <>
