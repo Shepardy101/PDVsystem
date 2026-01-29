@@ -229,6 +229,11 @@ productRouter.delete('/:id', (req, res) => {
     emitProductEvent('deleted', { id });
     res.status(204).end();
   } catch (err) {
-    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao deletar produto.' } });
+    // Se for erro de constraint de chave estrangeira, retorna código específico
+    if (err && typeof err === 'object' && 'code' in err && (err as any).code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+      res.status(400).json({ error: { code: 'SQLITE_CONSTRAINT_FOREIGNKEY', message: 'FOREIGN KEY constraint failed' } });
+    } else {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Erro ao deletar produto.' } });
+    }
   }
 });

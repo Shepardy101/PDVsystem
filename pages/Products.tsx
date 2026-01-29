@@ -30,6 +30,8 @@ import { isOperator } from '../types';
 import { logUiEvent } from '../services/telemetry';
 
 const Products: React.FC = () => {
+   // Estado para imagem selecionada antes da criação
+   const [imageFile, setImageFile] = useState<File | null>(null);
 
    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
    // Estado para auto-ativação do produto
@@ -70,7 +72,17 @@ const Products: React.FC = () => {
       evtSource.addEventListener('updated', (e: any) => {
          try {
             const product = JSON.parse(e.data);
-            setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+            // Garante conversão de centavos para reais ao atualizar produto após upload de imagem
+            setProducts(prev => prev.map(p =>
+               p.id === product.id
+                  ? {
+                      ...p,
+                      ...product,
+                      costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : (typeof product.costPrice === 'number' ? product.costPrice : 0),
+                      salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : (typeof product.salePrice === 'number' ? product.salePrice : 0),
+                    }
+                  : p
+            ));
          } catch { }
       });
       evtSource.addEventListener('deleted', (e: any) => {
@@ -263,13 +275,24 @@ const Products: React.FC = () => {
       try {
          sendTelemetry('product', 'delete-start', { productId });
          const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
-         if (!res.ok && res.status !== 204) throw new Error('Erro ao remover produto');
+         if (!res.ok && res.status !== 204) {
+            let msg = 'Erro ao remover produto';
+            try {
+               const errData = await res.json();
+               if (errData?.error?.code === 'SQLITE_CONSTRAINT_FOREIGNKEY' || (errData?.error?.message && errData.error.message.includes('FOREIGN KEY'))) {
+                  msg = 'Não é possível remover este produto/serviço porque ele está vinculado a vendas ou movimentações. Considere inativar o item em vez de deletar.';
+               }
+            } catch {}
+            showPopup('error', 'Erro ao remover produto/serviço', msg);
+            sendTelemetry('product', 'delete-error', { productId, message: msg });
+            return;
+         }
          setProducts(prev => prev.filter(p => p.id !== productId));
          setSelectedProduct(null);
          showPopup('success', 'Produto removido', 'O produto foi removido com sucesso.');
          sendTelemetry('product', 'delete-success', { productId });
       } catch (err) {
-         showPopup('error', 'Erro ao remover produto', 'Tente novamente.');
+         showPopup('error', 'Erro ao remover produto/serviço', 'Tente novamente.');
          sendTelemetry('product', 'delete-error', { productId, message: err instanceof Error ? err.message : 'unknown' });
       }
    }
@@ -285,9 +308,7 @@ const Products: React.FC = () => {
       const isService = type === 'service';
       const payload: any = {
          name: formData.get('name'),
-         ean: isService ? '' : formData.get('gtin'),
-         internalCode: isService ? '' : formData.get('internalCode'),
-         unit: formData.get('unit') || (isService ? 'serv' : 'unit'),
+         unit: isService ? 'serv' : (formData.get('unit') || 'unit'),
          status: autoActive ? 'active' : 'inactive',
          costPrice: Number(formData.get('costPrice')) || 0,
          salePrice: Number(formData.get('salePrice')) || 0,
@@ -300,6 +321,15 @@ const Products: React.FC = () => {
          supplierId: isService ? null : (formData.get('supplier') || null),
          type,
       };
+      if (!isService) {
+         payload.ean = formData.get('gtin');
+         payload.internalCode = formData.get('internalCode');
+      } else {
+         payload.ean = null;
+         payload.internalCode = null;
+      }
+      // DEBUG: popup para inspecionar submit antes de qualquer erro/reload
+      showPopup('info', 'DEBUG SUBMIT', `Tipo: ${type}\nPayload: ${JSON.stringify(payload, null, 2)}`);
       try {
          sendTelemetry('product', 'submit-start', { mode: selectedProduct ? 'update' : 'create', type, status: payload.status });
          let res;
@@ -318,10 +348,66 @@ const Products: React.FC = () => {
             });
          }
          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData?.error?.message || 'Erro ao salvar produto');
+            let errMsg = 'Erro ao salvar produto';
+            let errData = {};
+            try {
+               errData = await res.json();
+               if (errData && errData.error && errData.error.message) {
+                  errMsg = errData.error.message;
+               }
+            } catch {}
+            console.error('[Produto/Serviço][ERRO]', errMsg, errData, payload);
+            showPopup('error', 'Erro ao salvar produto/serviço', errMsg);
+            // Impede reload automático
+            return;
          }
          ({ product } = await res.json());
+
+         // Se houver imagem selecionada e for criação, faz upload agora
+         if (!selectedProduct && imageFile && product?.id) {
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            formData.append('ean', product.ean || product.gtin || '');
+            formData.append('description', product.name || '');
+            sendTelemetry('image', 'upload-create', { productId: product.id, name: imageFile.name });
+            try {
+               const imgRes = await fetch('/api/products/upload-image', {
+                  method: 'POST',
+                  body: formData
+               });
+               const imgData = await imgRes.json();
+               if (imgData.imageUrl) {
+                  // Atualiza produto com todos os campos obrigatórios + imageUrl
+                  const updatePayload = {
+                     name: product.name,
+                     ean: product.ean,
+                     internalCode: product.internal_code || product.internalCode,
+                     unit: product.unit,
+                     costPrice: typeof product.cost_price === 'number' ? product.cost_price / 100 : product.costPrice,
+                     salePrice: typeof product.sale_price === 'number' ? product.sale_price / 100 : product.salePrice,
+                     autoDiscountEnabled: product.auto_discount_enabled === 1 || product.autoDiscountEnabled === true,
+                     autoDiscountValue: typeof product.auto_discount_value === 'number' ? product.auto_discount_value / 100 : product.autoDiscount,
+                     status: product.status,
+                     stockOnHand: product.stock_on_hand ?? product.stock ?? 0,
+                     minStock: product.min_stock ?? 20,
+                     categoryId: product.category_id || product.category,
+                     supplierId: product.supplier_id || product.supplier || '',
+                     imageUrl: imgData.imageUrl,
+                     type: product.type || 'product',
+                  };
+                  await fetch(`/api/products/${product.id}`, {
+                     method: 'PUT',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(updatePayload)
+                  });
+                  product.imageUrl = imgData.imageUrl;
+               }
+            } catch (err) {
+               // Não bloqueia criação se upload falhar
+               sendTelemetry('image', 'upload-create-error', { productId: product.id, message: err instanceof Error ? err.message : 'unknown' });
+            }
+         }
+
          const mappedProduct = {
             id: product.id,
             name: product.name,
@@ -348,6 +434,7 @@ const Products: React.FC = () => {
          });
          setIsCreateModalOpen(false);
          setSelectedProduct(null);
+         setImageFile(null);
          // Buscar produtos atualizados para garantir sincronia
          setLoading(true);
          fetch('/api/products')
@@ -461,13 +548,17 @@ const Products: React.FC = () => {
          if (eanExists) errors.push('EAN já existe');
          if (codeExists) errors.push('Código interno já existe');
 
+         // Garante que costPrice/salePrice sejam números válidos (reais)
+         const costPrice = Number(row.costPrice);
+         const salePrice = Number(row.salePrice);
+
          return {
             id: `import-${idx}`,
             internalCode,
             gtin,
             name: row.name,
-            costPrice: parseFloat(row.costPrice),
-            salePrice: parseFloat(row.salePrice),
+            costPrice: isNaN(costPrice) ? 0 : costPrice,
+            salePrice: isNaN(salePrice) ? 0 : salePrice,
             stock: parseInt(row.stock),
             supplier: row.supplier || '',
             category: row.category || '',
@@ -938,7 +1029,7 @@ const Products: React.FC = () => {
                            <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-4">
                               <div>
                                  <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Preço Sugerido</p>
-                                 <p className="text-lg font-num font-bold text-accent">R$ {product.salePrice.toFixed(2)}</p>
+                                 <p className="text-lg font-num font-bold text-accent">R$ {(Number(product.salePrice) || 0).toFixed(2)}</p>
                               </div>
                               <div className="text-right">
                                  <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Saldo Atual</p>
@@ -1019,13 +1110,20 @@ const Products: React.FC = () => {
 
                   {/* Modal Content */}
                   <div className="p-2 overflow-y-auto custom-scrollbar space-y-8 relative z-10">
-                                    <form id="product-form" onSubmit={e => {
-                                       // Garante que os valores locais sejam enviados
-                                       const form = e.target as HTMLFormElement;
-                                       (form.elements.namedItem('gtin') as HTMLInputElement).value = eanValue;
-                                       (form.elements.namedItem('internalCode') as HTMLInputElement).value = internalCodeValue;
-                                       handleProductSubmit(e);
-                                    }}>
+                                                      <form id="product-form" onSubmit={async e => {
+                                                          e.preventDefault();
+                                                          e.stopPropagation();
+                                                          // Garante que os valores locais sejam enviados
+                                                          const form = e.target as HTMLFormElement;
+                                                          if (form.elements.namedItem('gtin')) {
+                                                             (form.elements.namedItem('gtin') as HTMLInputElement).value = eanValue;
+                                                          }
+                                                          if (form.elements.namedItem('internalCode')) {
+                                                             (form.elements.namedItem('internalCode') as HTMLInputElement).value = internalCodeValue;
+                                                          }
+                                                          await handleProductSubmit(e);
+                                                          return false;
+                                                      }}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="space-y-2 md:col-span-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text">Nomenclatura do Produto/Serviço</label>
@@ -1057,78 +1155,78 @@ const Products: React.FC = () => {
                               {/* Campos específicos para produto */}
                               {modalType === 'product' && (
                                  <>
-                                                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
-                                                      <div className="flex gap-2 items-center">
-                                                         <Input
-                                                            name="gtin"
-                                                            value={eanValue}
-                                                            onChange={e => setEanValue(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                                                            placeholder="7890000000000"
-                                                            icon={<ShieldAlert size={14} className="text-accent/40" />}
-                                                            className="bg-dark-950/50 flex-1"
-                                                            required
-                                                            readOnly={isOperatorUser}
-                                                            disabled={isOperatorUser}
-                                                            autoFocus
-                                                            onKeyDown={e => {
-                                                               if (e.key === 'Enter') {
-                                                                  internalCodeRef.current?.focus();
-                                                                  e.preventDefault();
-                                                               }
-                                                            }}
-                                                         />
-                                                         {!isOperatorUser && (
-                                                            <Button
-                                                               type="button"
-                                                               variant="secondary"
-                                                               className="px-2 py-1 text-[10px] font-bold"
-                                                               title="Gerar EAN automaticamente [ALT+E]"
-                                                               onClick={() => setEanValue(generateEan())}
-                                                               tabIndex={0}
-                                                               onKeyDown={e => {
-                                                                  if (e.key === 'Enter' || e.key === ' ') setEanValue(generateEan());
-                                                               }}
-                                                            >
-                                                               Gerar
-                                                            </Button>
-                                                         )}
-                                                      </div>
-                                                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
-                                                      <div className="flex gap-2 items-center">
-                                                         <Input
-                                                            name="internalCode"
-                                                            value={internalCodeValue}
-                                                            onChange={e => setInternalCodeValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                                            placeholder="000000"
-                                                            icon={<Hash size={14} className="text-accent/40" />}
-                                                            className="bg-dark-950/50 flex-1"
-                                                            readOnly={isOperatorUser}
-                                                            disabled={isOperatorUser}
-                                                            ref={internalCodeRef}
-                                                            onKeyDown={e => {
-                                                               if (e.key === 'Enter') {
-                                                                  // Avança para o próximo campo relevante
-                                                                  document.querySelector('select[name="categoryId"]')?.focus();
-                                                                  e.preventDefault();
-                                                               }
-                                                            }}
-                                                         />
-                                                         {!isOperatorUser && (
-                                                            <Button
-                                                               type="button"
-                                                               variant="secondary"
-                                                               className="px-2 py-1 text-[10px] font-bold"
-                                                               title="Gerar código interno automaticamente [ALT+I]"
-                                                               onClick={() => setInternalCodeValue(generateInternalCode())}
-                                                               tabIndex={0}
-                                                               onKeyDown={e => {
-                                                                  if (e.key === 'Enter' || e.key === ' ') setInternalCodeValue(generateInternalCode());
-                                                               }}
-                                                            >
-                                                               Gerar
-                                                            </Button>
-                                                         )}
-                                                      </div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
+                                    <div className="flex gap-2 items-center">
+                                       <Input
+                                          name="gtin"
+                                          value={eanValue}
+                                          onChange={e => setEanValue(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                                          placeholder="7890000000000"
+                                          icon={<ShieldAlert size={14} className="text-accent/40" />}
+                                          className="bg-dark-950/50 flex-1"
+                                          required
+                                          readOnly={isOperatorUser}
+                                          disabled={isOperatorUser}
+                                          autoFocus
+                                          onKeyDown={e => {
+                                             if (e.key === 'Enter') {
+                                                internalCodeRef.current?.focus();
+                                                e.preventDefault();
+                                             }
+                                          }}
+                                       />
+                                       {!isOperatorUser && (
+                                          <Button
+                                             type="button"
+                                             variant="secondary"
+                                             className="px-2 py-1 text-[10px] font-bold"
+                                             title="Gerar EAN automaticamente [ALT+E]"
+                                             onClick={() => setEanValue(generateEan())}
+                                             tabIndex={0}
+                                             onKeyDown={e => {
+                                                if (e.key === 'Enter' || e.key === ' ') setEanValue(generateEan());
+                                             }}
+                                          >
+                                             Gerar
+                                          </Button>
+                                       )}
+                                    </div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
+                                    <div className="flex gap-2 items-center">
+                                       <Input
+                                          name="internalCode"
+                                          value={internalCodeValue}
+                                          onChange={e => setInternalCodeValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                          placeholder="000000"
+                                          icon={<Hash size={14} className="text-accent/40" />}
+                                          className="bg-dark-950/50 flex-1"
+                                          readOnly={isOperatorUser}
+                                          disabled={isOperatorUser}
+                                          ref={internalCodeRef}
+                                          onKeyDown={e => {
+                                             if (e.key === 'Enter') {
+                                                // Avança para o próximo campo relevante
+                                                document.querySelector('select[name="categoryId"]')?.focus();
+                                                e.preventDefault();
+                                             }
+                                          }}
+                                       />
+                                       {!isOperatorUser && (
+                                          <Button
+                                             type="button"
+                                             variant="secondary"
+                                             className="px-2 py-1 text-[10px] font-bold"
+                                             title="Gerar código interno automaticamente [ALT+I]"
+                                             onClick={() => setInternalCodeValue(generateInternalCode())}
+                                             tabIndex={0}
+                                             onKeyDown={e => {
+                                                if (e.key === 'Enter' || e.key === ' ') setInternalCodeValue(generateInternalCode());
+                                             }}
+                                          >
+                                             Gerar
+                                          </Button>
+                                       )}
+                                    </div>
                                  </>
                               )}
                            </div>
@@ -1320,96 +1418,11 @@ const Products: React.FC = () => {
                                              accept="image/*"
                                              style={{ display: 'none' }}
                                              id="product-image-upload"
-                                             onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                 const file = e.target.files?.[0];
                                                 if (!file) return;
-                                                sendTelemetry('image', 'upload-start', { productId: selectedProduct?.id || null, name: file.name, size: file.size, type: file.type });
-                                                const ean = selectedProduct?.gtin || selectedProduct?.ean ||
-                                                   (document.querySelector('input[name="gtin"]') as HTMLInputElement | null)?.value ||
-                                                   (document.querySelector('input[name="ean"]') as HTMLInputElement | null)?.value || '';
-                                                const name = selectedProduct?.name || (document.querySelector('input[name="name"]') as HTMLInputElement | null)?.value || '';
-                                                const formData = new FormData();
-                                                formData.append('image', file);
-                                                formData.append('ean', ean);
-                                                formData.append('description', name);
-                                                try {
-                                                   console.log('[UPLOAD] Enviando imagem:', { file, ean, name });
-                                                   const res = await fetch('/api/products/upload-image', {
-                                                      method: 'POST',
-                                                      body: formData
-                                                   });
-                                                   const data = await res.json();
-                                                   console.log('[UPLOAD] Resposta do backend:', data);
-                                                   if (data.imageUrl) {
-                                                      // Envie todos os campos obrigatórios do produto junto com o novo imageUrl
-                                                      const p = selectedProduct;
-                                                      if (p) {
-                                                         // Monta o objeto exatamente com os nomes esperados pelo backend (camelCase)
-                                                         const updateData: Record<string, any> = {
-                                                            name: p.name || 'Produto',
-                                                            ean: p.ean || p.gtin || '0000000000000',
-                                                            internalCode: p.internal_code || p.internalCode || 'SEM-COD',
-                                                            unit: p.unit || 'unit',
-                                                            costPrice: typeof p.cost_price === 'number' ? p.cost_price : (typeof p.costPrice === 'number' ? p.costPrice : 0),
-                                                            salePrice: typeof p.sale_price === 'number' ? p.sale_price : (typeof p.salePrice === 'number' ? p.salePrice : 0),
-                                                            autoDiscountEnabled: p.auto_discount_enabled ?? p.autoDiscountEnabled ?? false,
-                                                            autoDiscountValue: p.auto_discount_value ?? p.autoDiscount ?? 0,
-                                                            status: p.status || 'active',
-                                                            stockOnHand: typeof p.stock_on_hand === 'number' ? p.stock_on_hand : (typeof p.stock === 'number' ? p.stock : 0),
-                                                            minStock: typeof p.min_stock === 'number' ? p.min_stock : (typeof p.minStock === 'number' ? p.minStock : 20),
-                                                            imageUrl: data.imageUrl,
-                                                            type: p.type || 'product',
-                                                         };
-                                                         // Só adiciona categoryId e supplierId se existirem e não forem vazios
-                                                         const catId = p.category_id || p.category;
-                                                         if (catId) updateData.categoryId = catId;
-                                                         const supId = p.supplier_id || p.supplier;
-                                                         if (supId) updateData.supplierId = supId;
-                                                         console.log('[UPLOAD] Payload FINAL para update:', JSON.stringify(updateData, null, 2));
-                                                         const updateRes = await fetch(`/api/products/${p.id}`, {
-                                                            method: 'PUT',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify(updateData)
-                                                         });
-                                                         const updateText = await updateRes.text();
-                                                         let parsedUpdateData: any;
-                                                         try {
-                                                            parsedUpdateData = JSON.parse(updateText);
-                                                         } catch {
-                                                            parsedUpdateData = { raw: updateText };
-                                                         }
-                                                         console.log('[UPLOAD] Resposta do update (raw):', updateText);
-                                                         console.log('[UPLOAD] Resposta do update (parsed):', parsedUpdateData);
-                                                         // Após update, buscar o produto atualizado do backend
-                                                         try {
-                                                            const fetchRes = await fetch(`/api/products/${p.id}`);
-                                                            const fetchData = await fetchRes.json();
-                                                            console.log('[UPLOAD] Produto após update (GET):', fetchData);
-                                                            if (fetchData && fetchData.imageUrl) {
-                                                               setSelectedProduct({ ...p, imageUrl: fetchData.imageUrl });
-                                                            } else {
-                                                               setSelectedProduct({ ...p, imageUrl: data.imageUrl });
-                                                            }
-                                                         } catch (fetchErr) {
-                                                            console.error('[UPLOAD] Erro ao buscar produto atualizado:', fetchErr);
-                                                            setSelectedProduct({ ...p, imageUrl: data.imageUrl });
-                                                         }
-                                                         // Atualiza a lista de produtos se necessário
-                                                         if (typeof setProducts === 'function') {
-                                                            setProducts((prev: Product[]) => prev.map((prod: Product) => prod.id === p.id ? { ...prod, imageUrl: data.imageUrl } : prod));
-                                                         }
-                                                         sendTelemetry('image', 'upload-success', { productId: p.id, imageUrl: data.imageUrl });
-                                                         showPopup('success', 'Imagem enviada', 'Foto salva com sucesso!');
-                                                      }
-                                                   } else {
-                                                      showPopup('error', 'Falha no upload', 'Não foi possível salvar a imagem.');
-                                                      sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: 'no-imageUrl' });
-                                                   }
-                                                } catch (err) {
-                                                   console.error('[UPLOAD] Erro ao enviar imagem:', err);
-                                                   showPopup('error', 'Erro', 'Erro ao enviar imagem.');
-                                                   sendTelemetry('image', 'upload-error', { productId: selectedProduct?.id || null, reason: err instanceof Error ? err.message : 'unknown' });
-                                                }
+                                                setImageFile(file);
+                                                sendTelemetry('image', 'select', { name: file.name, size: file.size, type: file.type });
                                              }}
                                           />
                                           <Button
@@ -1455,6 +1468,8 @@ const Products: React.FC = () => {
                                              </button>
                                           )}
                                        </>
+                                    ) : imageFile ? (
+                                       <img src={URL.createObjectURL(imageFile)} className="w-full h-full object-cover opacity-50" alt="Preview" />
                                     ) : <ImageIcon size={20} className="opacity-40" />}
                                  </div>
                               </div>
@@ -1563,7 +1578,7 @@ const Products: React.FC = () => {
                                  <td className="px-6 py-4">{item.status === 'valid' ? <div className="w-2 h-2 rounded-full bg-emerald-500" /> : <AlertCircle size={14} className="text-amber-500" />}</td>
                                  <td className="px-6 py-4 text-slate-200 font-bold">{item.name}</td>
                                  <td className="px-6 py-4 text-slate-500 font-mono">{item.gtin}</td>
-                                 <td className="px-6 py-4 text-right font-mono text-accent">R$ {item.salePrice.toFixed(2)}</td>
+                                 <td className="px-6 py-4 text-right font-mono text-accent">R$ {(Number(item.salePrice) || 0).toFixed(2)}</td>
                                  <td className="px-6 py-4 text-right text-slate-400">{item.stock} UN</td>
                               </tr>
                            ))}
