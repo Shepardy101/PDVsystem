@@ -26,16 +26,21 @@ call pm2 stop PDVsystem >nul 2>&1
 
 :: Força a limpeza da porta 8787 caso o processo ainda esteja pendente
 echo [Info] Garantindo que a porta 8787 esteja livre...
+
 :killport
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8787 ^| findstr LISTENING') do (
-    echo [Info] Finalizando processo na porta 8787 (PID: %%a)...
-    taskkill /f /pid %%a >nul 2>&1
+REM Captura o PID do processo na porta 8787 (se existir)
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8787 ^| findstr LISTENING') do set PID8787=%%a
+if defined PID8787 (
+    echo [Info] Finalizando processo na porta 8787 (PID: %PID8787%)...
+    taskkill /f /pid %PID8787% >nul 2>&1
+    set PID8787=
+    timeout /t 2 /nobreak >nul
+    goto killport
 )
-:: Pequena espera e verificação dupla
-timeout /t 3 /nobreak >nul
+REM Verifica novamente se a porta está livre
 netstat -aon | findstr :8787 | findstr LISTENING >nul
 if %errorlevel% equ 0 (
-    echo [Aviso] Porta 8787 ainda ocupada, tentando novamente...
+    timeout /t 2 /nobreak >nul
     goto killport
 )
 echo [Info] Porta 8787 liberada.
