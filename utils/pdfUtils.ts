@@ -142,7 +142,7 @@ export async function generateReceiptPDF({ company, sale }: ReceiptPDFOptions) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(120,120,120);
-  doc.text('Documento gerado eletronicamente. Não possui valor fiscal.', pageWidth / 2, 287, { align: 'center' });
+
   doc.setTextColor(80,80,80);
   if (sale?.id) {
     doc.setFontSize(8);

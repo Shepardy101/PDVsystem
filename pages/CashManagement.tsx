@@ -13,6 +13,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { getUserById, getOperatorNameById } from '../services/user';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info, CheckCircle2, Receipt, User, Tag, Calendar, FileText, CreditCard, Printer, X, Check, Zap, AlertTriangle, History, Search, ChevronRight, Calculator, Archive, ShoppingBag, Eye, Shield, MessageSquare, FolderPlus, TrendingUp, ArrowUpDown, } from 'lucide-react';
 import { Button, Input, Card, Badge, Modal } from '../components/UI';
+import { generateReceiptPDF } from '../utils/pdfUtils';
 import SuprimentoModal from '../components/modals/SuprimentoModal';
 import { CashSession, MovementTransaction, SaleTransaction } from '@/types';
 import { calculateCashBalance, calculateCashBalanceCents, calculateSessionSalesTotalCents } from '@/utils/calculateCashBalance';
@@ -1239,10 +1240,52 @@ const CashManagement: React.FC = () => {
                      </div>
                   )}
 
-                  {/* Rodapé do Modal */}
-                  <div className="flex gap-4 pt-4 border-t border-white/5">
-                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => closeTxDetail('close-button')}>Fechar Auditoria</Button>
-                  </div>
+                           {/* Rodapé do Modal */}
+                           <div className="flex gap-4 pt-4 border-t border-white/5">
+                               <Button
+                                    variant="secondary"
+                                    className="flex-1 py-4 text-xs font-bold uppercase tracking-widest"
+                                    onClick={() => closeTxDetail('close-button')}
+                               >Fechar Auditoria</Button>
+                               {selectedTx && selectedTx.items && selectedTx.items.length > 0 && selectedTx.payments && selectedTx.payments.length > 0 && (
+                                  <Button
+                                     variant="primary"
+                                     className="flex-1 py-4 text-xs font-bold uppercase tracking-widest"
+                                     icon={<Printer size={18} />}
+                                     onClick={async () => {
+                                        // Monta objeto company (usa dados do .env via pdfUtils)
+                                        const company = {
+                                           name: import.meta.env.VITE_APP_NAME || 'Nome Empresa',
+                                           cnpj: import.meta.env.VITE_APP_CNPJ || '',
+                                           address: import.meta.env.VITE_APP_ADDRESS || '',
+                                           phone: import.meta.env.VITE_APP_PHONE || ''
+                                        };
+                                        // Adapta selectedTx para o formato esperado por generateReceiptPDF
+                                        const sale = {
+                                           ...selectedTx,
+                                           createdAt: selectedTx.created_at || selectedTx.createdAt || Date.now(),
+                                           clientName: selectedTx.client_name || selectedTx.clientName || '',
+                                           clientCpf: selectedTx.client_cpf || selectedTx.clientCpf || '',
+                                           items: (selectedTx.items || []).map((item: any) => ({
+                                              productName: item.product_name_snapshot || item.productName || item.name,
+                                              quantity: item.quantity,
+                                              unitPrice: item.unit_price_at_sale || item.unitPrice || item.unit_price || 0,
+                                           })),
+                                           discountCents: selectedTx.discount_total || selectedTx.discountCents || 0,
+                                           adjustmentCents: selectedTx.adjustmentCents || 0,
+                                           total: selectedTx.total,
+                                           payments: (selectedTx.payments || []).map((p: any) => ({
+                                              method: p.method,
+                                              amount: p.amount,
+                                           })),
+                                           id: selectedTx.id,
+                                        };
+                                        await generateReceiptPDF({ company, sale });
+                                     }}
+                                     title="Imprimir Recibo [I]"
+                                  >Imprimir Recibo</Button>
+                               )}
+                           </div>
                </div>
             )}
          </Modal>
@@ -1365,10 +1408,50 @@ const CashManagement: React.FC = () => {
                      </div>
                   )}
 
-                  {/* Rodapé do Modal */}
-                  <div className="flex gap-4 pt-4 border-t border-white/5">
-                     <Button variant="secondary" className="flex-1 py-4 text-xs font-bold uppercase tracking-widest" onClick={() => closeTxDetail('close-button')}>Fechar Auditoria</Button>
-                  </div>
+                           {/* Rodapé do Modal */}
+                           <div className="flex gap-4 pt-4 border-t border-white/5">
+                               <Button
+                                    variant="secondary"
+                                    className="flex-1 py-4 text-xs font-bold uppercase tracking-widest"
+                                    onClick={() => closeTxDetail('close-button')}
+                               >Fechar Auditoria</Button>
+                               {selectedTx && selectedTx.items && selectedTx.items.length > 0 && selectedTx.payments && selectedTx.payments.length > 0 && (
+                                  <Button
+                                     variant="primary"
+                                     className="flex-1 py-4 text-xs font-bold uppercase tracking-widest"
+                                     icon={<Printer size={18} />}
+                                     onClick={async () => {
+                                        const company = {
+                                           name: import.meta.env.VITE_APP_NAME || 'Nome Empresa',
+                                           cnpj: import.meta.env.VITE_APP_CNPJ || '',
+                                           address: import.meta.env.VITE_APP_ADDRESS || '',
+                                           phone: import.meta.env.VITE_APP_PHONE || ''
+                                        };
+                                        const sale = {
+                                           ...selectedTx,
+                                           createdAt: selectedTx.created_at || selectedTx.createdAt || Date.now(),
+                                           clientName: selectedTx.client_name || selectedTx.clientName || '',
+                                           clientCpf: selectedTx.client_cpf || selectedTx.clientCpf || '',
+                                           items: (selectedTx.items || []).map((item: any) => ({
+                                              productName: item.product_name_snapshot || item.productName || item.name,
+                                              quantity: item.quantity,
+                                              unitPrice: item.unit_price_at_sale || item.unitPrice || item.unit_price || 0,
+                                           })),
+                                           discountCents: selectedTx.discount_total || selectedTx.discountCents || 0,
+                                           adjustmentCents: selectedTx.adjustmentCents || 0,
+                                           total: selectedTx.total,
+                                           payments: (selectedTx.payments || []).map((p: any) => ({
+                                              method: p.method,
+                                              amount: p.amount,
+                                           })),
+                                           id: selectedTx.id,
+                                        };
+                                        await generateReceiptPDF({ company, sale });
+                                     }}
+                                     title="Imprimir Recibo [I]"
+                                  >Imprimir Recibo</Button>
+                               )}
+                           </div>
                </div>
             )}
          </Modal>

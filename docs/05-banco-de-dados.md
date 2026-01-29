@@ -31,7 +31,7 @@
 - `name TEXT NOT NULL`
 - `ean TEXT UNIQUE NULL`
 - `internal_code TEXT UNIQUE NULL`
-- `unit TEXT NOT NULL CHECK(unit IN ('cx','unit','kg','serv'))`
+- `unit TEXT NOT NULL CHECK(unit IN ('cx','unit','kg','serv'))` (serviço usa 'serv')
 - `cost_price INTEGER NOT NULL DEFAULT 0`
 - `sale_price INTEGER NOT NULL DEFAULT 0`
 - `auto_discount_enabled INTEGER NOT NULL DEFAULT 0`
@@ -43,7 +43,7 @@
 - `created_at INTEGER NOT NULL`
 - `updated_at INTEGER NOT NULL`
 - `imageUrl TEXT`
-- `type TEXT DEFAULT 'product'`
+- `type TEXT DEFAULT 'product'` (serviço usa 'service')
 - `min_stock INTEGER NOT NULL DEFAULT 20`
 
 ### sales (0001)
@@ -137,6 +137,7 @@
 - `key TEXT PK`
 - `value TEXT NOT NULL`
 - Seeds: `('admin_password','admin123')`, `('can_approve_movements','true')`
+- Inclui a chave `Enable_Negative_Casher` (migration automática).
 
 ### allowed_ips / pending_ips (0011, 0025, 0026)
 - `allowed_ips`: `id INTEGER PK AUTOINCREMENT`, `ip TEXT NOT NULL UNIQUE`, `hostname TEXT`, `autorizado_em DATETIME DEFAULT CURRENT_TIMESTAMP`, `autorizado_por TEXT`.

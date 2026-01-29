@@ -38,8 +38,15 @@
 ## Caixa - Histórico (`server/src/routes/cash.history.routes.ts`)
 - `GET /api/cash/history`: lista sessões ordenadas por `opened_at` desc; calcula `sales_total`, `sangrias_total`, `suprimentos_total`, `expected_balance`, `status` (status danger se `difference_at_close` diferente de 0).
 
-## Produtos/Categorias
-- Rotas em `server/src/routes/product.routes.ts` e `category.routes.ts` (não exibidas; lacuna).
+## Produtos/Serviços/Categorias
+- Rotas em `server/src/routes/product.routes.ts` e `category.routes.ts`.
+- `POST /api/products` aceita tanto produtos quanto serviços:
+  - Para serviço: envie `type: 'service'` e `unit: 'serv'`.
+  - Campos opcionais (ean, internalCode, supplierId) podem ser string vazia/null para serviços.
+- Geração de PDF de recibo:
+  - O frontend utiliza a função `generateReceiptPDF` (ver utils/pdfUtils.ts) para gerar recibos de venda e de auditoria de movimentação transacional.
+  - O PDF é baixado no desktop e compartilhado no mobile (Web Share API).
+  - O botão de imprimir/compartilhar está disponível tanto na finalização de venda quanto na auditoria de movimentação.
 
 ## Usuários / Clientes / Fornecedores
 - Rotas em `server/src/routes/user.routes.ts` (clients incluídos), `supplier.routes.ts` (não exibidas; lacuna).
@@ -55,6 +62,7 @@
 - `GET /api/settings`: retorna todas as configs.
 - `GET /api/settings/:key`: retorna chave específica ou 404.
 - `PUT /api/settings/:key`: body `{ value, oldValue? }`; se `key === 'admin_password'`, valida `oldValue` contra valor atual.
+- A configuração `Enable_Negative_Casher` é criada automaticamente por migration e pode ser lida/alterada por esses endpoints.
 
 ## Admin DB (`server/src/routes/adminDb.routes.ts`)
 - Guard: `guardAdminDb` (em `services/adminDb.service.ts`): exige `ENABLE_DB_ADMIN === 'true'` e IP localhost.

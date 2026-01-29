@@ -1,7 +1,7 @@
 {
   "name": "pdvsys",
   "private": true,
-  "version": "1.0.15",
+  "version": "1.0.16",
   "dependencies": {
     "@google/genai": "^1.34.0",
     "axios": "^1.13.4",
@@ -50,6 +50,7 @@
     "docs:check": "node scripts/docs-check.mjs",
     "docs:setup-hooks": "node scripts/setup-githooks.mjs",
     "tunnel": "node server/Ngrox/server.js",
-    "tunnel:auth": "ngrok config add-authtoken"
+    "tunnel:auth": "ngrok config add-authtoken",
+    "up": "node scripts/bump-version.js"
   }
 }

@@ -21,8 +21,14 @@
 - Fechamento (`POST /api/cash/close`): recebe `physicalCount`; calcula diferença e encerra sessão.
 - Histórico (`GET /api/cash/history`): consolida `sales_total`, `sangrias_total`, `suprimentos_total`, `expected_balance`; status danger se `difference_at_close != 0`.
 
+## Recibos e Auditoria
+- Toda venda e movimentação transacional do tipo venda pode gerar recibo PDF moderno via função utilitária no frontend.
+- O PDF é baixado no desktop e compartilhado no mobile (Web Share API).
+- O botão de imprimir/compartilhar está disponível tanto na finalização de venda quanto na auditoria de movimentação.
+
 ## Estoque / Produtos
 - `products.unit` suporta `cx|unit|kg|serv`; `min_stock` padrão 20; `status` active/inactive.
+- Para serviços, use `unit: 'serv'` e `type: 'service'`.
 - `sale_items` capturam snapshot de produto (nome, códigos, unidade, preços, descontos aplicados).
 
 ## Segurança (negócio)
