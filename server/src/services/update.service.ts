@@ -24,6 +24,17 @@ export class UpdateService {
         };
     }
 
+    cleanupUpdate() {
+        if (this.isUpdateReady()) {
+            try {
+                fs.unlinkSync(TEMP_UPDATE_PATH);
+                console.log('[UpdateService] Pacote de atualização antigo removido (Limpeza).');
+            } catch (err) {
+                console.warn('[UpdateService] Falha ao remover pacote temporário:', err);
+            }
+        }
+    }
+
     async checkUpdate() {
         try {
             console.log(`[UpdateService] Verificando atualizações... Versão atual: ${this.currentVersion}`);
@@ -34,6 +45,10 @@ export class UpdateService {
                 console.log(`[UpdateService] Nova versão disponível: ${remoteConfig.version}`);
                 return remoteConfig;
             }
+
+            // Se chegamos aqui, o sistema já está na versão remota
+            // Se houver um lixo de zip antigo, limpamos agora
+            this.cleanupUpdate();
 
             console.log('[UpdateService] Sistema atualizado.');
             return null;

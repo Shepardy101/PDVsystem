@@ -103,14 +103,12 @@ startPerformanceLogger();
 // Função unificada para verificar e baixar atualizações
 async function runUpdateCheck() {
   try {
-    // Evita download redundante se já existe um patch pronto para aplicação
-    if (updateService.isUpdateReady()) {
-      console.log('[UpdateService] Existe uma atualização pendente de aplicação. Use o painel administrativo para aplicar.');
-      return;
-    }
-
     const config = await updateService.checkUpdate();
     if (config) {
+      if (updateService.isUpdateReady()) {
+        console.log('[UpdateService] Existe uma atualização pronta para aplicação. Use o painel administrativo.');
+        return;
+      }
       await updateService.downloadAndPrepare(config.url);
       console.log('[UpdateService] Sistema preparado. No próximo reinício a atualização será aplicada (ou via painel admin).');
     }

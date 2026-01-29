@@ -676,15 +676,7 @@ const Settings: React.FC = () => {
                   DB Manager
                </Button>
 
-               <Button icon={<Terminal size={18} />} onClick={() => {
-                  if (showLogsModal) {
-                     closeLogsModal();
-                  } else {
-                     openLogsModal();
-                  }
-               }}>
-                  {'LOGS'}
-               </Button>
+
             </div>
          </div>
 
