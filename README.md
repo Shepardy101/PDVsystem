@@ -33,22 +33,89 @@ Para gerar um pacote pronto para o cliente final:
 2. Execute `.\instalar-app.bat`.
 3. Para abrir o sistema, use o atalho criado ou `.\iniciar-app.bat`.
 
+
+
+## 🖥️ Executar backend em background (Produção)
+
+Para rodar o backend automaticamente em background (sem terminal aberto), utilize o pm2:
+
+### Instalar pm2 (se necessário)
+Abra o Prompt de Comando como Administrador e execute:
+```sh
+npm install -g pm2
+```
+
+### Iniciar backend com pm2
+No diretório do release, execute:
+```sh
+pm2 start server/dist/index.js --name PDVsystem --env production --node-args="--env-file=.env"
+pm2 save
+pm2 startup
+```
+Esses comandos garantem que o backend rode em segundo plano e inicie automaticamente com o Windows.
+
+### Parar, reiniciar e logs
+```sh
+pm2 stop PDVsystem      # Para o backend
+pm2 restart PDVsystem   # Reinicia o backend
+pm2 logs PDVsystem      # Mostra logs
+```
+
+### Remover do pm2
+```sh
+pm2 delete PDVsystem
+```
+
+---
 ## Executar (resumo)
 - Dev: `npm run dev` (backend watch + Vite em 3000)
 - Build: `npm run build` (client + server)
-- Prod local: `npm run start:prod` ou `pm2 start server/dist/index.js --name PDVsystem --env production`
+- Prod local: `npm run start:prod`
 - Pacote para cliente: `package-app.bat` → gera `build/PDVsystem-release.zip`
-- Instalação no cliente (após extrair o zip): `instalar-app.bat` (npm ci --production, pm2) e depois `iniciar-app.bat`
+- Instalação no cliente (após extrair o zip): `instalar-app.bat` (npm ci --production) e depois `iniciar-app.bat`
 
 ### 🌐 Acesso Remoto (Opcional)
 Se precisar acessar o sistema de qualquer lugar via internet:
 1. Certifique-se de que o backend está rodando.
 2. Execute o arquivo `iniciar-tunel.bat`.
-3. Utilize a URL `Forwarding` gerada pelo Ngrok (ex: `https://abcd-123.ngrok-free.app`).
+### 🧑‍💻 Exemplos de execução e troubleshooting (Windows/PowerShell)
 
- $env:ENABLE_DB_ADMIN="true"; npm run dev
+Abaixo estão exemplos de comandos úteis para desenvolvedores e administradores ao rodar e diagnosticar o PDVsystem em ambiente Windows:
 
+```powershell
+# Ativa o modo Admin DB (NUNCA use em produção!) e inicia em modo desenvolvimento
+$env:ENABLE_DB_ADMIN="true"; npm run dev
+
+# Ativa o modo Admin DB e inicia em produção (apenas para testes locais)
 $env:ENABLE_DB_ADMIN="true"; npm run start:prod
+```
+> **Comentário:**  
+> A variável de ambiente `ENABLE_DB_ADMIN` permite acesso ao Admin DB Manager, que só deve ser usado localmente para manutenção ou testes. Nunca habilite em produção real.
+
+#### 🔎 Verificando se a porta 8787 está em uso
+
+Para checar se o backend está rodando corretamente ou identificar conflitos de porta:
+
+```powershell
+netstat -ano | findstr 8787
+```
+> **Comentário:**  
+> O comando acima lista todos os processos escutando na porta 8787. O número na última coluna é o PID (identificador do processo).
+
+#### 🛑 Finalizando processo travado
+
+Se precisar encerrar um processo que está usando a porta 8787 (por exemplo, após um crash ou travamento):
+
+```powershell
+taskkill /PID 15904 /F
+```
+> **Comentário:**  
+> Substitua `15904` pelo PID retornado pelo comando anterior. O parâmetro `/F` força o encerramento imediato.
+
+---
+
+Esses comandos são úteis para resolver problemas comuns de ambiente, como porta ocupada ou necessidade de reiniciar o backend.  
+Sempre verifique se o Admin DB está desabilitado (`ENABLE_DB_ADMIN=false`) em produção para garantir a segurança.
 
 ## Pastas importantes
 - `dist/` SPA frontend

@@ -1,5 +1,23 @@
 // @ts-ignore
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+// Utilitários para geração de códigos
+function generateEan() {
+   // Gera EAN-13 começando com 789 e 10 dígitos aleatórios
+   let ean = '789';
+   for (let i = 0; i < 10; i++) {
+      ean += Math.floor(Math.random() * 10);
+   }
+   return ean.slice(0, 13);
+}
+
+function generateInternalCode() {
+   // Gera código interno de 6 dígitos
+   let code = '';
+   for (let i = 0; i < 6; i++) {
+      code += Math.floor(Math.random() * 10);
+   }
+   return code;
+}
 import { createPortal } from 'react-dom';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -12,6 +30,30 @@ import { isOperator } from '../types';
 import { logUiEvent } from '../services/telemetry';
 
 const Products: React.FC = () => {
+
+   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+   // Estado para auto-ativação do produto
+   const [autoActive, setAutoActive] = useState(true);
+   // Estados de Categoria
+   const [categories, setCategories] = useState<Category[]>([]);
+   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+   const [newCategoryName, setNewCategoryName] = useState('');
+   // Estados de Fornecedor
+   const [suppliers, setSuppliers] = useState<{ id: string, name: string }[]>([]);
+   const [isSupplierLoading, setIsSupplierLoading] = useState(false);
+   // Estados de Importação
+   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+   const [isUploading, setIsUploading] = useState(false);
+   const [importResults, setImportResults] = useState<any[]>([]);
+   // Estados de Filtro
+   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+   const [stockStatus, setStockStatus] = useState<'all' | 'low' | 'normal'>('all');
+   const [showCategoryList, setShowCategoryList] = useState(false);
+   const [showStockList, setShowStockList] = useState(false);
+   type SortKey = 'name' | 'costPrice' | 'salePrice' | 'stock';
+   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
+
    // SSE: Atualização em tempo real dos produtos
    React.useEffect(() => {
       const evtSource = new EventSource('/api/products/events');
@@ -52,30 +94,23 @@ const Products: React.FC = () => {
    const [searchTerm, setSearchTerm] = useState('');
    const [showImages, setShowImages] = useState(false);
    const [showFilters, setShowFilters] = useState(false);
-   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-   // Estado para auto-ativação do produto
-   const [autoActive, setAutoActive] = useState(true);
-   // Estados de Categoria
-   const [categories, setCategories] = useState<Category[]>([]);
-   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-   const [newCategoryName, setNewCategoryName] = useState('');
-   // Estados de Fornecedor
-   const [suppliers, setSuppliers] = useState<{ id: string, name: string }[]>([]);
-   const [isSupplierLoading, setIsSupplierLoading] = useState(false);
-   // Estados de Importação
-   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-   const [isUploading, setIsUploading] = useState(false);
-   const [importResults, setImportResults] = useState<any[]>([]);
-   // Estados de Filtro
-   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-   const [stockStatus, setStockStatus] = useState<'all' | 'low' | 'normal'>('all');
-   const [showCategoryList, setShowCategoryList] = useState(false);
-   const [showStockList, setShowStockList] = useState(false);
-   type SortKey = 'name' | 'costPrice' | 'salePrice' | 'stock';
-   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    // Estado local para EAN e código interno
+    const [eanValue, setEanValue] = useState('');
+    const [internalCodeValue, setInternalCodeValue] = useState('');
+    const internalCodeRef = useRef<HTMLInputElement>(null);
 
+    // Preenche os campos ao abrir para edição
+    useEffect(() => {
+       if (selectedProduct) {
+          setEanValue(selectedProduct.gtin || selectedProduct.ean || '');
+          setInternalCodeValue(selectedProduct.internalCode || '');
+       } else {
+          setEanValue('');
+          setInternalCodeValue('');
+       }
+    }, [selectedProduct, isCreateModalOpen]);
+   
    const toggleSort = (key: SortKey) => {
       setSortConfig(prev => {
          const next = prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' };
@@ -984,7 +1019,13 @@ const Products: React.FC = () => {
 
                   {/* Modal Content */}
                   <div className="p-2 overflow-y-auto custom-scrollbar space-y-8 relative z-10">
-                     <form id="product-form" onSubmit={handleProductSubmit}>
+                                    <form id="product-form" onSubmit={e => {
+                                       // Garante que os valores locais sejam enviados
+                                       const form = e.target as HTMLFormElement;
+                                       (form.elements.namedItem('gtin') as HTMLInputElement).value = eanValue;
+                                       (form.elements.namedItem('internalCode') as HTMLInputElement).value = internalCodeValue;
+                                       handleProductSubmit(e);
+                                    }}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="space-y-2 md:col-span-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text">Nomenclatura do Produto/Serviço</label>
@@ -1016,28 +1057,78 @@ const Products: React.FC = () => {
                               {/* Campos específicos para produto */}
                               {modalType === 'product' && (
                                  <>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
-                                    <Input
-                                       name="gtin"
-                                       defaultValue={selectedProduct?.gtin}
-                                       placeholder="789000000000"
-                                       icon={<ShieldAlert size={14} className="text-accent/40" />}
-                                       className="bg-dark-950/50"
-                                       required
-                                       readOnly={isOperatorUser}
-                                       disabled={isOperatorUser}
-                                    />
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
-                                    <Input
-                                       name="internalCode"
-                                       defaultValue={selectedProduct?.internalCode}
-                                       placeholder="ABC-123"
-                                       icon={<Hash size={14} className="text-accent/40" />}
-                                       className="bg-dark-950/50"
-                                       required
-                                       readOnly={isOperatorUser}
-                                       disabled={isOperatorUser}
-                                    />
+                                                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
+                                                      <div className="flex gap-2 items-center">
+                                                         <Input
+                                                            name="gtin"
+                                                            value={eanValue}
+                                                            onChange={e => setEanValue(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                                                            placeholder="7890000000000"
+                                                            icon={<ShieldAlert size={14} className="text-accent/40" />}
+                                                            className="bg-dark-950/50 flex-1"
+                                                            required
+                                                            readOnly={isOperatorUser}
+                                                            disabled={isOperatorUser}
+                                                            autoFocus
+                                                            onKeyDown={e => {
+                                                               if (e.key === 'Enter') {
+                                                                  internalCodeRef.current?.focus();
+                                                                  e.preventDefault();
+                                                               }
+                                                            }}
+                                                         />
+                                                         {!isOperatorUser && (
+                                                            <Button
+                                                               type="button"
+                                                               variant="secondary"
+                                                               className="px-2 py-1 text-[10px] font-bold"
+                                                               title="Gerar EAN automaticamente [ALT+E]"
+                                                               onClick={() => setEanValue(generateEan())}
+                                                               tabIndex={0}
+                                                               onKeyDown={e => {
+                                                                  if (e.key === 'Enter' || e.key === ' ') setEanValue(generateEan());
+                                                               }}
+                                                            >
+                                                               Gerar
+                                                            </Button>
+                                                         )}
+                                                      </div>
+                                                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
+                                                      <div className="flex gap-2 items-center">
+                                                         <Input
+                                                            name="internalCode"
+                                                            value={internalCodeValue}
+                                                            onChange={e => setInternalCodeValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                                            placeholder="000000"
+                                                            icon={<Hash size={14} className="text-accent/40" />}
+                                                            className="bg-dark-950/50 flex-1"
+                                                            readOnly={isOperatorUser}
+                                                            disabled={isOperatorUser}
+                                                            ref={internalCodeRef}
+                                                            onKeyDown={e => {
+                                                               if (e.key === 'Enter') {
+                                                                  // Avança para o próximo campo relevante
+                                                                  document.querySelector('select[name="categoryId"]')?.focus();
+                                                                  e.preventDefault();
+                                                               }
+                                                            }}
+                                                         />
+                                                         {!isOperatorUser && (
+                                                            <Button
+                                                               type="button"
+                                                               variant="secondary"
+                                                               className="px-2 py-1 text-[10px] font-bold"
+                                                               title="Gerar código interno automaticamente [ALT+I]"
+                                                               onClick={() => setInternalCodeValue(generateInternalCode())}
+                                                               tabIndex={0}
+                                                               onKeyDown={e => {
+                                                                  if (e.key === 'Enter' || e.key === ' ') setInternalCodeValue(generateInternalCode());
+                                                               }}
+                                                            >
+                                                               Gerar
+                                                            </Button>
+                                                         )}
+                                                      </div>
                                  </>
                               )}
                            </div>

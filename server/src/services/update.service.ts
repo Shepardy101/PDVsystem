@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import axios from 'axios';
+import { logEvent } from '../utils/audit';
 
 const pkgPath = path.join(process.cwd(), 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-const UPDATE_CONFIG_URL = 'https://raw.githubusercontent.com/Shepardy22/pdvsys-check-version/main/version.json'; // Exemplo
+const UPDATE_CONFIG_URL = 'https://raw.githubusercontent.com/Shepardy22/pdvsys-check-version/main/version.json';
 const TEMP_UPDATE_PATH = path.join(process.cwd(), 'temp_update.zip');
 
 export class UpdateService {
@@ -42,7 +43,7 @@ export class UpdateService {
             const remoteConfig = response.data;
 
             if (this.isNewerVersion(remoteConfig.version, this.currentVersion)) {
-                console.log(`[UpdateService] Nova versão disponível: ${remoteConfig.version}`);
+                logEvent(`[UpdateService] Nova versão disponível: ${remoteConfig.version}. Versão atual: ${this.currentVersion}`, 'info');
                 return remoteConfig;
             }
 
@@ -56,7 +57,7 @@ export class UpdateService {
             if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
                 console.log('[UpdateService] Sem conexão com servidor de atualizações (DNS/Offline).');
             } else {
-                console.error('[UpdateService] Erro ao verificar atualização:', error.message || error);
+                logEvent(`[UpdateService] Erro ao verificar atualização: ${error.message || error}`, 'error');
             }
             return null;
         }
@@ -107,18 +108,30 @@ export class UpdateService {
     }
 
     triggerUpdateScript() {
-        console.log('[UpdateService] Iniciando script de atualização externa...');
+        logEvent('[UpdateService] Acionando script de atualização externa com privilégios de Administrador...', 'warn');
         const scriptPath = path.join(process.cwd(), 'atualizar-app.bat');
 
-        // Inicia o script em um novo processo e fecha o processo atual
-        const child = exec(`start cmd /c "${scriptPath}"`, {
-            // @ts-ignore
-            detached: true,
-            stdio: 'ignore'
-        } as any);
+        try {
+            // Para garantir que o script .bat rode como admin, usamos o PowerShell com 'Start-Process -Verb RunAs'
+            // Isso abrirá um novo prompt solicitando permissão (UAC) ou rodará direto se o usuário já tiver privilégios
+            const psCommand = `Start-Process -FilePath "${scriptPath}" -Verb RunAs -WindowStyle Normal`;
 
-        child.unref();
-        process.exit(0);
+            const child = spawn('powershell', ['-Command', psCommand], {
+                detached: true,
+                stdio: 'ignore',
+                shell: true,
+                windowsHide: false // Precisamos que a janela apareça para o usuário ver o progresso (ou o prompt UAC)
+            });
+
+            child.unref();
+            logEvent('[UpdateService] Comando de elevação enviado. Encerrando processo principal...', 'info');
+
+            setTimeout(() => {
+                process.exit(0);
+            }, 1500);
+        } catch (err: any) {
+            logEvent(`[UpdateService] Falha crítica ao disparar script elevado: ${err.message}`, 'error');
+        }
     }
 
     private isNewerVersion(remote: string, local: string): boolean {

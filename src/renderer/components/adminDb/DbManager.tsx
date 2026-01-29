@@ -11,39 +11,12 @@ const DbManager: React.FC = () => {
 	const [selectedTable, setSelectedTable] = useState<string | null>(null);
 	const [editingRow, setEditingRow] = useState<any>(null);
 	const [queryPanelOpen, setQueryPanelOpen] = useState(false);
-	const [showResetModal, setShowResetModal] = useState(false);
 	const [showSeedModal, setShowSeedModal] = useState(false);
 	const [resetting, setResetting] = useState(false);
-	const [resetResult, setResetResult] = useState<string | null>(null);
 
 	return (
 		<div className="flex h-full w-full bg-dark-950">
-			{/* Modal de reset do banco */}
-			{showResetModal && (
-				<div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center animate-in fade-in">
-					<div className="bg-dark-950 rounded-2xl shadow-2xl border border-accent/30 w-[400px] max-w-full p-8 relative flex flex-col items-center">
-						<h2 className="text-lg font-bold text-red-500 mb-2">Resetar Banco de Dados</h2>
-						<p className="text-slate-400 text-sm mb-4 text-center">Esta ação irá apagar <b>TODOS</b> os dados do sistema e criar um usuário root padrão.<br />Digite <b>RESET</b> para confirmar.</p>
-						<input className="mb-4 px-3 py-2 rounded bg-dark-900 border border-white/10 text-white text-center" type="text" placeholder="Digite RESET" onChange={e => setResetResult(e.target.value)} disabled={resetting} />
-						<div className="flex gap-2 w-full justify-center">
-							<button className="btn btn-secondary" onClick={() => setShowResetModal(false)} disabled={resetting}>Cancelar</button>
-							<button className="btn btn-danger" disabled={resetResult !== 'RESET' || resetting} onClick={async () => {
-								setResetting(true);
-								try {
-									await resetDatabase();
-									setResetResult('OK');
-								} catch (e: any) {
-									setResetResult('ERRO');
-								} finally {
-									setResetting(false);
-								}
-							}}>Resetar</button>
-						</div>
-						{resetResult === 'OK' && <div className="mt-4 text-green-500 font-bold">Banco resetado e root criado!</div>}
-						{resetResult === 'ERRO' && <div className="mt-4 text-red-500 font-bold">Erro ao resetar banco.</div>}
-					</div>
-				</div>
-			)}
+			
 
 			{/* Modal de Seed Demo */}
 			{showSeedModal && (
@@ -85,9 +58,7 @@ const DbManager: React.FC = () => {
 					<button className="btn btn-primary !bg-cyan-600 !border-cyan-500" onClick={() => { setShowSeedModal(true); }}>
 						Popular Demonstração (Mock)
 					</button>
-					<button className="btn btn-danger" onClick={() => { setShowResetModal(true); setResetResult(null); }}>
-						Resetar Banco de Dados
-					</button>
+				
 				</div>
 				{selectedTable ? (
 					<RowsTable table={selectedTable} onEditRow={setEditingRow} />

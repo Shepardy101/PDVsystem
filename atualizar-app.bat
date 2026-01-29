@@ -19,9 +19,26 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Tenta parar o servico se existir (NSSM ou Nativo)
-echo [Info] Tentando parar servico PDVsystem...
-net stop PDVsystem >nul 2>&1
+
+:: Para backend via pm2
+echo [Info] Parando backend (pm2)...
+call pm2 stop PDVsystem >nul 2>&1
+
+:: Força a limpeza da porta 8787 caso o processo ainda esteja pendente
+echo [Info] Garantindo que a porta 8787 esteja livre...
+:killport
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8787 ^| findstr LISTENING') do (
+    echo [Info] Finalizando processo na porta 8787 (PID: %%a)...
+    taskkill /f /pid %%a >nul 2>&1
+)
+:: Pequena espera e verificação dupla
+timeout /t 3 /nobreak >nul
+netstat -aon | findstr :8787 | findstr LISTENING >nul
+if %errorlevel% equ 0 (
+    echo [Aviso] Porta 8787 ainda ocupada, tentando novamente...
+    goto killport
+)
+echo [Info] Porta 8787 liberada.
 
 echo [2/5] Extraindo arquivos...
 if exist "%EXTRACT_DIR%" rmdir /s /q "%EXTRACT_DIR%"
@@ -42,13 +59,13 @@ echo [4/5] Limpando arquivos temporarios...
 rmdir /s /q "%EXTRACT_DIR%"
 del /f /q "%TEMP_ZIP%"
 
-echo [5/5] Reiniciando sistema...
-echo [Info] Iniciando servico PDVsystem...
-net start PDVsystem >nul 2>&1
 
+echo [5/5] Reiniciando backend (pm2)...
+call pm2 start server/dist/index.js --name PDVsystem --env production --node-args="--env-file=.env"
+call pm2 save >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [Aviso] Nao foi possivel iniciar o servico automaticamente via 'net start'. 
-    echo Verifique se o servico esta instalado com o nome 'PDVsystem'.
+    echo [Aviso] Nao foi possivel iniciar o backend automaticamente via pm2.
+    echo Verifique se o pm2 está instalado e configurado corretamente.
 )
 
 echo ========================================

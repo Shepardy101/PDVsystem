@@ -5,6 +5,7 @@
 - Windows recomendado (scripts .bat e pm2 utilizados).
 - pm2 global (`npm install -g pm2`) para uso dos scripts de serviço.
 
+
 ## Passo a passo
 ### Desenvolvimento
 1) `npm install`
@@ -15,7 +16,10 @@
 4) Build completo: `npm run build` (client + server).
 
 ### Produção local (com artefatos buildados)
-5) `npm run start:prod` ou pm2: `pm2 start server/dist/index.js --name PDVsystem --env production --node-args="--env-file=.env"`.
+5) `npm run start:prod` ou, preferencialmente, pm2:
+	- `pm2 start server/dist/index.js --name PDVsystem --env production --node-args="--env-file=.env"`
+	- `pm2 save`
+	- `pm2 startup` (para iniciar automaticamente com o Windows)
 6) Start TS direto (sem build): `npm run dev:api` (requer tsx).
 
 ### Distribuição para cliente (zip pronto)

@@ -35,7 +35,6 @@ copy /y "instalar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-app.bat" "%STAGEDIR%" >nul
 copy /y "executar-servico.bat" "%STAGEDIR%" >nul
 copy /y "atualizar-app.bat" "%STAGEDIR%" >nul
-copy /y "nssm.exe" "%STAGEDIR%" >nul
 copy /y "iniciar-tunel.bat" "%STAGEDIR%" >nul
 copy /y "criar-atalho-app.bat" "%STAGEDIR%" >nul
 copy /y "INSTALACAO-CLIENTE.txt" "%STAGEDIR%" >nul

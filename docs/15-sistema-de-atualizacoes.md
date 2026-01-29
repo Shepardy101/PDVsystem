@@ -16,8 +16,8 @@ O sistema de atualização é composto por três partes principais:
 1. O servidor inicia e verifica a versão no `version.json` remoto.
 2. Se a versão remota for maior que a local (ex: `1.0.1` > `1.0.0`), o download do `.zip` é iniciado.
 3. O arquivo é salvo como `temp_update.zip` na raiz do projeto.
-4. Quando disparado (manualmente ou automaticamente), o sistema executa o `atualizar-app.bat` e encerra o processo Node.js.
-5. O script `.bat` para o PM2, extrai o ZIP, substitui os arquivos e reinicia o PM2.
+4. Quando disparado (manualmente ou automaticamente), o sistema executa o `atualizar-app.bat` e encerra o backend via pm2.
+5. O script `.bat` extrai o ZIP, substitui os arquivos e reinicia o backend via pm2.
 
 ---
 

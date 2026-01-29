@@ -93,6 +93,8 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT} (ou pelo IP local)`);
+  console.log(`Working Directory: ${process.cwd()}`);
+  console.log(`Internal Directory: ${__dirname}`);
 });
 
 // Agendamento diário de retenção de logs
@@ -120,5 +122,8 @@ async function runUpdateCheck() {
 // Verificação de atualização automática (a cada 1 hora)
 setInterval(runUpdateCheck, 1000 * 60 * 60);
 
-// Verificação inicial na subida do sistema
-runUpdateCheck();
+// Verificação inicial na subida do sistema (com delay de 10s para garantir rede)
+setTimeout(() => {
+  console.log('[UpdateService] Executando verificação de atualização inicial...');
+  runUpdateCheck();
+}, 10000);

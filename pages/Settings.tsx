@@ -352,15 +352,28 @@ const Settings: React.FC = () => {
    const [updateStatus, setUpdateStatus] = useState<{ currentVersion: string; isUpdateReady: boolean } | null>(null);
    const [applyingUpdate, setApplyingUpdate] = useState(false);
 
-   const fetchUpdateStatus = async () => {
+   const fetchUpdateStatus = async (forceCheck = false) => {
       try {
-         const res = await fetch('/api/update/status');
+         const endpoint = forceCheck ? '/api/update/check' : '/api/update/status';
+         const res = await fetch(endpoint);
          if (res.ok) {
             const data = await res.json();
-            setUpdateStatus(data);
+            // data de /api/update/check retorna { update: { version, url } | null }
+            // data de /api/update/status retorna { currentVersion, isUpdateReady, updatePath }
+            if (forceCheck) {
+               await fetchUpdateStatus(false); // atualiza o status local após checar remoto
+               if (data.update) {
+                  toast.success(`Nova versão encontrada: ${data.update.version}`);
+               } else {
+                  toast.success('Sistema já está na versão mais recente.');
+               }
+            } else {
+               setUpdateStatus(data);
+            }
          }
       } catch (e) {
-         console.warn('[Settings] Falha ao checar status de atualização local');
+         console.warn('[Settings] Falha ao checar status de atualização');
+         if (forceCheck) toast.error('Falha ao conectar com servidor de atualizações');
       }
    };
 
@@ -730,7 +743,13 @@ const Settings: React.FC = () => {
                                  </div>
                               </div>
                               <div className="flex gap-2">
-                                 <Button size="xs" variant="secondary" onClick={fetchUpdateStatus} icon={<RefreshCcw size={12} />}>
+                                 <Button size="xs" variant="secondary" onClick={() => {
+                                    toast.promise(fetchUpdateStatus(true), {
+                                       loading: 'Verificando atualizações...',
+                                       success: 'Verificação concluída',
+                                       error: 'Erro ao verificar'
+                                    });
+                                 }} icon={<RefreshCcw size={12} />}>
                                     Check_Updates
                                  </Button>
                                  {updateStatus?.isUpdateReady && (
