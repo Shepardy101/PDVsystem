@@ -731,7 +731,7 @@ const Settings: React.FC = () => {
                               </div>
                               <div className="flex gap-2">
                                  <Button size="xs" variant="secondary" onClick={fetchUpdateStatus} icon={<RefreshCcw size={12} />}>
-                                    Check - Updates
+                                    Check_Updates
                                  </Button>
                                  {updateStatus?.isUpdateReady && (
                                     <Button size="xs" variant="success" onClick={handleApplyUpdate} disabled={applyingUpdate} icon={<Zap size={12} />}>

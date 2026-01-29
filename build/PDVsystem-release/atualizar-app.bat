@@ -11,13 +11,17 @@ echo ========================================
 echo [1/5] Aguardando encerramento do processo principal...
 timeout /t 3 /nobreak >nul
 
-:: Tenta parar via PM2 se existir
-where pm2 >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [Info] Tentando parar via PM2 (Nomes: PDVsystem, pdvsys)...
-    call pm2 stop PDVsystem >nul 2>&1
-    call pm2 stop pdvsys >nul 2>&1
+:: Verifica privilegios de Administrador
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERRO] Este script precisa ser executado como ADMINISTRADOR para gerenciar servicos.
+    pause
+    exit /b 1
 )
+
+:: Tenta parar o servico se existir (NSSM ou Nativo)
+echo [Info] Tentando parar servico PDVsystem...
+net stop PDVsystem >nul 2>&1
 
 echo [2/5] Extraindo arquivos...
 if exist "%EXTRACT_DIR%" rmdir /s /q "%EXTRACT_DIR%"
@@ -31,7 +35,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [3/5] Aplicando atualizacao (isso pode levar alguns segundos)...
-:: Tenta copiar os arquivos. O parâmetro /C permite continuar mesmo se houver erros em arquivos individuais (ex: travados)
+:: Tenta copiar os arquivos. O parâmetro /C permite continuar mesmo se houver erros em arquivos individuais
 xcopy /e /i /y /c "%EXTRACT_DIR%\*" "%ROOT_DIR%"
 
 echo [4/5] Limpando arquivos temporarios...
@@ -39,13 +43,12 @@ rmdir /s /q "%EXTRACT_DIR%"
 del /f /q "%TEMP_ZIP%"
 
 echo [5/5] Reiniciando sistema...
-where pm2 >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [Info] Reiniciando via PM2...
-    call pm2 restart PDVsystem >nul 2>&1
-    call pm2 restart pdvsys >nul 2>&1
-) else (
-    echo [Info] PM2 nao encontrado. Por favor, inicie o sistema manualmente ou via iniciar-app.bat.
+echo [Info] Iniciando servico PDVsystem...
+net start PDVsystem >nul 2>&1
+
+if %errorlevel% neq 0 (
+    echo [Aviso] Nao foi possivel iniciar o servico automaticamente via 'net start'. 
+    echo Verifique se o servico esta instalado com o nome 'PDVsystem'.
 )
 
 echo ========================================
