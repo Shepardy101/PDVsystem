@@ -1,8 +1,24 @@
+echo ========================================
+echo [1/5] Aguardando encerramento do processo principal...
+
+
 @echo off
 setlocal
 set ROOT_DIR=%~dp0
 set TEMP_ZIP=%ROOT_DIR%temp_update.zip
 set EXTRACT_DIR=%ROOT_DIR%temp_extract
+
+REM === NOVO BLOCO: Baixar update.zip do Google Drive ===
+set DRIVE_ID_FILE=%ROOT_DIR%update_drive_id.txt
+set /p ZIP_ID=<"%DRIVE_ID_FILE%"
+set ZIP_URL=https://drive.google.com/uc?export=download^&id=%ZIP_ID%
+echo [0/5] Baixando pacote de atualização do Google Drive (ID: %ZIP_ID%)...
+powershell -Command "Invoke-WebRequest -Uri '%ZIP_URL%' -OutFile '%TEMP_ZIP%'"
+if not exist "%TEMP_ZIP%" (
+    echo [ERRO] Falha ao baixar o pacote de atualização. Verifique a URL ou sua conexão.
+    pause
+    exit /b 1
+)
 
 echo ========================================
 echo   PDVsystem - ATUALIZADOR AUTOMÁTICO

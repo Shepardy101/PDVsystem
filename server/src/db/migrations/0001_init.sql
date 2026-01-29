@@ -23,12 +23,13 @@ CREATE TABLE IF NOT EXISTS suppliers (
   updated_at INTEGER
 );
 
+
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  ean TEXT NOT NULL UNIQUE,
-  internal_code TEXT NOT NULL UNIQUE,
-  unit TEXT NOT NULL CHECK(unit IN ('cx','unit','kg')),
+  ean TEXT UNIQUE,
+  internal_code TEXT UNIQUE,
+  unit TEXT NOT NULL CHECK(unit IN ('cx','unit','kg','serv')),
   cost_price INTEGER NOT NULL DEFAULT 0,
   sale_price INTEGER NOT NULL DEFAULT 0,
   auto_discount_enabled INTEGER NOT NULL DEFAULT 0,
@@ -39,6 +40,9 @@ CREATE TABLE IF NOT EXISTS products (
   stock_on_hand INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  imageUrl TEXT,
+  type TEXT DEFAULT 'product',
+  min_stock INTEGER NOT NULL DEFAULT 20,
   FOREIGN KEY(category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE SET NULL,
   FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON UPDATE CASCADE ON DELETE SET NULL
 );

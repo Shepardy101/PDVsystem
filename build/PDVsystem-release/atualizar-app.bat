@@ -1,5 +1,32 @@
 @echo off
+echo   PDVsystem - ATUALIZADOR AUTOMÁTICO
+
+powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/Shepardy22/pdvsys-check-version/main/update_1.0.14.zip' -OutFile '%TEMP_ZIP%'"
+echo [OK] Atualização baixada para %TEMP_ZIP%.
+@echo off
 setlocal
+set ROOT_DIR=%~dp0
+set TEMP_ZIP=%ROOT_DIR%temp_update.zip
+
+@echo off
+echo   PDVsystem - ATUALIZADOR AUTOMÁTICO
+echo ========================================
+
+set /p UPDATE_URL="Digite a URL do arquivo de atualização (.zip): "
+
+setlocal
+powershell -Command "Invoke-WebRequest -Uri '%UPDATE_URL%' -OutFile '%TEMP_ZIP%'"
+
+if exist "%TEMP_ZIP%" (
+    echo [OK] Atualização baixada para %TEMP_ZIP%.
+) else (
+    echo [ERRO] Falha ao baixar o arquivo. Verifique a URL e tente novamente.
+)
+echo ========================================
+echo   PRONTO PARA INSTALAÇÃO MANUAL
+echo ========================================
+pause
+exit
 set ROOT_DIR=%~dp0
 set TEMP_ZIP=%ROOT_DIR%temp_update.zip
 set EXTRACT_DIR=%ROOT_DIR%temp_extract
