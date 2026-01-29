@@ -9,6 +9,8 @@
     "chart.js": "^4.5.1",
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.562.0",
     "multer": "^2.0.2",
     "papaparse": "^5.5.3",

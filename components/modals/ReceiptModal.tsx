@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Modal, Button } from '../UI';
 import { Printer, CheckCircle2 } from 'lucide-react';
+import { generateReceiptPDF } from '../../utils/pdfUtils';
 
 export interface ReceiptModalProps {
   isOpen: boolean;
@@ -10,6 +12,13 @@ export interface ReceiptModalProps {
 }
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClose, onPrint }) => {
+  // Dados fictícios da empresa (pode ser ajustado para vir do backend/config)
+  const company = {
+    name: import.meta.env.VITE_APP_NAME || 'Nome Empresa',
+    cnpj: import.meta.env.VITE_APP_CNPJ || '00.000.000/0000-00',
+    address: import.meta.env.VITE_APP_ADDRESS || 'Endereço Exemplo, 123',
+    phone: import.meta.env.VITE_APP_PHONE || '(00) 0000-0000',
+  };
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -18,7 +27,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
         onClose();
       } else if (e.key.toLowerCase() === 'i') {
         e.preventDefault();
-        onPrint();
+        handlePrintPDF();
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -26,14 +35,20 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, onPrint]);
+  }, [isOpen, onClose]);
+
+  const handlePrintPDF = React.useCallback(() => {
+    if (!lastSaleData) return;
+    generateReceiptPDF({ company, sale: lastSaleData });
+  }, [lastSaleData, company]);
   if (!isOpen) return null;
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Recibo de Transação">
       <div className="flex flex-col items-center gap-6" >
+        {/* Visualização mini do recibo */}
         <div className="bg-white text-black p-8 rounded shadow-2xl w-full max-w-[80mm] font-mono receipt-assemble" id="thermal-receipt">
           <div className="text-center mb-4">
-            <h2 className="text-lg font-bold">{import.meta.env.VITE_APP_NAME || 'Nome Empresa'}</h2>
+            <h2 className="text-lg font-bold">{company.name}</h2>
             <p className="text-[10px]">OBRIGADO PELA PREFERÊNCIA</p>
             <div className="border-b border-black border-dashed my-2"></div>
             <p className="text-[10px] font-bold">CUPOM FISCAL VIRTUAL</p>
@@ -90,7 +105,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
           )}
         </div>
         <div className="w-full flex flex-col sm:flex-row gap-3 sm:gap-4 no-print">
-          <Button variant="secondary" className="flex-1 py-4" icon={<Printer size={18} />} onClick={onPrint}>Imprimir [I]</Button>
+          <Button variant="secondary" className="flex-1 py-4" icon={<Printer size={18} />} onClick={handlePrintPDF}>Imprimir PDF [I]</Button>
           <Button autoFocus className="flex-1 py-4 shadow-accent-glow" icon={<CheckCircle2 size={18} />} onClick={onClose}>Finalizar [ENTER]</Button>
         </div>
       </div>
