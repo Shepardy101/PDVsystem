@@ -33,6 +33,7 @@ copy /y ".env" "%STAGEDIR%" >nul
 copy /y "README.md" "%STAGEDIR%" >nul
 copy /y "instalar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-app.bat" "%STAGEDIR%" >nul
+copy /y "atualizar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-tunel.bat" "%STAGEDIR%" >nul
 copy /y "criar-atalho-app.bat" "%STAGEDIR%" >nul
 copy /y "INSTALACAO-CLIENTE.txt" "%STAGEDIR%" >nul
