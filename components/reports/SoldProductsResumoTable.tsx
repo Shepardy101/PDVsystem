@@ -3,6 +3,7 @@
 const USE_MOCK = false;
 
 import React, { useEffect, useState, useMemo } from "react";
+import FuturisticSpinner from '../FuturisticSpinner';
 import { soldProductsMock, SoldProductMock } from "./SoldProductsDetailedTable.mock";
 
 type TelemetryFn = (area: string, action: string, meta?: Record<string, any>) => void;
@@ -151,7 +152,7 @@ const SoldProductsResumoTable: React.FC<SoldProductsResumoTableProps> = ({ onTel
       return sorted;
     }, [products, sort]);
 
-  if (loading) return <div className="text-xs text-slate-400">Carregando resumo...</div>;
+  if (loading) return <FuturisticSpinner />;
   if (error) return <div className="text-xs text-red-400">Erro: {error}</div>;
 
   return (
@@ -159,8 +160,8 @@ const SoldProductsResumoTable: React.FC<SoldProductsResumoTableProps> = ({ onTel
       <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.14),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-size-[100%_12px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-size-[22px_100%] opacity-[0.35]" />
       </div>
       <div className="flex items-center justify-between mb-2 gap-2">
         

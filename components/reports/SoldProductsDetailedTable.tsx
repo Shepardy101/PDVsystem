@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
+import FuturisticSpinner from '../FuturisticSpinner';
 // Troque para true para usar mock, false para API real
 const USE_MOCK = false;
 import { soldProductsMock } from "./SoldProductsDetailedTable.mock";
@@ -204,22 +205,7 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
     }, [allProducts, dateRange, customStart, customEnd, onTelemetry]);
 
     if (loading) {
-        return (
-            <div className="rounded-2xl border border-white/10 bg-dark-950/40 backdrop-blur-xl p-4">
-                <div className="flex items-center justify-between gap-4 mb-4">
-                    <div className="h-4 w-56 rounded bg-white/10 animate-pulse" />
-                    <div className="h-4 w-40 rounded bg-white/10 animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="h-8 rounded-xl bg-white/5 border border-white/10 animate-pulse"
-                        />
-                    ))}
-                </div>
-            </div>
-        );
+        return <FuturisticSpinner />;
     }
 
     if (error) {
@@ -239,8 +225,8 @@ const SoldProductsDetailedTable: React.FC<SoldProductsDetailedTableProps> = ({ o
             <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.18),transparent_45%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.14),transparent_55%)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[length:100%_12px]" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:22px_100%] opacity-[0.35]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-size-[100%_12px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-size-[22px_100%] opacity-[0.35]" />
             </div>
 
             {/* Header */}

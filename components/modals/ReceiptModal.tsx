@@ -19,6 +19,11 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
     address: import.meta.env.VITE_APP_ADDRESS || 'Endereço Exemplo, 123',
     phone: import.meta.env.VITE_APP_PHONE || '(00) 0000-0000',
   };
+
+// Detecta mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const printButtonText = isMobile ? 'Compartilhar' : 'Imprimir PDF [I]';
+
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,7 +110,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, lastSaleData, onClo
           )}
         </div>
         <div className="w-full flex flex-col sm:flex-row gap-3 sm:gap-4 no-print">
-          <Button variant="secondary" className="flex-1 py-4" icon={<Printer size={18} />} onClick={handlePrintPDF}>Imprimir PDF [I]</Button>
+            
+            <Button variant="secondary" className="flex-1 py-4" icon={<Printer size={18} />} onClick={handlePrintPDF}>{printButtonText}</Button>
           <Button autoFocus className="flex-1 py-4 shadow-accent-glow" icon={<CheckCircle2 size={18} />} onClick={onClose}>Finalizar [ENTER]</Button>
         </div>
       </div>
