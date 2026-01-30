@@ -11,6 +11,7 @@ interface ProductMixQuadrantsTabProps {
 }
 
 const PRESETS = [
+  
   { label: 'Hoje', getRange: () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -26,11 +27,12 @@ const PRESETS = [
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
     return { from: start.getTime(), to: now.getTime() };
   } },
+  { label: 'All', getRange: () => null },
   { label: 'Custom', getRange: () => null }
 ];
 
 const ProductMixQuadrantsTab: React.FC<ProductMixQuadrantsTabProps> = ({ onTelemetry }) => {
-  const [preset, setPreset] = useState(2); // 30 dias
+  const [preset, setPreset] = useState(0); // All
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,10 @@ const ProductMixQuadrantsTab: React.FC<ProductMixQuadrantsTabProps> = ({ onTelem
   const [data, setData] = useState<any[]>([]);
   const [showTable, setShowTable] = useState(false);
 
+
+  // Para o filtro "All", retorna null (busca tudo)
   const getRange = () => {
+    if (PRESETS[preset].label === 'All') return null;
     if (PRESETS[preset].label !== 'Custom') return PRESETS[preset].getRange();
     if (!customFrom || !customTo) return null;
     return { from: new Date(customFrom).getTime(), to: new Date(customTo).getTime() };
@@ -46,11 +51,17 @@ const ProductMixQuadrantsTab: React.FC<ProductMixQuadrantsTabProps> = ({ onTelem
 
   useEffect(() => {
     const range = getRange();
-    if (!range) return;
-    onTelemetry?.('productMix', 'fetch:start', { preset: PRESETS[preset].label, range });
     setLoading(true);
     setError(null);
-    fetchProductMix(range.from, range.to)
+    onTelemetry?.('productMix', 'fetch:start', { preset: PRESETS[preset].label, range });
+    // Se for All, busca sem parâmetros (tudo)
+    let fetchPromise;
+    if (!range) {
+      fetchPromise = fetchProductMix(undefined as any, undefined as any);
+    } else {
+      fetchPromise = fetchProductMix(range.from, range.to);
+    }
+    fetchPromise
       .then((resp) => {
         setData(resp);
         onTelemetry?.('productMix', 'fetch:success', { preset: PRESETS[preset].label, range, items: resp?.length ?? 0 });

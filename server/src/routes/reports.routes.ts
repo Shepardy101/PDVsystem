@@ -5,11 +5,19 @@ import { logEvent } from '../utils/audit';
 const reportsRouter = Router();
 
 // GET /api/reports/product-mix?from=...&to=...
+import db from '../db/database';
 reportsRouter.get('/product-mix', (req, res) => {
-  const from = Number(req.query.from);
-  const to = Number(req.query.to);
+  let from = Number(req.query.from);
+  let to = Number(req.query.to);
+  // Se não enviados, busca o range total do banco
   if (!from || !to) {
-    return res.status(400).json({ error: 'Parâmetros from e to são obrigatórios (epoch ms)' });
+    try {
+      const minMax = db.prepare('SELECT MIN(timestamp) as minTs, MAX(timestamp) as maxTs FROM sales').get() as { minTs: number|null, maxTs: number|null };
+      from = minMax?.minTs || 0;
+      to = minMax?.maxTs || Date.now();
+    } catch (err: any) {
+      return res.status(500).json({ error: 'Erro ao buscar range de datas', details: err.message });
+    }
   }
   try {
     const data = getProductMixQuadrants(from, to);

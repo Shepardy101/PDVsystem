@@ -1,6 +1,9 @@
 // Serviço para buscar dados do mix de produtos (quadrantes)
-export async function fetchProductMix(from: number, to: number) {
-  const url = `/api/reports/product-mix?from=${from}&to=${to}`;
+export async function fetchProductMix(from?: number, to?: number) {
+  let url = '/api/reports/product-mix';
+  if (typeof from === 'number' && typeof to === 'number') {
+    url += `?from=${from}&to=${to}`;
+  }
   const res = await fetch(url);
   if (!res.ok) throw new Error('Erro ao buscar dados do mix de produtos');
   const data = await res.json();

@@ -166,27 +166,7 @@ const App: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [isSidebarOpen]);
 
-  // Expansão automática da sidebar ao passar mouse (desktop)
-  useEffect(() => {
-    if (isMobile) return;
-    const sidebarEl = sidebarRef.current;
-    if (!sidebarEl) return;
-    let timer: NodeJS.Timeout | null = null;
-    const handleMouseEnter = () => {
-      setIsSidebarOpen(true);
-      if (timer) clearTimeout(timer);
-    };
-    const handleMouseLeave = () => {
-      timer = setTimeout(() => setIsSidebarOpen(false), 200);
-    };
-    sidebarEl.addEventListener('mouseenter', handleMouseEnter);
-    sidebarEl.addEventListener('mouseleave', handleMouseLeave);
-    return () => {
-      sidebarEl.removeEventListener('mouseenter', handleMouseEnter);
-      sidebarEl.removeEventListener('mouseleave', handleMouseLeave);
-      if (timer) clearTimeout(timer);
-    };
-  }, [isMobile, isSidebarOpen]);
+  // Removido: expansão/recolhimento automático da sidebar ao passar mouse
 
   if (loading) {
     return (
