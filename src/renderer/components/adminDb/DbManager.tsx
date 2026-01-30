@@ -55,10 +55,19 @@ const DbManager: React.FC = () => {
 			{/* Conteúdo principal + botões de ação */}
 			<div className="flex-1 flex flex-col min-w-0">
 				<div className="flex justify-end p-2 gap-4">
-					<button className="btn btn-primary !bg-cyan-600 !border-cyan-500" onClick={() => { setShowSeedModal(true); }}>
-						Popular Demonstração (Mock)
+					<button
+						className="btn btn-icon border-cyan-500! bg-cyan-600! text-cyan-100 hover:bg-cyan-700! hover:border-cyan-600! transition"
+						title="Popular Demonstração (Mock)"
+						aria-label="Popular Demonstração (Mock)"
+						onClick={() => setShowSeedModal(true)}
+					>
+						{/* Ícone Lucide: Database */}
+						<svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<ellipse cx="12" cy="5" rx="9" ry="3" />
+							<path d="M3 5v6c0 1.657 4.03 3 9 3s9-1.343 9-3V5" />
+							<path d="M3 11v6c0 1.657 4.03 3 9 3s9-1.343 9-3v-6" />
+						</svg>
 					</button>
-				
 				</div>
 				{selectedTable ? (
 					<RowsTable table={selectedTable} onEditRow={setEditingRow} />

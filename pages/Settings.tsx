@@ -1,5 +1,64 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+// Modal de senha root@remove reutilizável
+function PasswordConfirmModal({ open, onClose, onConfirm, actionLabel = 'Confirmar', info, requireWipeWord = false }) {
+   const [password, setPassword] = React.useState('');
+   const [wipeWord, setWipeWord] = React.useState('');
+   const [error, setError] = React.useState('');
+   const inputRef = React.useRef(null);
+   const wipeRef = React.useRef(null);
+   React.useEffect(() => {
+      if (open) {
+         setPassword(''); setWipeWord(''); setError('');
+         setTimeout(() => inputRef.current?.focus(), 100);
+      }
+   }, [open]);
+   const handleKeyDown = (e) => {
+      if (e.key === 'Escape') { onClose(); }
+      if (e.key === 'Enter') { handleConfirm(); }
+   };
+   const handleConfirm = () => {
+      if (password !== 'root@remove') { setError('Senha incorreta'); return; }
+      if (requireWipeWord && wipeWord.trim().toLowerCase() !== 'wipe') { setError('Digite "wipe" para confirmar'); return; }
+      setError(''); onConfirm();
+   };
+   return open ? (
+      <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center animate-in fade-in" onKeyDown={handleKeyDown} tabIndex={-1}>
+         <div className="bg-dark-950 border border-accent/40 rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col gap-4 relative" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-accent mb-2">Confirmação de Segurança</h2>
+            <p className="text-[11px] text-slate-400 mb-1">{info || 'Digite a senha root para continuar.'}</p>
+            <input
+               ref={inputRef}
+               type="password"
+               className="w-full px-3 py-2 rounded bg-dark-900 border border-accent/30 text-white text-sm outline-none focus:ring-2 focus:ring-accent"
+               placeholder="Senha:********"
+               value={password}
+               onChange={e => { setPassword(e.target.value); setError(''); }}
+               autoFocus
+               onKeyDown={handleKeyDown}
+            />
+            {requireWipeWord && (
+               <input
+                  ref={wipeRef}
+                  type="text"
+                  className="w-full px-3 py-2 rounded bg-dark-900 border border-accent/30 text-white text-sm outline-none focus:ring-2 focus:ring-accent"
+                  placeholder="Digite: wipe"
+                  value={wipeWord}
+                  onChange={e => { setWipeWord(e.target.value); setError(''); }}
+                  onKeyDown={handleKeyDown}
+               />
+            )}
+            {error && <div className="text-rose-400 text-xs font-mono">{error}</div>}
+            <div className="flex gap-2 mt-2">
+               <button className="flex-1 py-2 rounded bg-dark-900 border border-white/10 text-slate-300 hover:bg-dark-800 text-xs font-bold" onClick={onClose} tabIndex={0}>Cancelar [ESC]</button>
+               <button className="flex-1 py-2 rounded bg-accent text-dark-950 font-bold text-xs hover:bg-cyan-400/90" onClick={handleConfirm} tabIndex={0}>{actionLabel} [ENTER]</button>
+            </div>
+         </div>
+      </div>
+   ) : null;
+}
 // URL do webhook para envio dos logs ao purgar
 const LOGS_WEBHOOK_URL = import.meta.env.VITE_LOGS_WEBHOOK_URL || '';
 import { useAuth } from '../components/AuthContext';
@@ -582,16 +641,32 @@ const Settings: React.FC = () => {
       }
    };
 
-   const handleWipeLocal = async () => {
-      // if (!isManagerUser) {
-      //    toast.error('Apenas usuários manager podem limpar a base.');
-      //    return;
-      // }
-      const confirmPrompt = window.prompt('Digite "wipe" para confirmar a limpeza total e recriar o usuário root.');
-      if ((confirmPrompt || '').toLowerCase().trim() !== 'wipe') {
-         toast('Limpeza cancelada');
-         return;
+   // Modal e handler para popular demonstração
+   const [showDemoModal, setShowDemoModal] = useState(false);
+   const [loadingDemo, setLoadingDemo] = useState(false);
+   const handleDemoPopulate = () => setShowDemoModal(true);
+   const confirmDemoPopulate = async () => {
+      setShowDemoModal(false);
+      setLoadingDemo(true);
+      sendTelemetry('maintenance', 'populate-demo');
+      try {
+         const res = await fetch('/api/admin/maintenance/populate-demo', { method: 'POST' });
+         if (!res.ok) throw new Error('Erro HTTP');
+         await res.json();
+         toast.success('Dados de demonstração populados!');
+      } catch (err) {
+         console.error('[Settings] Falha ao popular demo:', err);
+         toast.error('Falha ao popular demonstração');
+      } finally {
+         setLoadingDemo(false);
       }
+   };
+   const [showWipeModal, setShowWipeModal] = useState(false);
+   const handleWipeLocal = () => {
+      setShowWipeModal(true);
+   };
+   const confirmWipeLocal = async () => {
+      setShowWipeModal(false);
       sendTelemetry('maintenance', 'wipe-local');
       try {
          const res = await fetch('/api/admin/maintenance/wipe-local', { method: 'POST' });
@@ -821,6 +896,25 @@ const Settings: React.FC = () => {
                      </Button>
                      {showMaintenancePanel && (
                         <div className="p-5 grid grid-cols-2 gap-3 border-t border-accent/20">
+                                                      {/* Botão discreto para popular demonstração */}
+                                                      <Button
+                                                         variant="ghost"
+                                                         className="text-[9px] py-2 w-full opacity-60 hover:opacity-100 border border-dashed border-accent/10 text-accent/70 col-span-2"
+                                                         icon={<Activity size={12} className="text-accent/60" />}
+                                                         disabled={loadingDemo}
+                                                         onClick={handleDemoPopulate}
+                                                         style={{ fontSize: 10, marginTop: -8, marginBottom: -8 }}
+                                                      >
+                                                         Popular Demonstração
+                                                      </Button>
+                                                      <PasswordConfirmModal
+                                                         open={showDemoModal}
+                                                         onClose={() => setShowDemoModal(false)}
+                                                         onConfirm={confirmDemoPopulate}
+                                                         actionLabel="Popular"
+                                                         info="Para popular dados de demonstração, digite a senha root@remove."
+                                                         requireWipeWord={false}
+                                                      />
                            <Button
                               variant="secondary"
                               className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
@@ -846,6 +940,14 @@ const Settings: React.FC = () => {
                            >
                               Wipe Local Storage
                            </Button>
+                           <PasswordConfirmModal
+                              open={showWipeModal}
+                              onClose={() => setShowWipeModal(false)}
+                              onConfirm={confirmWipeLocal}
+                              actionLabel="Wipe"
+                              info="Para limpar a base local e recriar o root, digite a senha root@remove e depois 'wipe'."
+                              requireWipeWord={true}
+                           />
                         </div>
                      )}
                   </div>
@@ -853,7 +955,7 @@ const Settings: React.FC = () => {
 
             </div>
 
-            <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden md:block hidden">
+            <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden md:block">
                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2 ml-2">
                   <Terminal size={14} className="text-accent" /> Audit Trail // Real-time.
                </h3>
