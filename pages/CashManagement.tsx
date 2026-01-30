@@ -701,10 +701,7 @@ const CashManagement: React.FC = () => {
 
                               {/* Status message */}
                               <div className="space-y-3">
-                                 <div className="inline-flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.2)] animate-in slide-in-from-top-4 duration-500">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_#ef4444]"></div>
-                                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-[0.3em]">Sistema Inativo</span>
-                                 </div>
+                                 
 
                                  <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight animate-in slide-in-from-top-6 duration-700">
                                     Nenhum Caixa Aberto

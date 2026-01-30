@@ -22,8 +22,6 @@ import ipControlRouter from './routes/admin/ipControl.routes';
 import maintenanceRouter from './routes/admin/maintenance.routes';
 import { scheduleLogRetention } from './services/logRetention';
 import { startPerformanceLogger } from './services/performanceLogger';
-import { updateService } from './services/update.service';
-import updateRouter from './routes/update.routes';
 
 import { ipAccessControl } from './middleware/ipAccessControl';
 const app = express();
@@ -79,7 +77,7 @@ app.use('/api/pos', posRouter);
 app.use('/api/report', reportRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/sys', sysRouter);
-app.use('/api/update', updateRouter);
+
 
 
 // SPA: qualquer rota não-API retorna index.html (depois do middleware de IP)
@@ -101,29 +99,3 @@ app.listen(PORT, '0.0.0.0', () => {
 scheduleLogRetention();
 // Logger periódico de performance (CPU/RAM/loop)
 startPerformanceLogger();
-
-// Função unificada para verificar e baixar atualizações
-async function runUpdateCheck() {
-  try {
-    const config = await updateService.checkUpdate();
-    if (config) {
-      if (updateService.isUpdateReady()) {
-        console.log('[UpdateService] Existe uma atualização pronta para aplicação. Use o painel administrativo.');
-        return;
-      }
-      await updateService.downloadAndPrepare(config.url);
-      console.log('[UpdateService] Sistema preparado. No próximo reinício a atualização será aplicada (ou via painel admin).');
-    }
-  } catch (err: any) {
-    console.error('[UpdateService] Falha na rotina de atualização. Consulte os logs acima para detalhes.');
-  }
-}
-
-// Verificação de atualização automática (a cada 1 hora)
-setInterval(runUpdateCheck, 1000 * 60 * 60);
-
-// Verificação inicial na subida do sistema (com delay de 10s para garantir rede)
-setTimeout(() => {
-  console.log('[UpdateService] Executando verificação de atualização inicial...');
-  runUpdateCheck();
-}, 10000);

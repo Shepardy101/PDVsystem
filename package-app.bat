@@ -34,7 +34,7 @@ copy /y "README.md" "%STAGEDIR%" >nul
 copy /y "instalar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-app.bat" "%STAGEDIR%" >nul
 copy /y "executar-servico.bat" "%STAGEDIR%" >nul
-copy /y "atualizar-app.bat" "%STAGEDIR%" >nul
+copy /y "updatesystem.md" "%STAGEDIR%\atualizar-app.bat" >nul
 copy /y "extrair-e-aplicar-atualizacao.bat" "%STAGEDIR%" >nul
 copy /y "update_drive_id.txt" "%STAGEDIR%" >nul
 copy /y "version_id.txt" "%STAGEDIR%" >nul

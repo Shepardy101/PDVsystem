@@ -127,6 +127,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
    const [showSecurityPanel, setShowSecurityPanel] = useState(false);
    const [showMaintenancePanel, setShowMaintenancePanel] = useState(false);
 
+   // Fetch das listas de IPs
    useEffect(() => {
       let isMounted = true;
       setLoading(true);
@@ -155,6 +156,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
       return () => { isMounted = false; };
    }, [refresh]);
 
+   // Handlers para autorizar, negar e remover IPs
    const handleAllow = async (ip: string, hostname?: string | null) => {
       if (!canManage) return;
       setLoading(true);
@@ -209,6 +211,8 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
          setLoading(false);
       }
    };
+
+   
    const openDetails = (entry: IpEntry, list: 'pending' | 'allowed' | 'blocked') => {
       telemetry('ip-control', 'open-details', { ip: entry.ip, list });
       setSelectedIp({ entry, list });
@@ -407,55 +411,7 @@ const Settings: React.FC = () => {
    const [settingsLoading, setSettingsLoading] = useState(false);
    const isManagerUser = user?.role === 'manager';
 
-   // System Update States
-   const [updateStatus, setUpdateStatus] = useState<{ currentVersion: string; isUpdateReady: boolean } | null>(null);
-   const [applyingUpdate, setApplyingUpdate] = useState(false);
-
-   const fetchUpdateStatus = async (forceCheck = false) => {
-      try {
-         const endpoint = forceCheck ? '/api/update/check' : '/api/update/status';
-         const res = await fetch(endpoint);
-         if (res.ok) {
-            const data = await res.json();
-            // data de /api/update/check retorna { update: { version, url } | null }
-            // data de /api/update/status retorna { currentVersion, isUpdateReady, updatePath }
-            if (forceCheck) {
-               await fetchUpdateStatus(false); // atualiza o status local após checar remoto
-               if (data.update) {
-                  toast.success(`Nova versão encontrada: ${data.update.version}`);
-               } else {
-                  toast.success('Sistema já está na versão mais recente.');
-               }
-            } else {
-               setUpdateStatus(data);
-            }
-         }
-      } catch (e) {
-         console.warn('[Settings] Falha ao checar status de atualização');
-         if (forceCheck) toast.error('Falha ao conectar com servidor de atualizações');
-      }
-   };
-
-   const handleApplyUpdate = async () => {
-      if (!window.confirm('Deseja aplicar a atualização agora? O sistema será fechado para processar os arquivos e reiniciado em seguida.')) return;
-      setApplyingUpdate(true);
-      try {
-         const res = await fetch('/api/update/apply', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: 'local' })
-         });
-         if (!res.ok) throw new Error('Erro ao acionar atualizador');
-         toast.success('Atualizador acionado. O sistema vai fechar em instantes.');
-      } catch (err) {
-         toast.error('Falha ao acionar atualizador');
-         setApplyingUpdate(false);
-      }
-   };
-
-   useEffect(() => {
-      fetchUpdateStatus();
-   }, []);
+   // Removido: todos os controles de atualização manual. Apenas labels de versão do build permanecem.
 
    const interactionCounts = useMemo(() => {
       const acc: Record<string, number> = {};
@@ -807,41 +763,18 @@ const Settings: React.FC = () => {
 
                         {/* Sistema e Atualização */}
                         <div className="border-t border-accent/15 bg-black/5">
-                           <div className="px-6 py-4 flex items-center justify-between border-b border-white/10 bg-black/20">
+                           <div className="px-6 py-4 flex items-center border-b border-white/10 bg-black/20">
                               <div className="flex items-center gap-3">
                                  <div className="h-8 w-1 bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.6)]" />
                                  <div>
                                     <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 flex items-center gap-2">
                                        <Server size={14} className="text-purple-400" /> Sistema // Build
                                     </p>
-                                    <p className="text-[11px] text-slate-300 font-mono">Versão {updateStatus?.currentVersion || '0.0.0'}</p>
-                                 </div>
-                              </div>
-                              <div className="flex gap-2">
-                                 <Button size="xs" variant="secondary" onClick={() => {
-                                    toast.promise(fetchUpdateStatus(true), {
-                                       loading: 'Verificando atualizações...',
-                                       success: 'Verificação concluída',
-                                       error: 'Erro ao verificar'
-                                    });
-                                 }} icon={<RefreshCcw size={12} />}>
-                                    Check_Updates
-                                 </Button>
-                                 {updateStatus?.isUpdateReady && (
-                                    <Button size="xs" variant="success" onClick={handleApplyUpdate} disabled={applyingUpdate} icon={<Zap size={12} />}>
-                                       {applyingUpdate ? 'Aplicando...' : 'Aplicar Update'}
-                                    </Button>
-                                 )}
+                                    <p className="text-[11px] text-slate-300 font-mono">
+                                       Versão do sistema: {import.meta.env.VITE_APP_VERSION || '0.0.0'}
+                                    </p>  </div>
                               </div>
                            </div>
-                           {updateStatus?.isUpdateReady && (
-                              <div className="p-4 bg-purple-500/10">
-                                 <div className="flex items-center gap-2 text-purple-300 text-[10px] font-mono animate-pulse">
-                                    <span className="h-2 w-2 rounded-full bg-purple-500" />
-                                    PATCH DISPONÍVEL! CLIQUE EM APLICAR PARA REINICIAR O SISTEMA.
-                                 </div>
-                              </div>
-                           )}
                         </div>
                      </div>
                      {/* Seção de Controle de IPs */}

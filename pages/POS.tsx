@@ -1044,7 +1044,7 @@ const POS: React.FC<POSProps> = ({ cashOpen, onOpenCash }) => {
 
                <div className="flex items-center gap-6 pt-8 opacity-40">
                   <div className="flex flex-col items-center">
-                     <span className="text-[10px] font-bold text-slate-500 uppercase">Fator de Autenticação</span>
+                     <span className="text-[10px] font-bold text-slate-500 uppercase">Aguardando...</span>
                      <div className="h-1 w-12 bg-accent/20 rounded-full mt-1 overflow-hidden">
                         <div className="h-full bg-accent w-1/3 animate-ping" />
                      </div>
