@@ -37,6 +37,7 @@ copy /y "executar-servico.bat" "%STAGEDIR%" >nul
 copy /y "atualizar-app.bat" "%STAGEDIR%" >nul
 copy /y "extrair-e-aplicar-atualizacao.bat" "%STAGEDIR%" >nul
 copy /y "update_drive_id.txt" "%STAGEDIR%" >nul
+copy /y "version_id.txt" "%STAGEDIR%" >nul
 copy /y "iniciar-tunel.bat" "%STAGEDIR%" >nul
 copy /y "criar-atalho-app.bat" "%STAGEDIR%" >nul
 copy /y "INSTALACAO-CLIENTE.txt" "%STAGEDIR%" >nul
