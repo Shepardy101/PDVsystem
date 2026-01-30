@@ -19,12 +19,41 @@ xcopy /e /i /y "dist" "%STAGEDIR%\dist" >nul
 echo Copiando backend compilado (server/dist)...
 xcopy /e /i /y "server\dist" "%STAGEDIR%\server\dist" >nul
 
+
+
+:: Pergunta sobre data
+:askdata
+set "COPYDATA="
+set /p COPYDATA=Deseja empacotar a pasta data (banco de dados)? [S/N]: 
+if /I "%COPYDATA%"=="S" goto copydata
+if /I "%COPYDATA%"=="N" goto skipdata
+echo Responda apenas S ou N.
+goto askdata
+:copydata
 echo Copiando banco de dados (data/novabev.sqlite)...
 if not exist "%STAGEDIR%\data" mkdir "%STAGEDIR%\data"
 copy /y "data\novabev.sqlite" "%STAGEDIR%\data\novabev.sqlite" >nul
+goto askpublic
+:skipdata
+echo [INFO] Banco de dados NAO sera empacotado.
+goto askpublic
 
+:askpublic
+set "COPYPUBLIC="
+set /p COPYPUBLIC=Deseja empacotar a pasta public (uploads)? [S/N]: 
+if /I "%COPYPUBLIC%"=="S" goto copypublic
+if /I "%COPYPUBLIC%"=="N" goto skippublic
+echo Responda apenas S ou N.
+goto askpublic
+:copypublic
 echo Copiando uploads...
 xcopy /e /i /y "public\uploads" "%STAGEDIR%\public\uploads" >nul
+goto afterpublic
+:skippublic
+echo [INFO] Pasta public/uploads NAO sera empacotada.
+goto afterpublic
+
+:afterpublic
 
 echo Copiando manifestos e scripts...
 copy /y "package.json" "%STAGEDIR%" >nul
