@@ -33,14 +33,9 @@ copy /y ".env" "%STAGEDIR%" >nul
 copy /y "README.md" "%STAGEDIR%" >nul
 copy /y "instalar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-app.bat" "%STAGEDIR%" >nul
-copy /y "executar-servico.bat" "%STAGEDIR%" >nul
-copy /y "updatesystem.md" "%STAGEDIR%\atualizar-app.bat" >nul
-copy /y "extrair-e-aplicar-atualizacao.bat" "%STAGEDIR%" >nul
-copy /y "update_drive_id.txt" "%STAGEDIR%" >nul
-copy /y "version_id.txt" "%STAGEDIR%" >nul
+copy /y "atualizar-app.bat" "%STAGEDIR%" >nul
 copy /y "iniciar-tunel.bat" "%STAGEDIR%" >nul
 copy /y "criar-atalho-app.bat" "%STAGEDIR%" >nul
-copy /y "INSTALACAO-CLIENTE.txt" "%STAGEDIR%" >nul
 
 echo Copiando servidor de tunel (Ngrox)...
 if not exist "%STAGEDIR%\server\Ngrox" mkdir "%STAGEDIR%\server\Ngrox"
