@@ -99,11 +99,8 @@ Novo no projeto? Comece por aqui:
   - Quando usar cada script
 
 - **[15 - Sistema de Atualizações](15-sistema-de-atualizacoes.md)**
-  - Como funciona o update automático
+  - Como funciona o update 
   - Preparar uma atualização
-  - Hospedar atualizações
-  - Configurar clientes
-  - API de update
 
 ---
 
@@ -139,9 +136,6 @@ Novo no projeto? Comece por aqui:
   - Conceitos do sistema
   - Abreviações
 
-- **[99 - Lacunas e Perguntas](99-lacunas-perguntas.md)**
-  - Pontos a serem expandidos
-  - Referências para código-fonte
 
 ---
 
@@ -149,7 +143,7 @@ Novo no projeto? Comece por aqui:
 
 ### O que é o PDVsystem?
 
-PDVsystem é um **sistema completo de ponto de venda e gestão** para distribuidores de bebidas, desenvolvido como uma **SPA React** servida por um **backend Node/Express** na porta 8787.
+PDVsystem é um **sistema completo de ponto de venda e gestão**, desenvolvido como uma **SPA React** servida por um **backend Node/Express** na porta 8787.
 
 ### Características Principais
 
@@ -322,18 +316,10 @@ O hook de pre-commit bloqueará se faltar arquivo ou referência.
 
 ---
 
-## 📞 Suporte
-
-Para dúvidas, lacunas ou sugestões de melhoria na documentação:
-- Consulte [99 - Lacunas e Perguntas](99-lacunas-perguntas.md)
-- Abra uma issue no repositório
-- Entre em contato com a equipe de desenvolvimento
-
----
 
 <div align="center">
 
-**Documentação mantida e atualizada pela equipe PDVsystem**
+**Documentação mantida e atualizada por Shepardy**
 
 Última atualização: Fevereiro 2026 | Versão: 1.0.26
 

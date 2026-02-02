@@ -18,7 +18,7 @@ const requiredFiles = [
   'docs/12-observabilidade-monitoramento.md',
   'docs/13-troubleshooting.md',
   'docs/14-glossario.md',
-  'docs/99-lacunas-perguntas.md'
+  'docs/15-sistema-de-atualizacoes.md'
 ];
 
 function fail(msg) {

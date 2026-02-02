@@ -91,127 +91,6 @@ npm run migrate
 npm run dev
 ```
 
-### Estrutura de Branches
-
-- `main` - Branch principal (produção)
-- `develop` - Branch de desenvolvimento
-- `feature/*` - Novas funcionalidades
-- `fix/*` - Correções de bugs
-- `docs/*` - Melhorias na documentação
-- `refactor/*` - Refatorações
-
----
-
-## 📝 Padrões de Código
-
-### TypeScript
-
-- Use TypeScript para todo código novo
-- Defina tipos explícitos sempre que possível
-- Evite `any` - use `unknown` se necessário
-- Use interfaces para objetos complexos
-
-```typescript
-// ✅ Bom
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'manager' | 'operator';
-}
-
-// ❌ Evite
-const user: any = { ... };
-```
-
-### Nomenclatura
-
-- **Arquivos**: camelCase para arquivos TS/TSX (`userService.ts`)
-- **Componentes**: PascalCase (`UserCard.tsx`)
-- **Funções**: camelCase (`getUserById`)
-- **Constantes**: UPPER_SNAKE_CASE (`MAX_RETRIES`)
-- **Interfaces/Types**: PascalCase (`UserData`)
-
-### Estrutura de Arquivos
-
-#### Backend (server/src/)
-
-```
-routes/
-  ├── user.routes.ts       # Rotas HTTP
-repositories/
-  ├── user.repo.ts         # Acesso ao banco
-services/
-  ├── user.service.ts      # Lógica de negócio
-```
-
-#### Frontend
-
-```
-pages/
-  ├── Users.tsx            # Página completa
-components/
-  ├── UserCard.tsx         # Componente reutilizável
-  ├── modals/
-  │   └── UserModal.tsx    # Modal específico
-services/
-  ├── user.ts              # Chamadas à API
-```
-
-### Comentários
-
-- Comente **por que**, não **o que**
-- Use JSDoc para funções públicas
-- Mantenha comentários atualizados
-
-```typescript
-/**
- * Calcula o total de uma venda aplicando descontos
- * @param items - Itens da venda
- * @param discounts - Descontos a aplicar
- * @returns Total em centavos
- */
-function calculateTotal(items: SaleItem[], discounts: Discount[]): number {
-  // Implementação
-}
-```
-
-### Formatação
-
-- **Indentação**: 2 espaços
-- **Aspas**: Simples para strings
-- **Ponto e vírgula**: Sempre use
-- **Linha máxima**: 100 caracteres (flexível)
-
-### Git Commits
-
-Use commits semânticos:
-
-```
-tipo(escopo): descrição curta
-
-Descrição detalhada (opcional)
-
-Refs: #123
-```
-
-**Tipos:**
-- `feat`: Nova funcionalidade
-- `fix`: Correção de bug
-- `docs`: Documentação
-- `style`: Formatação (não afeta código)
-- `refactor`: Refatoração
-- `test`: Testes
-- `chore`: Tarefas de manutenção
-
-**Exemplos:**
-```
-feat(pos): adiciona suporte a multipagamento
-fix(cash): corrige cálculo de diferença no fechamento
-docs(api): atualiza documentação de endpoints
-refactor(products): extrai lógica de validação para service
-```
-
 ---
 
 ## 🔄 Processo de Pull Request
@@ -285,15 +164,12 @@ Breve descrição das mudanças
 - [ ] Documentação atualizada
 - [ ] Testes passando
 - [ ] Build sem erros
-- [ ] Sem conflitos com develop
+
 
 ## Screenshots
 (se aplicável)
 
-## Issues Relacionadas
-Refs: #123
-Closes: #456
-```
+
 
 ### Revisão
 
@@ -338,15 +214,6 @@ O que realmente acontece
 - Node.js: [v24.0.0]
 - Versão do PDVsystem: [1.0.26]
 - Browser: [Chrome 120]
-
-## Logs
-```
-Cole logs relevantes aqui
-```
-
-## Informações Adicionais
-Qualquer contexto adicional
-```
 
 ---
 
@@ -438,31 +305,6 @@ npm run docs:check
 
 ---
 
-## 🔐 Segurança
-
-### Reportando Vulnerabilidades
-
-**NÃO** abra issues públicas para vulnerabilidades de segurança.
-
-Entre em contato diretamente com a equipe de desenvolvimento.
-
-### Boas Práticas
-
-- Nunca commite credenciais ou tokens
-- Use `.env` para configurações sensíveis
-- Não habilite `ENABLE_DB_ADMIN` em produção
-- Mantenha dependências atualizadas
-
----
-
-## 📞 Dúvidas?
-
-- Consulte a [documentação completa](docs/README.md)
-- Abra uma issue de discussão
-- Entre em contato com a equipe
-
----
-
 ## 🙏 Agradecimentos
 
 Obrigado por contribuir com o PDVsystem! Sua ajuda é muito apreciada.
@@ -471,6 +313,6 @@ Obrigado por contribuir com o PDVsystem! Sua ajuda é muito apreciada.
 
 <div align="center">
 
-**Feito com ❤️ pela comunidade PDVsystem**
+**Feito com ❤️ por @Shepardy**
 
 </div>

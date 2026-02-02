@@ -1,82 +1,186 @@
-# Guia do Sistema de Atualizações Automáticas
+# 15 - Sistema de Atualizações
 
-Este documento explica como funciona, como configurar e como utilizar o sistema de atualizações automáticas do **PDVsystem**.
+## Visão Geral
 
----
-
-## 1. Visão Geral do Funcionamento
-
-O sistema de atualização é composto por três partes principais:
-
-1.  **Backend (UpdateService):** Monitora se há novas versões e baixa o pacote.
-2.  **Script Externo (`atualizar-app.bat`):** Realiza a substituição dos arquivos físicos enquanto o sistema está parado.
-3.  **Hospedagem Remota:** O local onde você coloca o arquivo de configuração (`version.json`) e o pacote compactado (`.zip`).
-
-### Fluxo de Atualização:
-1. O servidor inicia e verifica a versão no `version.json` remoto.
-2. Se a versão remota for maior que a local (ex: `1.0.1` > `1.0.0`), o download do `.zip` é iniciado.
-3. O arquivo é salvo como `temp_update.zip` na raiz do projeto.
-4. Quando disparado (manualmente ou automaticamente), o sistema executa o `atualizar-app.bat` e encerra o backend via pm2.
-5. O script `.bat` extrai o ZIP, substitui os arquivos e reinicia o backend via pm2.
+O PDVsystem utiliza um processo **manual** de atualização que permite aplicar novas versões de forma controlada e segura.
 
 ---
 
-## 2. Como Preparar uma Atualização
+## Processo de Atualização
 
-Para enviar uma atualização para seus clientes, siga estes passos:
+### 1. Preparar Nova Versão
 
-1.  **Aumente a versão:** No arquivo `package.json`, altere o campo `"version"`. Ex: de `"0.0.0"` para `"1.0.0"`.
-2.  **Gere o pacote:** Execute o script `package-app.bat` na raiz do projeto.
-    - Isso criará um arquivo em `build/PDVsystem-release.zip`.
-3.  **Renomeie o pacote (Opcional):** Você pode renomear para algo como `update-v1.0.0.zip`.
-
----
-
-## 3. Como Hospedar a Atualização
-
-Você precisa de um servidor web onde os clientes possam baixar os arquivos. Uma forma simples e gratuita é usar o **GitHub**:
-
-1. Crie um repositório (ou use o atual).
-2. Crie um arquivo chamado `version.json` com o seguinte conteúdo:
+1. **Aumente a versão** no `package.json`:
    ```json
    {
-     "version": "1.0.0",
-     "url": "https://link-direto-para-seu-arquivo/update-v1.0.0.zip"
+     "version": "1.0.27"
    }
    ```
-3. Suba o arquivo `.zip` e o `version.json` para o seu servidor/repositório.
+
+2. **Gere o pacote de release**:
+   ```bash
+   # Execute o script de empacotamento
+   package-app.bat
+   ```
+   
+   Isso criará: `build/PDVsystem-release.zip`
+
+### 2. Aplicar Atualização no Cliente
+
+1. **Copie o arquivo** `PDVsystem-release.zip` para o servidor do cliente
+
+2. **Renomeie** o arquivo para `update.zip`
+
+3. **Extraia** a pasta `update` na raiz do projeto:
+   ```
+   C:\PDVsystem\
+   └── update\
+       ├── dist\
+       ├── server\
+       ├── public\
+       └── ...
+   ```
+
+4. **Execute o script de atualização**:
+   ```bash
+   atualizar-app.bat
+   ```
+
+### 3. O Que o Script Faz
+
+O `atualizar-app.bat` realiza automaticamente:
+
+1. ✅ Para o servidor (via PM2)
+2. ✅ Faz backup da pasta `data` (banco de dados)
+3. ✅ Substitui arquivos antigos pelos novos
+4. ✅ Preserva configurações (`.env`, `data/`)
+5. ✅ Limpa a pasta `update`
+6. ✅ Reinicia o servidor (via PM2)
 
 ---
 
-## 4. Configurando o Cliente
+## Estrutura do Pacote de Release
 
-No arquivo `server/src/services/update.service.ts`, você deve configurar a constante `UPDATE_CONFIG_URL` com o link direto (Raw) para o seu `version.json`.
+O arquivo `PDVsystem-release.zip` contém:
 
-```typescript
-const UPDATE_CONFIG_URL = 'https://raw.githubusercontent.com/usuario/repo/main/version.json';
+```
+PDVsystem-release.zip
+├── dist/                    # Frontend buildado
+├── server/
+│   └── dist/               # Backend buildado
+├── public/
+│   └── uploads/            # Pasta de uploads (vazia)
+├── data/                   # Pasta do banco (vazia)
+├── scripts/                # Scripts de automação
+├── package.json            # Dependências
+├── *.bat                   # Scripts Windows
+└── README.md              # Documentação
 ```
 
 ---
 
-## 5. Comandos de API
+## Backup e Segurança
 
-Você pode interagir com o sistema de atualização através dos seguintes endpoints:
+> [!WARNING]
+> **Sempre faça backup do banco de dados antes de atualizar!**
 
-- **Verificar Atualização:** `GET /api/update/check`
-  - Retorna se há uma versão nova disponível.
-- **Aplicar Atualização:** `POST /api/update/apply`
-  - Body: `{"url": "link_do_zip"}`
-  - Faz o download imediato e reinicia o sistema em 2 segundos.
+### Backup Manual
+
+Copie a pasta `data/` antes de atualizar:
+```bash
+# Crie um backup
+xcopy C:\PDVsystem\data C:\PDVsystem\backup\data-YYYYMMDD /E /I
+```
+
+### Arquivos Preservados
+
+O script de atualização **preserva automaticamente**:
+- ✅ `data/` - Banco de dados SQLite
+- ✅ `.env` - Variáveis de ambiente
+- ✅ `public/uploads/` - Imagens de produtos
 
 ---
 
-## 6. Considerações Importantes
+## Verificação Pós-Atualização
 
-> [!WARNING]
-> **Backup do Banco de Dados:** Embora o script de atualização tente preservar a pasta `data`, é sempre recomendável que o cliente tenha backups regulares do arquivo `novabev.sqlite`.
+Após atualizar, verifique:
+
+1. **Servidor rodando**:
+   ```bash
+   pm2 status
+   ```
+
+2. **Versão atualizada**:
+   - Acesse: `http://localhost:8787`
+   - Verifique o número da versão no rodapé
+
+3. **API funcionando**:
+   ```bash
+   curl http://localhost:8787/api/health
+   ```
+
+4. **Logs sem erros**:
+   ```bash
+   pm2 logs PDVsystem
+   ```
+
+---
+
+## Troubleshooting
+
+### Atualização Falhou
+
+Se algo der errado:
+
+1. **Restaure o backup**:
+   ```bash
+   xcopy C:\PDVsystem\backup\data-YYYYMMDD C:\PDVsystem\data /E /I /Y
+   ```
+
+2. **Reinstale dependências**:
+   ```bash
+   npm install
+   ```
+
+3. **Reconstrua o projeto**:
+   ```bash
+   npm run build
+   ```
+
+4. **Reinicie o servidor**:
+   ```bash
+   pm2 restart PDVsystem
+   ```
+
+### Servidor Não Inicia
+
+1. Verifique logs: `pm2 logs PDVsystem`
+2. Verifique porta: `netstat -ano | findstr :8787`
+3. Execute migrations: `npm run migrate`
+
+---
+
+## Notas Importantes
 
 > [!IMPORTANT]
-> **Permissões:** O sistema deve ter permissão de escrita na pasta onde está instalado para que o script `.bat` consiga substituir os arquivos.
+> **Permissões:** O sistema precisa de permissão de escrita na pasta de instalação.
 
 > [!NOTE]
-> Se houver mudanças nas dependências do `package.json`, o cliente precisará rodar `npm install` novamente. O script `instalar-app.bat` já faz isso, mas em atualizações automáticas rápidas, focamos na substituição de arquivos de código (`dist` e `server/dist`).
+> **Dependências:** Se houver mudanças no `package.json`, execute `npm install` após a atualização.
+
+> [!TIP]
+> **Automação:** Para múltiplos clientes, você pode criar um script que distribua e aplique atualizações remotamente via SSH/RDP.
+
+---
+
+## Histórico de Versões
+
+Consulte o [CHANGELOG.md](../CHANGELOG.md) para ver o histórico completo de mudanças entre versões.
+
+---
+
+## Referências
+
+- [Instalação e Execução](09-instalacao-e-execucao.md)
+- [Automação Windows e PM2](10-automacao-windows-e-pm2.md)
+- [Troubleshooting](13-troubleshooting.md)
