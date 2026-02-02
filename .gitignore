@@ -7,10 +7,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
+server/dist
+build/PDVsystem-release.zip
+
+# Environment files
 *.local
+.env
+.env.local
+.env.production
+
+# Database files (não commitar bancos com dados reais)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+
+# Uploads (não commitar arquivos de usuários)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Expo (não usado neste projeto)
+.expo
+.expo-shared
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +48,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+temp_update.zip
+
+# PM2
+.pm2
