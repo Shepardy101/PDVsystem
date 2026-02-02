@@ -1,7 +1,7 @@
 # 01 - Visão Geral
 
 ## O que é
-PDVsystem (NovaBev POS) é um sistema de ponto de venda e gestão para distribuidores de bebidas, operando como SPA React servida por um backend Express em Node.
+PDVsystem é um sistema de ponto de venda e gestão, operando como SPA React servida por um backend Express em Node.
 
 ## Para quem
 - Operadores de caixa (PDV).

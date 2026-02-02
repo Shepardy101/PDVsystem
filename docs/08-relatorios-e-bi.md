@@ -20,5 +20,4 @@
 - `pages/Reports.tsx`: consome `/api/report` e `/api/reports`, exibe JSON retornado.
 - Outros gráficos (Recharts/Chart.js) são usados em componentes de dashboards (não detalhados no recorte).
 
-## Lacunas
-- Precisar mapear páginas/comps específicos que exibem product-mix e sold-products; ver `services/reports.ts` e componentes de gráficos.
+

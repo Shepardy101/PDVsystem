@@ -38,5 +38,3 @@
 ## Auditoria e Logs
 - `sessions-movements` retorna todas as sessões, movimentos e vendas com itens/pagamentos para BI/auditoria.
 
-## Lacunas
-- Validações detalhadas em repos `cash.repo.ts`, `pos.repo.ts`, `product.routes.ts` não exibidas; ver `docs/99-lacunas-perguntas.md`.

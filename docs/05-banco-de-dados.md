@@ -143,13 +143,9 @@
 - `allowed_ips`: `id INTEGER PK AUTOINCREMENT`, `ip TEXT NOT NULL UNIQUE`, `hostname TEXT`, `autorizado_em DATETIME DEFAULT CURRENT_TIMESTAMP`, `autorizado_por TEXT`.
 - `pending_ips`: `id INTEGER PK AUTOINCREMENT`, `ip TEXT NOT NULL UNIQUE`, `hostname TEXT`, `user_agent TEXT`, `requested_path TEXT`, `request_method TEXT`, `referer TEXT`, `accept_language TEXT`, `accept_header TEXT`, `accept_encoding TEXT`, `forwarded_for_raw TEXT`, `remote_port INTEGER`, `http_version TEXT`, `tentado_em DATETIME DEFAULT CURRENT_TIMESTAMP`. Detalhes adicionados em 0025/0026.
 
-## Padrões
-- Valores monetários sempre inteiros em centavos.
-- Datas/timestamps em epoch ms (inteiros) quando em rotas e colunas de tempo; algumas migrations usam DATETIME default CURRENT_TIMESTAMP para IPs.
-- IDs em TEXT (UUID ou chaves amigáveis como `root`).
-- Tabela `logs` armazena auditoria e telemetria de UI: colunas `id`, `message`, `level` (`info|warn|error`), `context_json`, `created_at` (epoch ms).
 
-## Exemplos JSON (baseados no schema)
+
+## Exemplos JSON 
 ```json
 {
   "sales": [
@@ -169,5 +165,4 @@
 - 0022_rebuild_products_with_min_stock_and_serv: adiciona `min_stock`, `imageUrl`, `type`, mantém `serv`.
 - 0023_products_allow_null_codes: permite `ean` e `internal_code` nulos; mantém `min_stock`.
 
-## Lacunas
-Esquemas completos de 0011, 0012, 0013, 0014, 0015, 0016, 0017, 0018, 0019, 0020 não estão no recorte; ver `docs/99-lacunas-perguntas.md`.
+

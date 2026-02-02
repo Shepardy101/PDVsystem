@@ -8,7 +8,7 @@
 ![TypeScript](https://img.shields.io/badge/typescript-5.8.2-3178c6.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Sistema completo de Ponto de Venda (POS) e gestão para distribuidores de bebidas**
+**Sistema completo de Ponto de Venda (POS) e gestão de estoque**
 
 [Documentação Completa](docs/README.md) • [Instalação](#-instalação-rápida) • [Recursos](#-recursos-principais) • [Arquitetura](#-arquitetura)
 

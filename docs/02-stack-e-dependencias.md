@@ -2,7 +2,7 @@
 
 ## Frontend
 - React 19 + Vite (SPA) servida pelo backend.
-- UI: Tailwind (via CDN no HTML), ícones lucide-react.
+- UI: Tailwind, ícones lucide-react.
 - Gráficos: Recharts e Chart.js (importadas em components de relatórios/monitoramento).
 
 ## Backend
