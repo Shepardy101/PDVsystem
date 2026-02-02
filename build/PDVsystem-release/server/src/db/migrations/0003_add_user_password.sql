@@ -1,1 +1,0 @@
--- REMOVIDO: Coluna password já existe na tabela users.
