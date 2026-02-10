@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
             <form onSubmit={handleLogin} className="space-y-6" autoComplete="off">
               <Input 
                 label="Usuário" 
-                placeholder="nome de usuário" 
+                placeholder="root" 
                 icon={<LogIn size={18} />} 
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -66,7 +66,7 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
               <Input 
                 label="Senha" 
                 type="password" 
-                placeholder="••••••••" 
+                placeholder="root" 
                 icon={<Key size={18} />} 
                 value={password}
                 name="new-password"
@@ -109,16 +109,8 @@ const Login: React.FC<LoginProps> = ({ onOpenCash }) => {
         </div>
 
         <div className="mt-8 flex justify-center gap-4 text-xs text-slate-500">
-           <span>v3.1.0-beta</span>
-           <span>•</span>
-             <a
-             href="https://wa.me/5562985901981?text=Olá,%20preciso%20de%20suporte%20no%20PDVsystem."
-             target="_blank"
-             rel="noopener noreferrer"
-             className="hover:text-neon"
-             >
-             Suporte Técnico
-             </a>
+           <span>Versão demonstração</span>
+           
         </div>
       </div>
     </div>
