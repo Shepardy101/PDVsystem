@@ -104,16 +104,6 @@ O sistema segue uma arquitetura **Clean Architecture** adaptada, visando manuten
 - **Backend**: Node.js, Express, Better-SQLite3 (WAL Mode)
 - **Infra**: PM2 para gerenciamento de processos, Scripts .bat para automação Windows
 
-### Fluxo de Dados
-```mermaid
-graph LR
-    A[Frontend React] -->|REST API| B[Express API]
-    B -->|Services| C[Business Logic]
-    C -->|Repositories| D[SQLite Database]
-    E[Background Jobs] -->|Maintenance| D
-    F[Saks Global State] -->|Store| A
-```
-
 ---
 
 ## 💻 Guia do Desenvolvedor
@@ -154,6 +144,16 @@ O projeto inclui scripts `.bat` na raiz para facilitar o deploy em clientes Wind
    ```bash
    npm run dev
    ```
+
+> [!NOTE]
+> **Dados de Demonstração**: O projeto é clonado com um banco de dados **já populado** (produtos, vendas, clientes) para facilitar seus testes.
+>
+> **Para Produção**:
+> 1. Vá em **Configurações > Sistema**.
+> 2. No painel "Manutenção", clique em **Resetar Banco de Dados**.
+> 3. Use a senha de segurança: `root@remove`.
+>
+> Isso limpará todas as vendas e produtos, mantendo apenas o usuário admin (login: root, senha: root).
 
 > Para mais detalhes técnicos, consulte a [Pasta de Documentação](docs/).
 

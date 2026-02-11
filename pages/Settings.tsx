@@ -212,7 +212,7 @@ const IPControlPanel: React.FC<IPControlPanelProps> = ({ canManage, telemetry })
       }
    };
 
-   
+
    const openDetails = (entry: IpEntry, list: 'pending' | 'allowed' | 'blocked') => {
       telemetry('ip-control', 'open-details', { ip: entry.ip, list });
       setSelectedIp({ entry, list });
@@ -786,36 +786,7 @@ const Settings: React.FC = () => {
 
                {/* Botões expansíveis para Protocolos de Segurança e Maintenance */}
                <div className="flex flex-col gap-4">
-                  {/* Protocolos de Segurança */}
-                  <div className="rounded-3xl border border-white/10 bg-dark-900/40">
-                     <Button
-                        className="w-full flex justify-between items-center px-6 py-4 text-left text-[12px] font-bold uppercase tracking-widest text-slate-300 rounded-t-3xl"
-                        variant="secondary"
-                        onClick={() => setShowSecurityPanel(v => !v)}
-                        icon={<Shield size={16} className="text-accent" />}
-                     >
-                        Protocolos de Segurança
-                        <span>{showSecurityPanel ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</span>
-                     </Button>
-                     {showSecurityPanel && (
-                        <div className="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/10">
-                           <div className="space-y-4">
-                              <Input label="Nível de Criptografia" defaultValue="AES-256-GCM" icon={<Lock size={14} />} disabled />
-                              <Input label="Intervalo de Auto-Logout (Segundos)" defaultValue="3600" type="number" icon={<Clock size={14} />} />
-                           </div>
-                           <div className="space-y-4">
-                              <div className="flex items-center justify-between p-4 bg-dark-950/50 rounded-2xl border border-white/5">
-                                 <div>
-                                    <p className="text-xs font-bold text-slate-200">Backups Automáticos</p>
-                                    <p className="text-[9px] text-slate-500 uppercase">A cada 12 horas</p>
-                                 </div>
-                                 <Switch enabled={true} onChange={() => { }} />
-                              </div>
-                              <Button variant="secondary" className="w-full py-3" icon={<Cloud size={16} />}>Configurar Cloud Sync</Button>
-                           </div>
-                        </div>
-                     )}
-                  </div>
+
                   {/* Maintenance // Quick Ops */}
                   <div className="rounded-3xl border border-accent/25 bg-linear-to-br from-[#0b1420] via-[#0b1f2e] to-[#04090f] shadow-[0_0_28px_-14px_rgba(34,211,238,0.9)] relative">
                      <Button
@@ -829,25 +800,25 @@ const Settings: React.FC = () => {
                      </Button>
                      {showMaintenancePanel && (
                         <div className="p-5 grid grid-cols-2 gap-3 border-t border-accent/20">
-                                                      {/* Botão discreto para popular demonstração */}
-                                                      <Button
-                                                         variant="ghost"
-                                                         className="text-[9px] py-2 w-full opacity-60 hover:opacity-100 border border-dashed border-accent/10 text-accent/70 col-span-2"
-                                                         icon={<Activity size={12} className="text-accent/60" />}
-                                                         disabled={loadingDemo}
-                                                         onClick={handleDemoPopulate}
-                                                         style={{ fontSize: 10, marginTop: -8, marginBottom: -8 }}
-                                                      >
-                                                         Popular Demonstração
-                                                      </Button>
-                                                      <PasswordConfirmModal
-                                                         open={showDemoModal}
-                                                         onClose={() => setShowDemoModal(false)}
-                                                         onConfirm={confirmDemoPopulate}
-                                                         actionLabel="Popular"
-                                                         info="Para popular dados de demonstração, digite a senha root@remove."
-                                                         requireWipeWord={false}
-                                                      />
+                           {/* Botão discreto para popular demonstração */}
+                           <Button
+                              variant="ghost"
+                              className="text-[9px] py-2 w-full opacity-60 hover:opacity-100 border border-dashed border-accent/10 text-accent/70 col-span-2"
+                              icon={<Activity size={12} className="text-accent/60" />}
+                              disabled={loadingDemo}
+                              onClick={handleDemoPopulate}
+                              style={{ fontSize: 10, marginTop: -8, marginBottom: -8 }}
+                           >
+                              Popular Demonstração
+                           </Button>
+                           <PasswordConfirmModal
+                              open={showDemoModal}
+                              onClose={() => setShowDemoModal(false)}
+                              onConfirm={confirmDemoPopulate}
+                              actionLabel="Popular"
+                              info="Para popular dados de demonstração, digite a senha root@remove."
+                              requireWipeWord={false}
+                           />
                            <Button
                               variant="secondary"
                               className="text-[9px] py-3 w-full bg-dark-900/60 border border-accent/30 hover:shadow-[0_0_18px_-6px_rgba(34,211,238,0.9)]"
