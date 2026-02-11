@@ -18,384 +18,164 @@
 
 ## 📋 Sobre o Projeto
 
-**PDVsystem** é um sistema de ponto de venda e gestao de estoque. Combina uma interface React intuitiva com um backend Node.js robusto, oferecendo gestão completa de vendas, estoque, caixa, clientes e relatórios analíticos.
+**PDVsystem** é um sistema de ponto de venda e gestao de estoque de alta performance. Combina uma interface React intuitiva com um backend Node.js robusto, oferecendo gestão completa de vendas, estoque, caixa, clientes e relatórios analíticos em tempo real.
 
-### 🎯 Este projeto demonstra:
+Projetado para atender desde pequenos comércios até distribuidoras, focando em velocidade, estabilidade e experiência do usuário.
 
+---
 
-- ✅ **Arquitetura Full-Stack moderna** - React 19 + Node.js + TypeScript
-- ✅ **API RESTful completa** - Express com 15+ rotas organizadas
-- ✅ **Banco de dados relacional** - SQLite com 23 migrations versionadas
-- ✅ **Sistema de autenticação** - Controle de usuários e permissões (admin/manager/operator)
-- ✅ **Segurança robusta** - Whitelist de IPs, guards de acesso, validações
-- ✅ **Monitoramento em tempo real** - Métricas de CPU, memória, performance
-- ✅ **Sistema de atualizações** - Update automático para clientes
-- ✅ **Telemetria e Analytics** - Tracking de eventos e comportamento do usuário
-- ✅ **Automação Windows** - Scripts .bat + PM2 para deploy em produção
-- ✅ **Código limpo e organizado** - Padrões de repositório, services, middlewares
+## 📸 Tour Visual do Sistema
+
+Explore as principais funcionalidades do sistema através das imagens abaixo. Clique nas seções para expandir.
+
+<details>
+<summary><b>🖥️ Terminal de Vendas (PDV)</b></summary>
+<br>
+
+> **Foco em Produtividade**: Interface otimizada para operação via teclado, garantindo vendas rápidas e sem uso do mouse. Suporte a múltiplos pagamentos, descontos e impressão direta.
+
+![Tela do PDV - Terminal de Vendas](docs/img/pos-screen.png)
+*(Exemplo da interface de vendas)*
+</details>
+
+<details>
+<summary><b>📦 Gestão de Estoque e Produtos</b></summary>
+<br>
+
+> **Controle Total**: Cadastro detalhado de produtos, controle de estoque mínimo, categorias e fornecedores. Importação e exportação em massa (Excel) para facilitar a migração.
+
+![Gestão de Produtos](docs/img/products-screen.png)
+</details>
+
+<details>
+<summary><b>💵 Fluxo de Caixa e Financeiro</b></summary>
+<br>
+
+> **Auditoria e Segurança**: Abertura e fechamento de caixa com conferência cega. Histórico completo de sangrias, suprimentos e quebra de caixa.
+
+![Fluxo de Caixa](docs/img/cash-screen.png)
+</details>
+
+<details>
+<summary><b>📊 Dashboards e Relatórios (BI)</b></summary>
+<br>
+
+> **Inteligência de Negócio**: Gráficos interativos de vendas por período, produtos mais vendidos, ticket médio e performance por operador.
+
+![Relatórios de Vendas](docs/img/reports-screen.png)
+</details>
+
+<details>
+<summary><b>🔒 Configurações e Monitoramento</b></summary>
+<br>
+
+> **Controle Técnico**: Monitoramento de recursos do servidor (CPU/RAM) em tempo real, logs de auditoria, whitelist de IPs e gerenciamento de permissões de usuários.
+
+![Configurações e Monitoramento](docs/img/settings-screen.png)
+</details>
 
 ---
 
 ## 🚀 Recursos Principais
 
-### 💰 Ponto de Venda (PDV)
-- Terminal de vendas com interface keyboard-first
-- Suporte a múltiplos métodos de pagamento (dinheiro, PIX, cartão)
-- Multipagamento (dividir venda em vários métodos)
-- Aplicação de descontos automáticos e manuais
-- Geração de recibos em PDF
-- Vinculação de clientes às vendas
+### 💰 Para o Operador (Frente de Caixa)
+- **Venda Rápida**: Atalhos de teclado para todas as funções (F1, F2, F5...)
+- **Flexibilidade**: Pagamentos mistos (ex: R$50 Dinheiro + R$100 Cartão)
+- **Offline-First**: Operação contínua mesmo com oscilações de rede (Sync automático)
 
-### 💵 Gestão de Caixa
-- Abertura e fechamento de sessões de caixa
-- Movimentações: suprimento, sangria, pagamentos
-- Auditoria completa com histórico de sessões
-- Cálculo automático de diferenças (esperado vs. físico)
-- Gráficos de performance e tendências
+### 🏢 Para o Gerente (Backoffice)
+- **Relatórios**: Curva ABC de produtos, fechamento diário/mensal automatico
+- **Fiscal**: Emissão de comprovantes não fiscais e preparação para NFC-e
+- **Segurança**: Níveis de acesso granulares (Admin, Gerente, Caixa)
 
-### 📦 Produtos e Estoque
-- Cadastro de produtos e serviços
-- Categorização e fornecedores
-- Controle de estoque com alertas de mínimo
-- Upload de imagens de produtos
-- Importação/exportação em massa (XLSX)
-- Suporte a diferentes unidades (caixa, unidade, kg, serviço)
-
-### 👥 Gestão de Entidades
-- **Usuários**: 3 níveis de permissão (admin, gerente, operador)
-- **Clientes**: Cadastro completo com histórico
-- **Fornecedores**: Gestão de CNPJ, contatos, categorias
-
-### 📊 Relatórios e BI
-- Produtos mais vendidos (detalhado e agregado)
-- Product Mix (análise de frequência e valor)
-- Breakdown de vendas por método de pagamento
-- Gráficos interativos (Recharts + Chart.js)
-- Exportação de dados
-
-### 🔒 Segurança e Administração
-- Whitelist de IPs com aprovação manual
-- Admin DB Manager (CRUD genérico protegido)
-- Logs de auditoria e telemetria
-- Sistema de manutenção (purge cache, wipe local)
-- Controle granular de permissões
-
-### 🤖 Funcionalidades Especiais
-- **Sistema de Atualizações** - Update automático de versões
-- **Monitoramento de Performance** - CPU, RAM, Event Loop
-- **Acesso Remoto** - Túnel Ngrok integrado
-- **Retenção de Logs** - Limpeza automática agendada
+### 🛠️ Para o Time de TI (Suporte)
+- **Update Automático**: Sistema de auto-update integrado para clientes
+- **Telemetria**: Logs remotos para diagnóstico de problemas
+- **Acesso Remoto**: Túnel Ngrok integrado para suporte à distância
 
 ---
 
-## 🏗️ Arquitetura
+## 🏗️ Arquitetura e Tecnologias
+
+O sistema segue uma arquitetura **Clean Architecture** adaptada, visando manutenibilidade e escalabilidade.
 
 ### Stack Tecnológico
-
-**Frontend**
-- React 19 com TypeScript
-- Vite (build tool)
-- Tailwind CSS
-- Recharts & Chart.js (gráficos)
-- Lucide React (ícones)
-- React Hot Toast (notificações)
-
-**Backend**
-- Node.js (v20.6.0+, recomendado v24)
-- Express.js
-- TypeScript
-- Better-SQLite3 (banco de dados)
-- Multer (upload de arquivos)
-- PM2 (gerenciamento de processos)
-
-**Infraestrutura**
-- SQLite com WAL mode
-- Porta padrão: 8787
-- SPA servida pelo backend
-- Scripts .bat para automação Windows
-
-### Estrutura de Diretórios
-
-```
-PDVsystem/
-├── pages/              # Páginas React (POS, Caixa, Produtos, etc.)
-├── components/         # Componentes reutilizáveis e modais
-├── services/           # Camada de serviços frontend
-├── hooks/              # Hooks customizados React
-├── server/
-│   ├── src/
-│   │   ├── routes/     # Rotas da API Express
-│   │   ├── repositories/ # Camada de acesso ao banco
-│   │   ├── services/   # Lógica de negócio backend
-│   │   ├── middleware/ # Middlewares (IP control, etc.)
-│   │   └── db/         # Database e migrations
-│   └── dist/           # Build do backend
-├── dist/               # Build do frontend
-├── data/               # Banco de dados SQLite
-├── public/uploads/     # Arquivos enviados
-├── docs/               # Documentação técnica completa
-└── scripts/            # Scripts de build e validação
-```
+- **Frontend**: React 19, TypeScript, Tailwind CSS, Shadcn/UI
+- **Backend**: Node.js, Express, Better-SQLite3 (WAL Mode)
+- **Infra**: PM2 para gerenciamento de processos, Scripts .bat para automação Windows
 
 ### Fluxo de Dados
-
 ```mermaid
 graph LR
-    A[Frontend React] -->|HTTP/JSON| B[Express API]
-    B -->|Middleware| C[IP Access Control]
-    C -->|Routes| D[Controllers]
-    D -->|Repository| E[SQLite Database]
-    E -->|Data| D
-    D -->|JSON| A
-    
-    F[PM2] -->|Manage| B
-    G[Performance Logger] -->|Monitor| B
-    H[Log Retention] -->|Clean| E
+    A[Frontend React] -->|REST API| B[Express API]
+    B -->|Services| C[Business Logic]
+    C -->|Repositories| D[SQLite Database]
+    E[Background Jobs] -->|Maintenance| D
+    F[Saks Global State] -->|Store| A
 ```
 
 ---
 
-## 📥 Instalação Rápida
+## 💻 Guia do Desenvolvedor
 
-### Pré-requisitos
-- Node.js v20.6.0 ou superior (recomendado v24)
-- npm ou yarn
-- Windows (para scripts .bat e PM2)
+Esta seção é para desenvolvedores que desejam manter ou expandir o sistema.
 
-### Desenvolvimento
-
-```bash
-# 1. Clone o repositório
-git clone <repository-url>
-cd PDVsystem
-
-# 2. Instale as dependências
-npm install
-
-# 3. Configure o ambiente
-cp .env.example .env
-# Edite .env com suas configurações
-
-# 4. Execute as migrations do banco
-npm run migrate
-
-# 5. Inicie em modo desenvolvimento
-npm run dev
+### Estrutura de Pastas Essencial
+```
+PDVsystem/
+├── pages/              # Views principais (Rotas do React)
+├── components/         # UI Kit e componentes reutilizáveis
+├── server/src/         # Código fonte do Backend
+│   ├── routes/         # Definição dos endpoints da API
+│   ├── services/       # Regras de negócio complexas
+│   └── db/             # Migrations e conexão SQLite
+├── docs/               # Documentação técnica detalhada
+└── scripts/            # Automação (.bat e .sh)
 ```
 
-Acesse: `http://localhost:3000` (frontend) e `http://localhost:8787` (API)
+### Scripts de Automação (Windows)
+O projeto inclui scripts `.bat` na raiz para facilitar o deploy em clientes Windows:
 
-### Produção (Build Local)
+- `iniciar-sistema.bat`: Inicializa o PM2 e o servidor.
+- `atualizar-app.bat`: Busca atualizações e aplica patches.
+- `iniciar-tunel.bat`: Abre conexão remota via Ngrok para suporte.
 
-```bash
-# 1. Build completo
-npm run build
+### Primeiros Passos (Dev)
 
-# 2. Inicie com PM2
-pm2 start server/dist/index.js --name PDVsystem --env production --node-args="--env-file=.env"
-pm2 save
-pm2 startup
-```
+1. **Instalar Dependências**:
+   ```bash
+   npm install
+   ```
+2. **Setup do Banco**:
+   ```bash
+   npm run migrate
+   ```
+3. **Rodar em Dev**:
+   ```bash
+   npm run dev
+   ```
 
-### Distribuição para Cliente
-
-```bash
-# 1. Gere o pacote de release
-.\package-app.bat
-
-# 2. Distribua o arquivo gerado
-# build/PDVsystem-release.zip
-
-# 3. No cliente, extraia e execute
-.\instalar-app.bat
-```
-
----
-
-## ⚙️ Configuração
-
-### Variáveis de Ambiente (.env)
-
-```env
-# Servidor
-PORT=8787
-DB_PATH=data/novabev.sqlite
-
-# Segurança (NUNCA habilite em produção pública!)
-ENABLE_DB_ADMIN=false
-
-# Branding
-VITE_APP_NAME="NovaBev POS"
-
-# Monitoramento
-PERF_LOG_ENABLED=true
-PERF_LOG_INTERVAL_MS=60000
-
-# Webhooks (opcional)
-VITE_LOGS_WEBHOOK_URL=https://...
-```
-
-### Primeiro Acesso
-
-**Usuário padrão:**
-- Email: `root@root.com`
-- Senha: `root`
-
-⚠️ **Importante**: Altere a senha do admin imediatamente após o primeiro login!
-
----
-
-## 📚 Documentação
-
-A documentação completa está organizada na pasta [`docs/`](docs/README.md):
-
-- **[Visão Geral](docs/01-visao-geral.md)** - Introdução e conceitos
-- **[Stack e Dependências](docs/02-stack-e-dependencias.md)** - Tecnologias utilizadas
-- **[Arquitetura](docs/03-arquitetura.md)** - Estrutura e fluxos
-- **[Banco de Dados](docs/05-banco-de-dados.md)** - Schema e migrations
-- **[API Express](docs/06-api-express.md)** - Endpoints e contratos
-- **[Instalação e Execução](docs/09-instalacao-e-execucao.md)** - Guias detalhados
-- **[Segurança](docs/11-seguranca-e-guardrails.md)** - Controles e boas práticas
-- **[Sistema de Atualizações](docs/15-sistema-de-atualizacoes.md)** - Updates automáticos
-- **[Troubleshooting](docs/13-troubleshooting.md)** - Resolução de problemas
-
----
-
-## 🔧 Scripts Disponíveis
-
-```bash
-# Desenvolvimento
-npm run dev              # Backend + Frontend em modo watch
-npm run dev:api          # Apenas backend em modo watch
-
-# Build
-npm run build            # Build completo (client + server)
-npm run build:client     # Build apenas frontend
-npm run build:server     # Build apenas backend
-
-# Produção
-npm run start:prod       # Inicia backend em produção
-npm run migrate          # Executa migrations do banco
-
-# Utilitários
-npm run docs:check       # Valida documentação
-npm run tunnel           # Inicia túnel ngrok
-npm run up               # Incrementa versão
-```
+> Para mais detalhes técnicos, consulte a [Pasta de Documentação](docs/).
 
 ---
 
 ## 🛡️ Segurança
 
-### Controle de Acesso
-- **Whitelist de IPs**: Apenas IPs autorizados podem acessar o sistema
-- **Aprovação Manual**: Novos IPs ficam em fila de aprovação
-- **Exceções**: Health check, admin routes e uploads não requerem whitelist
-
-### Admin DB Manager
-- Protegido por flag `ENABLE_DB_ADMIN=true`
-- Acesso restrito a localhost
-- NUNCA habilite em produção pública
-
-### Boas Práticas
-- Mantenha backups regulares de `data/novabev.sqlite`
-- Backup de `public/uploads/`
-- Use firewall para restringir porta 8787
-- Altere senhas padrão imediatamente
+- **IP Whitelist**: O sistema só aceita conexões de IPs previamente autorizados.
+- **Rate Limiting**: Proteção contra brute-force em rotas sensíveis.
+- **Sanatização**: Inputs validados com Zod para prevenir injeção.
 
 ---
 
-## 🐛 Troubleshooting
+## 📥 Instalação Produção
 
-### Porta 8787 ocupada
-```powershell
-# Verificar processo
-netstat -ano | findstr 8787
-
-# Finalizar processo (substitua PID)
-taskkill /PID <PID> /F
-```
-
-### Banco de dados travado
-```bash
-# Reinicie o PM2
-pm2 restart PDVsystem
-
-# Ou delete arquivos WAL/SHM
-rm data/novabev.sqlite-wal
-rm data/novabev.sqlite-shm
-```
-
-### IP bloqueado (403)
-- Acesse via localhost
-- Vá em Settings → IP Control
-- Aprove seu IP na lista de pendentes
-
-Mais soluções: [docs/13-troubleshooting.md](docs/13-troubleshooting.md)
-
----
-
-## 🌐 Acesso Remoto
-
-Para acessar o sistema de qualquer lugar via internet:
+Consulte o guia detalhado em [docs/09-instalacao-e-execucao.md](docs/09-instalacao-e-execucao.md).
 
 ```bash
-# Inicie o túnel ngrok
-.\iniciar-tunel.bat
+# Exemplo rápido com PM2
+npm run build
+pm2 start server/dist/index.js --name PDVsystem
 ```
-
-O túnel criará uma URL pública temporária apontando para seu servidor local.
-
----
-
-## 📊 Monitoramento
-
-O sistema inclui monitoramento automático de:
-- **CPU**: Uso percentual do processador
-- **Memória**: RAM utilizada/total
-- **Event Loop**: Delay e latência
-- **Banco de Dados**: Tamanho e performance
-- **Logs**: Auditoria completa de ações
-
-Acesse as métricas em: Settings → System Monitor
-
----
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Por favor:
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
-Veja [CONTRIBUTING.md](CONTRIBUTING.md) para mais detalhes.
-
----
-
-## 📝 Changelog
-
-Veja [CHANGELOG.md](CHANGELOG.md) para histórico de versões e mudanças.
-
----
-
-## 📄 Licença
-
-Este projeto está licenciado sob a **MIT License** - sinta-se livre para fazer fork, modificar e usar em seus próprios projetos.
-
-Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
----
-
-
-## 🔗 Links Úteis
-
-- [Documentação Completa](docs/README.md)
-- [Guia de Instalação](docs/09-instalacao-e-execucao.md)
-- [API Reference](docs/06-api-express.md)
-- [Troubleshooting](docs/13-troubleshooting.md)
 
 ---
 

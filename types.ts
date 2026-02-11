@@ -176,6 +176,5 @@ export interface CashSession {
 
 
 
-// CashTransaction antigo removido, pois agora usamos SaleTransaction | MovementTransaction
 
 export type AppView = 'login' | 'pos' | 'products' | 'entities' | 'cash' | 'reports' | 'settings';
