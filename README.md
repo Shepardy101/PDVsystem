@@ -8,7 +8,7 @@
 ![TypeScript](https://img.shields.io/badge/typescript-5.8.2-3178c6.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Sistema completo de Ponto de Venda (POS) e gestão de estoque**
+**Sistema de Vendas e gestão de estoque**
 
 [Documentação Completa](docs/README.md) • [Instalação](#-instalação-rápida) • [Recursos](#-recursos-principais) • [Arquitetura](#-arquitetura)
 
@@ -20,7 +20,7 @@
 
 **PDVsystem** é um sistema de ponto de venda e gestao de estoque de alta performance. Combina uma interface React intuitiva com um backend Node.js robusto, oferecendo gestão completa de vendas, estoque, caixa, clientes e relatórios analíticos em tempo real.
 
-Projetado para atender desde pequenos comércios até distribuidoras, focando em velocidade, estabilidade e experiência do usuário.
+Projetado para atender desde pequenos e médios comércios, focando em velocidade, estabilidade e experiência do usuário.
 
 ---
 
@@ -32,7 +32,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>🖥️ Terminal de Vendas (PDV)</b></summary>
 <br>
 
-> **Foco em Produtividade**: Interface otimizada para operação via teclado, garantindo vendas rápidas e sem uso do mouse. Suporte a múltiplos pagamentos, descontos e impressão direta.
+> **Foco em Produtividade**: Interface otimizada para operação via teclado, garantindo vendas rápidas e sem uso do mouse. Registro de múltiplos pagamentos, descontos e impressão direta.
 
 ![Tela do PDV - Terminal de Vendas](docs/img/pos-screen.png)
 *(Exemplo da interface de vendas)*
@@ -60,7 +60,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>📊 Dashboards e Relatórios (BI)</b></summary>
 <br>
 
-> **Inteligência de Negócio**: Gráficos interativos de vendas por período, produtos mais vendidos, ticket médio e performance por operador.
+> **Inteligência de Negócio**: Gráficos interativos de vendas de produtos por volume e frequência e produtos mais vendidos.
 
 ![Relatórios de Vendas](docs/img/reports-screen.png)
 </details>
@@ -79,17 +79,17 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 ## 🚀 Recursos Principais
 
 ### 💰 Para o Operador (Frente de Caixa)
-- **Venda Rápida**: Atalhos de teclado para todas as funções (F1, F2, F5...)
+- **Venda Rápida**: Agilidade na finalização da venda (Enter contínuo) e auto-focus no campo de busca
 - **Flexibilidade**: Pagamentos mistos (ex: R$50 Dinheiro + R$100 Cartão)
 - **Offline-First**: Operação contínua mesmo com oscilações de rede (Sync automático)
 
 ### 🏢 Para o Gerente (Backoffice)
 - **Relatórios**: Curva ABC de produtos, fechamento diário/mensal automatico
-- **Fiscal**: Emissão de comprovantes não fiscais e preparação para NFC-e
+- **Fiscal**: Emissão de comprovantes não fiscais e preparação para NFC-e (em desenvolvimento)
 - **Segurança**: Níveis de acesso granulares (Admin, Gerente, Caixa)
 
 ### 🛠️ Para o Time de TI (Suporte)
-- **Update Automático**: Sistema de auto-update integrado para clientes
+- **Update Automático**: Script de update integrado para clientes
 - **Telemetria**: Logs remotos para diagnóstico de problemas
 - **Acesso Remoto**: Túnel Ngrok integrado para suporte à distância
 
@@ -162,8 +162,8 @@ O projeto inclui scripts `.bat` na raiz para facilitar o deploy em clientes Wind
 ## 🛡️ Segurança
 
 - **IP Whitelist**: O sistema só aceita conexões de IPs previamente autorizados.
-- **Rate Limiting**: Proteção contra brute-force em rotas sensíveis.
-- **Sanatização**: Inputs validados com Zod para prevenir injeção.
+- **IP Whitelist**: O sistema só aceita conexões de IPs previamente autorizados.
+- **Validação de Dados**: Verificação rigorosa de inputs no backend.
 
 ---
 
