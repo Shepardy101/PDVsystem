@@ -1,4 +1,4 @@
-# Dockerfile para PDVsystem/NovaBev POS
+# Dockerfile para PDVsystem
 # Build multi-stage: frontend (Vite) + backend (Express)
 
 # Etapa 1: Build do frontend
