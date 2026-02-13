@@ -145,6 +145,83 @@ O projeto inclui scripts `.bat` na raiz para facilitar o deploy em clientes Wind
    npm run dev
    ```
 
+### Scripts de Build Profissionais
+
+O projeto inclui scripts otimizados para análise e build de produção:
+
+#### 📦 Scripts Disponíveis
+
+```bash
+# Build com resumo detalhado (recomendado)
+npm run build:analyze
+```
+**Benefícios**: 
+- Mostra apenas informações relevantes (chunks, tamanhos, tempo)
+- Filtra ruído do output (últimas 15 linhas)
+- Ideal para CI/CD e verificação rápida de bundle size
+
+```bash
+# Build limpo (remove dist/ antes)
+npm run build:clean
+```
+**Benefícios**:
+- Garante build completamente novo
+- Remove arquivos órfãos de builds anteriores
+- Previne problemas de cache em produção
+
+```bash
+# Análise de erros de build
+npm run build:errors
+```
+**Benefícios**:
+- Filtra apenas erros com contexto (2 linhas antes/depois)
+- Facilita debug sem informações desnecessárias
+- Economiza tempo na identificação de problemas
+
+```bash
+# Análise de warnings
+npm run build:warnings
+```
+**Benefícios**:
+- Identifica potenciais problemas não-críticos
+- Útil para code quality e otimizações
+- Contexto de 1 linha antes/depois para localização rápida
+
+```bash
+# Contagem de chunks JS gerados
+npm run build:stats
+```
+**Benefícios**:
+- Monitora crescimento do bundle ao longo do tempo
+- Ajuda a identificar quando code splitting é necessário
+- Métrica rápida de complexidade do build
+
+> **🎯 Dica de Performance**: O sistema usa **code splitting** com React.lazy() e manual chunks.
+> O build inicial é ~230KB (react-vendor) + chunks sob demanda, resultando em **90% de redução** no bundle inicial.
+
+### Comandos Úteis (PowerShell)
+
+Comandos para depuração avançada e análise personalizada:
+
+```powershell
+# Buscar padrões específicos no código-fonte
+Get-ChildItem -Recurse -Filter *.tsx | Select-String -Pattern "useState"
+
+# Análise de imports não utilizados
+npm run build 2>&1 | Select-String -Pattern "not used|unused"
+
+# Buscar múltiplos padrões com contexto
+npm run build 2>&1 | Select-String -Pattern "error|warning" -Context 2,2
+
+# Verificar tamanho total de dist/
+Get-ChildItem dist -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="TotalMB";Expression={[math]::Round($_.Sum / 1MB, 2)}}
+
+# Listar todos os chunks ordenados por tamanho
+Get-ChildItem dist/assets/*.js | Sort-Object Length -Descending | Select-Object Name, @{Name="Size(KB)";Expression={[math]::Round($_.Length / 1KB, 2)}}
+```
+
+> **💡 Dica**: Use os scripts npm (`build:analyze`, `build:errors`, etc.) para análises comuns. Reserve comandos PowerShell customizados para casos específicos.
+
 > [!NOTE]
 > **Dados de Demonstração**: O projeto é clonado com um banco de dados **já populado** (produtos, vendas, clientes) para facilitar seus testes.
 >

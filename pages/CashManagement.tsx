@@ -50,6 +50,7 @@ const CashManagement: React.FC = () => {
 
    const [sales, setSales] = useState<SaleTransaction[]>([]);
    const [movements, setMovements] = useState<MovementTransaction[]>([]);
+   const [allOpenSales, setAllOpenSales] = useState<SaleTransaction[]>([]);
 
 
    const [historyModalTab, setHistoryModalTab] = useState<'resumo' | 'movimentacoes'>('resumo');
@@ -103,6 +104,17 @@ const CashManagement: React.FC = () => {
          (tx): tx is SaleTransaction => 'items' in tx && Array.isArray((tx as any).items) && (tx as any).items.length > 0
       );
    }, [session]);
+
+   // Determinar quais vendas mostrar (todas para admin/manager, apenas do operador para operator)
+   const salesForOperatorView = useMemo(() => {
+      if (!user) return [];
+      // Se for admin ou manager, mostrar todas as vendas abertas
+      if (user.role === 'admin' || user.role === 'manager') {
+         return allOpenSales;
+      }
+      // Se for operador, mostrar apenas suas vendas
+      return currentSessionSales;
+   }, [user, allOpenSales, currentSessionSales]);
 
    // Buscar vendas e movimentações da sessão de caixa aberta
    const fetchAndSetSessionTransactions = useCallback(async () => {
@@ -226,6 +238,34 @@ const CashManagement: React.FC = () => {
          }
       })();
    }, [refreshFlag, user?.id]);
+
+   // Buscar todas as vendas das sessões abertas (para admin/manager)
+   useEffect(() => {
+      if (!user) return;
+      if (user.role !== 'admin' && user.role !== 'manager') {
+         setAllOpenSales([]);
+         return;
+      }
+
+      // Admin/Manager: buscar todas as vendas abertas
+      (async () => {
+         try {
+            console.log('[CashManagement] Buscando todas vendas abertas (admin/manager)...');
+            const res = await fetch('/api/pos/sales/all-open');
+            if (res.ok) {
+               const data = await res.json();
+               console.log('[CashManagement] Vendas abertas encontradas:', data.sales?.length || 0);
+               setAllOpenSales(data.sales || []);
+            } else {
+               console.warn('[CashManagement] Erro ao buscar vendas abertas:', res.status);
+               setAllOpenSales([]);
+            }
+         } catch (err) {
+            console.error('[CashManagement] Erro ao buscar vendas abertas:', err);
+            setAllOpenSales([]);
+         }
+      })();
+   }, [user, refreshFlag]);
 
 
 
@@ -872,7 +912,7 @@ const CashManagement: React.FC = () => {
                {/* Componente de vendas por operador */}
                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
                   <OperatorSalesBreakdown 
-                     sales={selectedHistory ? sales : currentSessionSales} 
+                     sales={selectedHistory ? sales : salesForOperatorView} 
                      onTelemetry={(area, action, meta) => sendTelemetry(area, action, meta)} 
                   />
                </div>

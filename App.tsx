@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useAuth } from './components/AuthContext';
 import { ShoppingCart, Package, Users, Wallet, BarChart3, LogOut, Settings as SettingsIcon, Bell, Menu, X, Command } from 'lucide-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppView } from './types';
+import FuturisticSpinner from './components/FuturisticSpinner';
 import Login from './pages/Login';
-import POS from './pages/POS';
-import Products from './pages/Products';
-import CashManagement from './pages/CashManagement';
-import Reports from './pages/Reports';
-import Entities from './pages/Entities';
-import Settings from './pages/Settings';
+
+// Lazy loading das páginas principais para otimizar bundle
+const POS = lazy(() => import('./pages/POS'));
+const Products = lazy(() => import('./pages/Products'));
+const CashManagement = lazy(() => import('./pages/CashManagement'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Entities = lazy(() => import('./pages/Entities'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 // Declaração global para suportar import.meta.env no Vite/TypeScript
 declare global {
@@ -373,39 +376,45 @@ const App: React.FC = () => {
         {/* View Layout Container */}
         <div className="flex-1 min-h-0 h-full relative overflow-y-auto overflow-x-hidden bg-dark-950">
           <div className="flex flex-col min-h-full h-full relative z-10">
-            {view === 'pos' && (
-              <div className="flex-1 flex flex-col min-h-0 h-full">
-                <POS 
-                  cashOpen={cashOpen}
-                  onOpenCash={handleOpenCash}
-                />
+            <Suspense fallback={
+              <div className="flex-1 flex items-center justify-center">
+                <FuturisticSpinner />
               </div>
-            )}
-            {view === 'products' && (
-              <div className="flex-1 flex flex-col min-h-0 h-full">
-                <Products />
-              </div>
-            )}
-            {view === 'entities' && (
-              <div className="flex-1 flex flex-col min-h-0 h-full">
-                <Entities />
-              </div>
-            )}
-            {view === 'cash' && (
-              <div className="flex-1 flex flex-col min-h-0 h-full">
-                <CashManagement />
-              </div>
-            )}
-            {view === 'reports' && (
-              <div className="flex-1 flex flex-col min-h-0 h-full">
-                <Reports />
-              </div>
-            )}
-            {view === 'settings' && (
-              <div className="flex-1 flex flex-col min-h-0 h-full">
-                <Settings />
-              </div>
-            )}
+            }>
+              {view === 'pos' && (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                  <POS 
+                    cashOpen={cashOpen}
+                    onOpenCash={handleOpenCash}
+                  />
+                </div>
+              )}
+              {view === 'products' && (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                  <Products />
+                </div>
+              )}
+              {view === 'entities' && (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                  <Entities />
+                </div>
+              )}
+              {view === 'cash' && (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                  <CashManagement />
+                </div>
+              )}
+              {view === 'reports' && (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                  <Reports />
+                </div>
+              )}
+              {view === 'settings' && (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                  <Settings />
+                </div>
+              )}
+            </Suspense>
           </div>
         </div>
       </main>

@@ -21,6 +21,42 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Separar bibliotecas por categoria para melhor cache
+            if (id.includes('node_modules')) {
+              // Core React (sempre necessário)
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'react-vendor';
+              }
+              // Ícones Lucide (grande biblioteca de ícones)
+              if (id.includes('lucide-react')) {
+                return 'icons-vendor';
+              }
+              // Biblioteca de gráficos (usada em Reports)
+              if (id.includes('recharts') || id.includes('victory') || id.includes('d3-')) {
+                return 'charts-vendor';
+              }
+              // UI Components (Radix)
+              if (id.includes('@radix-ui')) {
+                return 'ui-vendor';
+              }
+              // Biblioteca de datas
+              if (id.includes('date-fns')) {
+                return 'date-vendor';
+              }
+              // Resto das dependências
+              return 'vendor';
+            }
+          }
+        }
+      },
+      // Otimizações adicionais
+      chunkSizeWarningLimit: 1000,
+      sourcemap: false,
     }
   };
 });
