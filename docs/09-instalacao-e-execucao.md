@@ -38,6 +38,23 @@
 - `VITE_LOGS_WEBHOOK_URL` (URL para envio de logs ao limpar o cache).
 
 > **Nota:** Recomenda-se o uso do Node.js v24 para aproveitar o carregamento nativo de `.env` via `--env-file`.
+> # Variáveis de ambiente do PDVsystem
+>
+> .env
+>
+> 
+- `VITE_APP_NAME`="Nome Empresa LTDA
+- `VITE_APP_CNPJ`="01.222.666/555-00"
+- `VITE_APP_ADDRESS`="Rua teste, 123 - cidade, estado"
+- `VITE_APP_PHONE`="(62) 99999-1234"
+
+# Webhook para envio dos logs ao purgar (opcional)
+- `VITE_LOGS_WEBHOOK_URL`='https://webhook.site/your-webhook-url'
+- `ENABLE_DB_ADMIN`=false
+_ `NGROK_AUTHTOKEN`='your-ngrok-authtoken'
+
+# versão do sistema
+- `VITE_APP_VERSION`="1.0.26"
 
 ## Banco de Dados
 - Local: `data/novabev.sqlite`; WAL/SHM gerados automaticamente.
