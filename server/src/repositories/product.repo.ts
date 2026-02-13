@@ -75,11 +75,19 @@ export function getProductByInternalCode(internal_code: string): Product | undef
 
 export function createProduct(data: any) {
   // Validação
+  console.log('[createProduct] Dados recebidos:', JSON.stringify(data, null, 2));
   const isService = data.type === 'service';
   // Converte string vazia para null em campos opcionais
   const normalize = (v: any) => (v === '' ? null : v);
   if (!data.name || !data.unit || (!isService && (!data.ean || !data.internalCode))) {
-    console.error('[createProduct] Campos obrigatórios ausentes:', data);
+    console.error('[createProduct] Campos obrigatórios ausentes:', {
+      name: data.name || 'FALTANDO',
+      unit: data.unit || 'FALTANDO',
+      type: data.type || 'product',
+      ean: data.ean || 'FALTANDO',
+      internalCode: data.internalCode || 'FALTANDO',
+      isService
+    });
     throw { code: 'VALIDATION_ERROR', message: 'Campos obrigatórios ausentes.' };
   }
   if (!['cx', 'unit', 'kg', 'serv'].includes(data.unit)) {

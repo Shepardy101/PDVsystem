@@ -322,14 +322,17 @@ const Products: React.FC = () => {
          type,
       };
       if (!isService) {
-         payload.ean = formData.get('gtin');
-         payload.internalCode = formData.get('internalCode');
+         payload.ean = eanValue || formData.get('gtin');
+         payload.internalCode = internalCodeValue || formData.get('internalCode');
+         // Validação frontend antes de enviar
+         if (!payload.ean || !payload.internalCode) {
+            showPopup('error', 'Campos obrigatórios', 'Para produtos, o EAN e Código Interno são obrigatórios.');
+            return;
+         }
       } else {
          payload.ean = null;
          payload.internalCode = null;
       }
-      // DEBUG: popup para inspecionar submit antes de qualquer erro/reload
-      showPopup('info', 'DEBUG SUBMIT', `Tipo: ${type}\nPayload: ${JSON.stringify(payload, null, 2)}`);
       try {
          sendTelemetry('product', 'submit-start', { mode: selectedProduct ? 'update' : 'create', type, status: payload.status });
          let res;
@@ -349,7 +352,7 @@ const Products: React.FC = () => {
          }
          if (!res.ok) {
             let errMsg = 'Erro ao salvar produto';
-            let errData = {};
+            let errData: any = {};
             try {
                errData = await res.json();
                if (errData && errData.error && errData.error.message) {
@@ -1110,20 +1113,7 @@ const Products: React.FC = () => {
 
                   {/* Modal Content */}
                   <div className="p-2 overflow-y-auto custom-scrollbar space-y-8 relative z-10">
-                                                      <form id="product-form" onSubmit={async e => {
-                                                          e.preventDefault();
-                                                          e.stopPropagation();
-                                                          // Garante que os valores locais sejam enviados
-                                                          const form = e.target as HTMLFormElement;
-                                                          if (form.elements.namedItem('gtin')) {
-                                                             (form.elements.namedItem('gtin') as HTMLInputElement).value = eanValue;
-                                                          }
-                                                          if (form.elements.namedItem('internalCode')) {
-                                                             (form.elements.namedItem('internalCode') as HTMLInputElement).value = internalCodeValue;
-                                                          }
-                                                          await handleProductSubmit(e);
-                                                          return false;
-                                                      }}>
+                                                      <form id="product-form" onSubmit={handleProductSubmit}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="space-y-2 md:col-span-1">
                               <label className="text-[10px] font-bold uppercase tracking-widest text-accent/70 assemble-text">Nomenclatura do Produto/Serviço</label>
@@ -1155,7 +1145,7 @@ const Products: React.FC = () => {
                               {/* Campos específicos para produto */}
                               {modalType === 'product' && (
                                  <>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">GTIN / EAN *</label>
                                     <div className="flex gap-2 items-center">
                                        <Input
                                           name="gtin"
@@ -1164,7 +1154,7 @@ const Products: React.FC = () => {
                                           placeholder="7890000000000"
                                           icon={<ShieldAlert size={14} className="text-accent/40" />}
                                           className="bg-dark-950/50 flex-1"
-                                          required
+                                          required={modalType === 'product'}
                                           readOnly={isOperatorUser}
                                           disabled={isOperatorUser}
                                           autoFocus
@@ -1191,7 +1181,7 @@ const Products: React.FC = () => {
                                           </Button>
                                        )}
                                     </div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 assemble-text mt-4">Código Interno *</label>
                                     <div className="flex gap-2 items-center">
                                        <Input
                                           name="internalCode"
@@ -1200,13 +1190,15 @@ const Products: React.FC = () => {
                                           placeholder="000000"
                                           icon={<Hash size={14} className="text-accent/40" />}
                                           className="bg-dark-950/50 flex-1"
+                                          required={modalType === 'product'}
                                           readOnly={isOperatorUser}
                                           disabled={isOperatorUser}
                                           ref={internalCodeRef}
                                           onKeyDown={e => {
                                              if (e.key === 'Enter') {
                                                 // Avança para o próximo campo relevante
-                                                document.querySelector('select[name="categoryId"]')?.focus();
+                                                const categorySelect = document.querySelector('select[name="categoryId"]') as HTMLSelectElement | null;
+                                                categorySelect?.focus();
                                                 e.preventDefault();
                                              }
                                           }}
