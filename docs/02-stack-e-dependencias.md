@@ -8,7 +8,7 @@
 ## Backend
 - Node.js + Express (TypeScript → build em `server/dist`).
 - Banco: SQLite via better-sqlite3.
-- Uploads: multer (rota de uploads em `server/src/routes/sys/uploads` — não detalhada neste recorte).
+- Uploads: multer (rota de uploads em `server/src/routes/sys/uploads`.
 - UUID: `uuid`.
 - CORS habilitado globalmente.
 
