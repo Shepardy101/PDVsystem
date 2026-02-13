@@ -18,7 +18,7 @@
 
 ## 📋 Sobre o Projeto
 
-**PDVsystem** é um sistema de ponto de venda e gestao de estoque de alta performance. Combina uma interface React intuitiva com um backend Node.js robusto, oferecendo gestão completa de vendas, estoque, caixa, clientes e relatórios analíticos em tempo real.
+**PDVsystem**  é uma base aberta para sistemas de ponto de venda e gestão de estoque. Construído com React e Node.js, oferece módulos prontos para vendas, caixa, clientes e relatórios, permitindo que outros desenvolvedores personalizem, implementem e contribuam para sua evolução.
 
 Projetado para atender desde pequenos e médios comércios, focando em velocidade, estabilidade e experiência do usuário.
 

@@ -119,3 +119,31 @@ export async function queryBuilder(req: Request, res: Response) {
 		res.status(400).json({ error: e.message });
 	}
 }
+
+export async function exportTable(req: Request, res: Response) {
+	const { table, format } = req.query;
+	if (!table || typeof table !== 'string') return res.status(400).json({ error: 'Missing table' });
+	const exportFormat = (format === 'import' ? 'import' : 'raw') as 'raw' | 'import';
+	try {
+		const data = adminDbRepo.exportTableData(table, exportFormat);
+		res.json(data);
+	} catch (e: any) {
+		res.status(400).json({ error: e.message });
+	}
+}
+
+export async function wipeProductsTable(req: Request, res: Response) {
+	const { password, confirmation } = req.body;
+	if (password !== 'root@remove') {
+		return res.status(403).json({ error: 'Senha incorreta' });
+	}
+	if (confirmation !== 'wipe') {
+		return res.status(400).json({ error: 'Confirmação inválida' });
+	}
+	try {
+		const result = adminDbRepo.wipeProductsTable();
+		res.json({ ok: true, message: 'Tabela de produtos limpa com sucesso', deletedCount: result });
+	} catch (e: any) {
+		res.status(500).json({ error: e.message });
+	}
+}

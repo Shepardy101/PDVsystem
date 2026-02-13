@@ -37,6 +37,11 @@ router.delete('/rows', adminDbService.deleteRow);
 // Query builder
 router.post('/query', adminDbService.queryBuilder);
 
+// Export table data
+router.get('/export', adminDbService.exportTable);
+
+// Wipe products table
+router.post('/wipe-products', adminDbService.wipeProductsTable);
 
 // Reset DB and create root user
 router.post('/reset', adminDbService.resetDatabase);
