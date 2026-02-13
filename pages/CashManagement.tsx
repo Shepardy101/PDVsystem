@@ -1,6 +1,7 @@
 import CashPerformanceTrends from '../components/CashPerformanceTrends';
 import FuturisticSpinner from '../components/FuturisticSpinner';
 import CashSalesBreakdown from '../components/CashSalesBreakdown';
+import OperatorSalesBreakdown from '../components/OperatorSalesBreakdown';
 import { fetchSessionTransactions } from '../utils/transactions';
 import PagamentoModal from '../components/modals/PagamentoModal';
 import SangriaModal from '../components/modals/SangriaModal';
@@ -42,7 +43,7 @@ const CashManagement: React.FC = () => {
       sendTelemetry('page', 'view');
    }, [sendTelemetry]);
    const [historySearch, setHistorySearch] = useState<string>('');
-   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+   const [activeTab, setActiveTab] = useState<'current' | 'history' | 'performance' | 'operators'>('current');
    const [cashHistory, setCashHistory] = useState([]);
    const [cashHistoryLoading, setCashHistoryLoading] = useState(false);
    const [cashHistoryError, setCashHistoryError] = useState('');
@@ -94,6 +95,14 @@ const CashManagement: React.FC = () => {
       () => (sessionSalesCents > 0 ? sessionSalesCents : cashBalanceCents),
       [sessionSalesCents, cashBalanceCents]
    );
+
+   // Extrair vendas da sessão atual para análise por operador
+   const currentSessionSales = useMemo(() => {
+      if (!session || !Array.isArray(session.transactions)) return [];
+      return session.transactions.filter(
+         (tx): tx is SaleTransaction => 'items' in tx && Array.isArray((tx as any).items) && (tx as any).items.length > 0
+      );
+   }, [session]);
 
    // Buscar vendas e movimentações da sessão de caixa aberta
    const fetchAndSetSessionTransactions = useCallback(async () => {
@@ -445,6 +454,16 @@ const CashManagement: React.FC = () => {
             >
                <TrendingUp size={14} />
                <span className="text-[9px] font-bold uppercase tracking-widest">Desempenho</span>
+            </button>
+            <button
+               onClick={() => setActiveTab('operators')}
+               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 ${activeTab === 'operators'
+                  ? 'bg-accent/10 border-accent/40 text-accent shadow-accent-glow'
+                  : 'bg-dark-900/40 border-white/5 text-slate-500 hover:text-slate-300'
+                  }`}
+            >
+               <User size={14} />
+               <span className="text-[9px] font-bold uppercase tracking-widest">Vendas por Operador</span>
             </button>
          </div>
 
@@ -846,6 +865,16 @@ const CashManagement: React.FC = () => {
                {/* Componente externo para desempenho ao longo do tempo */}
                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
                   <CashPerformanceTrends onTelemetry={(area, action, meta) => sendTelemetry(area, action, meta)} />
+               </div>
+            </div>
+         ) : activeTab === 'operators' ? (
+            <div className="flex-1 animate-in fade-in duration-300 min-h-0 flex flex-col">
+               {/* Componente de vendas por operador */}
+               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 bg-dark-900/40">
+                  <OperatorSalesBreakdown 
+                     sales={selectedHistory ? sales : currentSessionSales} 
+                     onTelemetry={(area, action, meta) => sendTelemetry(area, action, meta)} 
+                  />
                </div>
             </div>
          ) : null}
