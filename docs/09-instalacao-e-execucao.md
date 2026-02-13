@@ -39,26 +39,41 @@
 
 > **Nota:** Recomenda-se o uso do Node.js v24 para aproveitar o carregamento nativo de `.env` via `--env-file`.
 > # Variáveis de ambiente do PDVsystem
->
-> .env
->
-> 
-- `VITE_APP_NAME`="Nome Empresa LTDA
-- `VITE_APP_CNPJ`="01.222.666/555-00"
-- `VITE_APP_ADDRESS`="Rua teste, 123 - cidade, estado"
-- `VITE_APP_PHONE`="(62) 99999-1234"
+```ini
+# Frontend
+VITE_APP_NAME=Nome Empresa LTDA
+VITE_APP_CNPJ=01.222.666/0001-00
+VITE_APP_ADDRESS=Rua teste, 123 - cidade, estado
+VITE_APP_PHONE=(62) 99999-1234
+VITE_APP_VERSION=1.0.26
+VITE_LOGS_WEBHOOK_URL=https://webhook.site/your-webhook-url
 
-# Webhook para envio dos logs ao purgar (opcional)
-- `VITE_LOGS_WEBHOOK_URL`='https://webhook.site/your-webhook-url'
-- `ENABLE_DB_ADMIN`=false
-_ `NGROK_AUTHTOKEN`='your-ngrok-authtoken'
-
-# versão do sistema
-- `VITE_APP_VERSION`="1.0.26"
+# Backend & Database
+ENABLE_DB_ADMIN=false
+NGROK_AUTHTOKEN=your-ngrok-authtoken
+PERF_LOG_ENABLED=true
+PERF_LOG_INTERVAL_MS=3600000
+LOG_EXPORT_WINDOW_HOURS=24
+BACKUP_WEBHOOK_URL=
+BACKUP_WEBHOOK_TOKEN=
+BACKUP_SEND_TIMEOUT_MS=5000
+```
 
 ## Banco de Dados
 - Local: `data/novabev.sqlite`; WAL/SHM gerados automaticamente.
 - Reset seguro: `POST /api/admin-db/reset` (precisa `ENABLE_DB_ADMIN=true`, IP localhost, body `confirm: "RESET"`).
+
+
+.env.local
+```ini
+PERF_LOG_ENABLED=true
+PERF_LOG_INTERVAL_MS=3600000
+BACKUP_WEBHOOK_URL=
+BACKUP_WEBHOOK_TOKEN=
+LOG_EXPORT_WINDOW_HOURS=24
+BACKUP_SEND_TIMEOUT_MS=5000
+NGROK_AUTHTOKEN=''
+```
 
 ## Artefatos
 - Frontend build: `dist/`
