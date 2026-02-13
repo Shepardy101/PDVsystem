@@ -98,3 +98,9 @@ export async function queryBuilder(opts: any) {
 	if (!res.ok) throw new Error('Erro ao executar query');
 	return res.json();
 }
+export async function exportTableData(table: string, format: 'raw' | 'import' = 'raw') {
+	const q = buildQuery({ table, format });
+	const res = await fetch(BASE + '/export?' + q);
+	if (!res.ok) throw new Error('Erro ao exportar dados');
+	return res.json();
+}

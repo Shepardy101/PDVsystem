@@ -119,3 +119,15 @@ export async function queryBuilder(req: Request, res: Response) {
 		res.status(400).json({ error: e.message });
 	}
 }
+
+export async function exportTable(req: Request, res: Response) {
+	const { table, format } = req.query;
+	if (!table || typeof table !== 'string') return res.status(400).json({ error: 'Missing table' });
+	const exportFormat = (format === 'import' ? 'import' : 'raw') as 'raw' | 'import';
+	try {
+		const data = adminDbRepo.exportTableData(table, exportFormat);
+		res.json(data);
+	} catch (e: any) {
+		res.status(400).json({ error: e.message });
+	}
+}

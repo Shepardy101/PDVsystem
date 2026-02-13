@@ -162,3 +162,48 @@ export function queryBuilder({ table, select, where, orderBy, limit, offset }: a
 	const rows = db.prepare(sql).all(...params);
 	return { rows };
 }
+
+export function exportTableData(table: string, format: 'raw' | 'import' = 'raw') {
+	validateTable(table);
+	
+	// Para tabela products no formato de importação, usar query personalizada com JOINs
+	if (format === 'import' && table === 'products') {
+		const sql = `
+			SELECT 
+				p.internal_code,
+				p.ean,
+				p.name,
+				p.cost_price,
+				p.sale_price,
+				p.stock_on_hand,
+				COALESCE(s.name, '') as supplier_name,
+				COALESCE(c.name, '') as category_name
+			FROM products p
+			LEFT JOIN suppliers s ON p.supplier_id = s.id
+			LEFT JOIN categories c ON p.category_id = c.id
+			WHERE p.type = 'product'
+		`;
+		const rows = db.prepare(sql).all();
+		const transformedRows = rows.map((row: any) => ({
+			internalCode: row.internal_code || '',
+			gtin: row.ean || '',
+			name: row.name || '',
+			costPrice: row.cost_price ? row.cost_price / 100 : 0,
+			salePrice: row.sale_price ? row.sale_price / 100 : 0,
+			stock: row.stock_on_hand || 0,
+			supplier: row.supplier_name || '',
+			category: row.category_name || ''
+		}));
+		return { 
+			columns: ['internalCode', 'gtin', 'name', 'costPrice', 'salePrice', 'stock', 'supplier', 'category'], 
+			rows: transformedRows 
+		};
+	}
+	
+	// Formato padrão (raw) - todas as colunas
+	const schema = getTableSchema(table);
+	const cols = schema.columns.map((c: any) => c.name);
+	const sql = `SELECT ${cols.map(c => `"${c}"`).join(',')} FROM "${table}"`;
+	const rows = db.prepare(sql).all();
+	return { columns: cols, rows };
+}
