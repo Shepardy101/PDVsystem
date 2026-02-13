@@ -207,3 +207,9 @@ export function exportTableData(table: string, format: 'raw' | 'import' = 'raw')
 	const rows = db.prepare(sql).all();
 	return { columns: cols, rows };
 }
+
+export function wipeProductsTable() {
+	const stmt = db.prepare("DELETE FROM products WHERE type IN ('product', 'serv')");
+	const result = stmt.run();
+	return result.changes;
+}

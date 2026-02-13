@@ -131,3 +131,19 @@ export async function exportTable(req: Request, res: Response) {
 		res.status(400).json({ error: e.message });
 	}
 }
+
+export async function wipeProductsTable(req: Request, res: Response) {
+	const { password, confirmation } = req.body;
+	if (password !== 'root@remove') {
+		return res.status(403).json({ error: 'Senha incorreta' });
+	}
+	if (confirmation !== 'wipe') {
+		return res.status(400).json({ error: 'Confirmação inválida' });
+	}
+	try {
+		const result = adminDbRepo.wipeProductsTable();
+		res.json({ ok: true, message: 'Tabela de produtos limpa com sucesso', deletedCount: result });
+	} catch (e: any) {
+		res.status(500).json({ error: e.message });
+	}
+}

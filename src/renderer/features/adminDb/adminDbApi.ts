@@ -104,3 +104,16 @@ export async function exportTableData(table: string, format: 'raw' | 'import' = 
 	if (!res.ok) throw new Error('Erro ao exportar dados');
 	return res.json();
 }
+
+export async function wipeProductsTable(password: string, confirmation: string) {
+	const res = await fetch(BASE + '/wipe-products', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ password, confirmation })
+	});
+	if (!res.ok) {
+		const error = await res.json();
+		throw new Error(error.error || 'Erro ao limpar tabela');
+	}
+	return res.json();
+}
