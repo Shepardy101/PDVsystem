@@ -27,7 +27,7 @@ Aplicados em `server/src/index.ts`:
 
 1. **CORS** - Habilitado globalmente
 2. **express.json()** - Parse de JSON
-3. **ipAccessControl** - Whitelist de IPs (aplicado após exceções)
+3. **ipAccessControl** - Whitelist de IPs
 
 ### Exceções de IP Control
 
@@ -140,7 +140,7 @@ Finaliza uma venda.
       "amount": 1000
     }
   ],
-  "clientId": "uuid" // opcional
+  "clientId": "uuid"
 }
 ```
 
@@ -264,7 +264,7 @@ Registra entrada de dinheiro (suprimento).
   "category": "Suprimento",
   "description": "Troco adicional",
   "operatorId": "root",
-  "cashSessionId": "uuid" // opcional, usa sessão aberta se omitido
+  "cashSessionId": "uuid"
 }
 ```
 
@@ -286,7 +286,7 @@ Registra saída de dinheiro (sangria).
   "category": "Sangria",
   "description": "Retirada para banco",
   "operatorId": "root",
-  "cashSessionId": "uuid" // opcional
+  "cashSessionId": "uuid"
 }
 ```
 
@@ -308,7 +308,7 @@ Registra pagamento/despesa.
   "category": "Despesa",
   "description": "Conta de luz",
   "operatorId": "root",
-  "cashSessionId": "uuid" // opcional
+  "cashSessionId": "uuid"
 }
 ```
 
@@ -326,13 +326,44 @@ Retorna todas as sessões, movimentos e vendas para análise.
 **Response 200:**
 ```json
 {
-  "sessions": [...],
-  "movements": [...],
+  "sessions": [
+    {
+      "id": "uuid",
+      "operator_id": "root",
+      "opened_at": 1706889600000,
+      "closed_at": 1706900000000,
+      "initial_balance": 10000,
+      "is_open": 0,
+      "created_at": 1706889600000,
+      "updated_at": 1706900000000
+    }
+  ],
+  "movements": [
+    {
+      "id": "uuid",
+      "cash_session_id": "uuid",
+      "type": "supply_in",
+      "direction": "in",
+      "amount": 5000,
+      "description": "Suprimento inicial",
+      "timestamp": 1706889600000,
+      "category": "Suprimento",
+      "operator": "Admin"
+    }
+  ],
   "sales": [
     {
-      "...": "...",
-      "payments": [...],
-      "items": [...]
+      "id": "uuid",
+      "timestamp": 1706889600000,
+      "operator_id": "root",
+      "cash_session_id": "uuid",
+      "subtotal": 1000,
+      "discount_total": 0,
+      "total": 1000,
+      "status": "completed",
+      "created_at": 1706889600000,
+      "items": [...],
+      "payments": [...]
     }
   ]
 }
@@ -383,7 +414,7 @@ Lista produtos com paginação.
   "items": [
     {
       "id": "uuid",
-      "name": "Cerveja Skol 350ml",
+      "name": "Produto nome",
       "ean": "7891234567890",
       "internal_code": "PROD001",
       "unit": "unit",
@@ -416,7 +447,29 @@ Busca produtos por nome, EAN ou código interno.
 **Response 200:**
 ```json
 {
-  "items": [...]
+  "items": [
+    {
+      "id": "uuid",
+      "name": "Produto nome",
+      "ean": "7891234567890",
+      "internal_code": "PROD001",
+      "unit": "unit",
+      "cost_price": 250,
+      "sale_price": 500,
+      "auto_discount_enabled": 0,
+      "auto_discount_value": 0,
+      "category_id": "uuid",
+      "supplier_id": "uuid",
+      "status": "active",
+      "stock_on_hand": 100,
+      "imageUrl": "/uploads/image.jpg",
+      "type": "product",
+      "min_stock": 20,
+      "created_at": 1706889600000,
+      "updated_at": 1706889600000
+    }
+  ],
+  "total": 150
 }
 ```
 
@@ -428,8 +481,23 @@ Busca produto por ID.
 ```json
 {
   "id": "uuid",
-  "name": "...",
-  "...": "..."
+  "name": "Produto nome",
+  "ean": "7891234567890",
+  "internal_code": "PROD001",
+  "unit": "unit",
+  "cost_price": 250,
+  "sale_price": 500,
+  "auto_discount_enabled": 0,
+  "auto_discount_value": 0,
+  "category_id": "uuid",
+  "supplier_id": "uuid",
+  "status": "active",
+  "stock_on_hand": 100,
+  "imageUrl": "/uploads/image.jpg",
+  "type": "product",
+  "min_stock": 20,
+  "created_at": 1706889600000,
+  "updated_at": 1706889600000
 }
 ```
 
@@ -443,7 +511,7 @@ Cria novo produto ou serviço.
 **Request Body (Produto):**
 ```json
 {
-  "name": "Cerveja Skol 350ml",
+  "name": "Produto nome",
   "ean": "7891234567890",
   "internal_code": "PROD001",
   "unit": "unit",
@@ -478,7 +546,26 @@ Cria novo produto ou serviço.
 **Response 201:**
 ```json
 {
-  "product": {...}
+  "product": {
+    "id": "uuid",
+    "name": "Produto nome",
+    "ean": "7891234567890",
+    "internal_code": "PROD001",
+    "unit": "unit",
+    "cost_price": 250,
+    "sale_price": 500,
+    "auto_discount_enabled": 0,
+    "auto_discount_value": 0,
+    "category_id": "uuid",
+    "supplier_id": "uuid",
+    "status": "active",
+    "stock_on_hand": 100,
+    "imageUrl": "/uploads/image.jpg",
+    "type": "product",
+    "min_stock": 20,
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -495,7 +582,26 @@ Atualiza produto existente.
 **Response 200:**
 ```json
 {
-  "product": {...}
+  "product": {
+    "id": "uuid",
+    "name": "Produto nome",
+    "ean": "7891234567890",
+    "internal_code": "PROD001",
+    "unit": "unit",
+    "cost_price": 250,
+    "sale_price": 500,
+    "auto_discount_enabled": 0,
+    "auto_discount_value": 0,
+    "category_id": "uuid",
+    "supplier_id": "uuid",
+    "status": "active",
+    "stock_on_hand": 100,
+    "imageUrl": "/uploads/image.jpg",
+    "type": "product",
+    "min_stock": 20,
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -578,7 +684,7 @@ Lista todas as categorias.
 [
   {
     "id": "uuid",
-    "name": "Cervejas",
+    "name": "Categoria",
     "created_at": 1706889600000,
     "updated_at": 1706889600000
   }
@@ -592,14 +698,19 @@ Cria nova categoria.
 **Request Body:**
 ```json
 {
-  "name": "Refrigerantes"
+  "name": "Categoria nome"
 }
 ```
 
 **Response 201:**
 ```json
 {
-  "category": {...}
+  "category": {
+    "id": "uuid",
+    "name": "Categoria nome",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -617,7 +728,12 @@ Atualiza categoria.
 **Response 200:**
 ```json
 {
-  "category": {...}
+  "category": {
+    "id": "uuid",
+    "name": "Refrigerantes e Sucos",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -674,7 +790,15 @@ Cria novo usuário.
 **Response 201:**
 ```json
 {
-  "user": {...}
+  "user": {
+    "id": "uuid",
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "role": "operator",
+    "status": "active",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -714,7 +838,15 @@ Atualiza usuário.
 **Response 200:**
 ```json
 {
-  "user": {...}
+  "user": {
+    "id": "uuid",
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "role": "operator",
+    "status": "active",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -739,8 +871,8 @@ Lista todos os clientes.
 [
   {
     "id": "uuid",
-    "name": "Bar do João",
-    "email": "bar@example.com",
+    "name": "Cliente nome",
+    "email": "cliente@example.com",
     "phone": "(11) 98765-4321",
     "address": "Rua X, 123",
     "created_at": 1706889600000,
@@ -756,8 +888,8 @@ Cria novo cliente.
 **Request Body:**
 ```json
 {
-  "name": "Bar do João",
-  "email": "bar@example.com",
+  "name": "Cliente nome",
+  "email": "cliente@example.com",
   "phone": "(11) 98765-4321",
   "address": "Rua X, 123"
 }
@@ -766,7 +898,15 @@ Cria novo cliente.
 **Response 201:**
 ```json
 {
-  "client": {...}
+  "client": {
+    "id": "uuid",
+    "name": "Cliente nome",
+    "email": "cliente@example.com",
+    "phone": "(11) 98765-4321",
+    "address": "Rua X, 123",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -777,7 +917,15 @@ Atualiza cliente.
 **Response 200:**
 ```json
 {
-  "client": {...}
+  "client": {
+    "id": "uuid",
+    "name": "Cliente nome",
+    "email": "cliente@example.com",
+    "phone": "(11) 98765-4321",
+    "address": "Rua X, 123",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -803,7 +951,7 @@ Lista todos os fornecedores.
   {
     "id": "uuid",
     "name": "Ambev",
-    "fantasy": "Ambev Distribuidora",
+    "fantasy": "Nome fantasia",
     "cnpj": "12345678000190",
     "address": "Av. Principal, 1000",
     "phone": "(11) 3000-0000",
@@ -823,7 +971,20 @@ Busca fornecedor por ID.
 ```json
 {
   "id": "uuid",
-  "...": "..."
+  "name": "Nome Fornecedor",
+  "fantasy": "Nome Fantasia",
+  "cnpj": "12345678000190",
+  "address": "Av. Principal, 1000",
+  "phone": "(11) 3000-0000",
+  "email": "contato@fornecedor.com",
+  "category": {
+    "id": "uuid",
+    "name": "nome categoria",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  },
+  "created_at": 1706889600000,
+  "updated_at": 1706889600000
 }
 ```
 
@@ -834,20 +995,32 @@ Cria novo fornecedor.
 **Request Body:**
 ```json
 {
-  "name": "Ambev",
-  "fantasy": "Ambev Distribuidora",
+  "name": "Nome Fornecedor",
+  "fantasy": "Nome fantasia",
   "cnpj": "12345678000190",
   "address": "Av. Principal, 1000",
   "phone": "(11) 3000-0000",
-  "email": "contato@ambev.com",
-  "category": "Bebidas"
+  "email": "contato@fornecedor.com",
+  "category": "nome categoria"
 }
 ```
 
 **Response 201:**
 ```json
 {
-  "supplier": {...}
+  "supplier": {
+    "id": "uuid",
+    "name": "Nome Fornecedor",
+    "fantasy": "Nome fantasia",
+    "cnpj": "12345678000190",
+    "address": "Av. Principal, 1000",
+    "phone": "(11) 3000-0000",
+    "email": "contato@fornecedor.com",
+    "category": "nome categoria",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
+
 }
 ```
 
@@ -858,7 +1031,18 @@ Atualiza fornecedor.
 **Response 200:**
 ```json
 {
-  "supplier": {...}
+  "supplier": {
+    "id": "uuid",
+    "name": "Nome Fornecedor",
+    "fantasy": "Nome fantasia",
+    "cnpj": "12345678000190",
+    "address": "Av. Principal, 1000",
+    "phone": "(11) 3000-0000",
+    "email": "contato@fornecedor.com",
+    "category": "nome categoria",
+    "created_at": 1706889600000,
+    "updated_at": 1706889600000
+  }
 }
 ```
 
@@ -887,7 +1071,7 @@ Produtos vendidos agregados.
 [
   {
     "product_id": "uuid",
-    "product_name": "Cerveja Skol 350ml",
+    "product_name": "Produto nome",
     "total_quantity": 150,
     "total_value": 75000
   }
@@ -905,7 +1089,7 @@ Lista detalhada de itens vendidos.
     "id": "uuid",
     "sale_id": "uuid",
     "product_id": "uuid",
-    "product_name_snapshot": "Cerveja Skol 350ml",
+    "product_name_snapshot": "Produto nome",
     "quantity": 2,
     "unit_price_at_sale": 500,
     "line_total": 1000,
@@ -929,7 +1113,7 @@ Análise de mix de produtos.
 [
   {
     "product_id": "uuid",
-    "product_name": "Cerveja Skol 350ml",
+    "product_name": "Produto nome",
     "frequency": 45,
     "total_quantity": 150,
     "total_value": 75000,
@@ -1120,10 +1304,17 @@ Lista todas as tabelas do banco.
 **Response 200:**
 ```json
 [
-  "sales",
   "products",
+  "categories",
   "users",
-  "..."
+  "sales",
+  "cash_sessions",
+  "clients",
+  "suppliers",
+  "settings",
+  "ip_control",
+  "schema_version"
+
 ]
 ```
 
@@ -1147,7 +1338,18 @@ Schema de uma tabela.
       "pk": 1
     }
   ],
-  "foreignKeys": [...]
+  "foreignKeys": [
+    {
+      "id": 0,
+      "seq": 0,
+      "table": "categories",
+      "from": "category_id",
+      "to": "id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    }
+  ]
 }
 ```
 
@@ -1166,7 +1368,13 @@ Lista registros de uma tabela.
 **Response 200:**
 ```json
 {
-  "rows": [...],
+  "rows": [
+    {
+      "id": "uuid",
+      "name": "Produto nome",
+      "created_at": 1706889600000
+    }
+  ],
   "total": 150
 }
 ```
@@ -1181,8 +1389,8 @@ Insere registro.
   "table": "products",
   "data": {
     "id": "uuid",
-    "name": "Produto X",
-    "...": "..."
+    "name": "Produto nome",
+    "created_at": 1706889600000
   }
 }
 ```
@@ -1258,12 +1466,18 @@ Query builder seguro.
 }
 ```
 
-**Operators permitidos:** `=`, `!=`, `>`, `<`, `>=`, `<=`, `LIKE`
+**Operators permitidos:** `=`, `!=`, `>`, `<`, `>=`, `<=`
 
 **Response 200:**
 ```json
 {
-  "rows": [...]
+  "rows": [
+    {
+      "id": "uuid",
+      "name": "Produto nome",
+      "status": "active"
+    }
+  ],
 }
 ```
 

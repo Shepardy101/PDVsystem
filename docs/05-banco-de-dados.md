@@ -4,7 +4,7 @@
 - DB: `data/novabev.sqlite` (criado se ausente). Fonte: `server/src/db/database.ts`.
 - PRAGMAs aplicados: `journal_mode=WAL`, `foreign_keys=ON`.
 
-## Tabelas (segundo migrations visíveis)
+## Tabelas 
 ### schema_version
 - `version INTEGER NOT NULL`
 - `applied_at INTEGER NOT NULL`

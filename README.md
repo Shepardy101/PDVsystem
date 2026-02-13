@@ -18,7 +18,7 @@
 
 ## 📋 Sobre o Projeto
 
-**PDVsystem** é um sistema de ponto de venda e gestao de estoque de alta performance. Combina uma interface React intuitiva com um backend Node.js robusto, oferecendo gestão completa de vendas, estoque, caixa, clientes e relatórios analíticos em tempo real.
+**PDVsystem**  é uma base aberta para sistemas de ponto de venda e gestão de estoque. Construído com React e Node.js, oferece módulos prontos para vendas, caixa, clientes e relatórios, permitindo que outros desenvolvedores personalizem, implementem e contribuam para sua evolução.
 
 Projetado para atender desde pequenos e médios comércios, focando em velocidade, estabilidade e experiência do usuário.
 
@@ -32,7 +32,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>🖥️ Terminal de Vendas (PDV)</b></summary>
 <br>
 
-> **Foco em Produtividade**: Interface otimizada para operação via teclado, garantindo vendas rápidas e sem uso do mouse. Registro de múltiplos pagamentos, descontos e impressão direta.
+> Interface otimizada para operação via teclado, garantindo vendas rápidas e sem uso do mouse. Registro de múltiplos pagamentos, descontos e impressão direta.
 
 ![Tela do PDV - Terminal de Vendas](docs/img/pos-screen.png)
 *(Exemplo da interface de vendas)*
@@ -42,7 +42,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>📦 Gestão de Estoque e Produtos</b></summary>
 <br>
 
-> **Controle Total**: Cadastro detalhado de produtos, controle de estoque mínimo, categorias e fornecedores. Importação e exportação em massa (Excel) para facilitar a migração.
+> Cadastro detalhado de produtos, controle de estoque mínimo, categorias e fornecedores. Importação e exportação em massa (Excel) para facilitar a migração.
 
 ![Gestão de Produtos](docs/img/products-screen.png)
 </details>
@@ -51,7 +51,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>💵 Fluxo de Caixa e Financeiro</b></summary>
 <br>
 
-> **Auditoria e Segurança**: Abertura e fechamento de caixa com conferência cega. Histórico completo de sangrias, suprimentos e quebra de caixa.
+> Abertura e fechamento de caixa com conferência cega. Histórico completo de sangrias, suprimentos e quebra de caixa.
 
 ![Fluxo de Caixa](docs/img/cash-screen.png)
 </details>
@@ -60,7 +60,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>📊 Dashboards e Relatórios (BI)</b></summary>
 <br>
 
-> **Inteligência de Negócio**: Gráficos interativos de vendas de produtos por volume e frequência e produtos mais vendidos.
+> Gráficos interativos de vendas de produtos por volume e frequência e produtos mais vendidos.
 
 ![Relatórios de Vendas](docs/img/reports-screen.png)
 </details>
@@ -69,7 +69,7 @@ Explore as principais funcionalidades do sistema através das imagens abaixo. Cl
 <summary><b>🔒 Configurações e Monitoramento</b></summary>
 <br>
 
-> **Controle Técnico**: Monitoramento de recursos do servidor (CPU/RAM) em tempo real, logs de auditoria, whitelist de IPs e gerenciamento de permissões de usuários.
+> Monitoramento de recursos do servidor (CPU/RAM) em tempo real, logs de auditoria, whitelist de IPs e gerenciamento de permissões de usuários.
 
 ![Configurações e Monitoramento](docs/img/settings-screen.png)
 </details>

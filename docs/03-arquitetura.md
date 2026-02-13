@@ -7,7 +7,7 @@
 - SPA fallback: qualquer rota não-API e não-/uploads retorna `dist/index.html` (ver `server/src/index.ts`).
 
 ## Fluxo de dados
-1. UI (pages/components) → `fetch` para `/api/*` (services em `services/*.ts` e chamadas diretas nas pages).
+1. UI (pages/components) → `fetch` para `/api/*`.
 2. Middleware `ipAccessControl` filtra IPs; exceções: `/api/health`, `/api/admin-db`, `/api/admin/ip-control`, `/uploads`.
 3. Handlers Express em `server/src/routes/*.ts` → repositórios específicos (POS, cash, reports, adminDb, etc.).
 4. Repositórios executam SQL no SQLite (`data/novabev.sqlite`) e retornam JSON.
